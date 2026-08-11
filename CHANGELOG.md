@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Examples: Added **R-lens** — an LRP variant of the Jacobian-lens fit (`jacobian_lens_fit.py --rules lrp`; rules in `examples/r_lens_rules.py`: LN-rule on residual-stream RMSNorms, identity + half rules on the gated MLP), making early-layer readouts markedly more faithful. The rules are pure stop-gradients, so the forward pass and the lens `.pt` format are unchanged and the existing readout + chat visualizer consume R-lenses as-is; `provenance["rules"]` records which backward was used. Dense models only for now (MoE fails fast at startup). CPU-only unit tests cover the rules in `examples/tests/test_r_lens_rules.py`.
+
 ## v1.2.1 (22 July 2026)
 
 - Steering: Fixed offline steering via `LLM.chat` — the plugin now patches `LLM.chat` (which submits requests to the engine directly rather than routing through `LLM.generate`). Previously, live `SteeringVector` objects raised a msgpack `TypeError`, and JSON-serialized vectors ran **silently unsteered**. Activation capture (`output_residual_stream`) and per-request hooks (`apply_hooks`) now also work through `LLM.chat`. (#28)

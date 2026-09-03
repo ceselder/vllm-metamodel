@@ -9,9 +9,11 @@
 
 Meta-models need you to inject an activation (or soft token) into the model at some position. Because vllm doesn't support this, we generally use a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a vllm plugin that allows for steering residual stream.
 
-However, vllm-lens does not go brr. It is ~40x-50x slower than standard vllm because it does a python for loop over every hidden state to match them via string matching over every single token in the whole batch. and then it does two gpu syncs and then clones every layer's output. It does this every single token, every single time a steering vector is applied. ~~I~~ Fable rewrote the hook to be vectorized and just use a hashmap instead of using a python loop which clones states etc... **Anyway, this makes generation like 40x faster and should just be merged into vllm-lens but whatever**
+However, vllm-lens does not go brr. At large batch sizes it is up to ~40x slower than standard vllm, and the reason is dumb: its forward hook runs on every single forward pass (i.e. every generated token, for every hooked layer), and on every pass it does a python for loop over every request in the batch, string-matching the request id against every registered steering key, doing two gpu syncs per request to find its rows, and cloning the layer output. It does this whether or not any vector actually applies on that step.~~I~~ Fable rewrote the hook to index the steering configs in a hashmap, build one plan per forward pass from host-side buffers (no gpu syncs), skip idle steps on a single check, and apply all vectors with one index_add_ instead of a loop. 
 
-This change also allows you to use cuda-graphs after prefill, since meda-models generally only inject once at one token index during prefill, we can get near vllm-level performance with them applied for meta-models! yippee!
+**Anyway, this makes generation like 40x faster and should just be merged into vllm-lens but whatever**
+
+This change also allows you to use cuda-graphs after prefill, since meta-models generally only inject once at one token index during prefill, we can get near vllm-level performance with them applied for meta-models! yippee!
 
 ```bash
 pip install git+https://github.com/ceselder/vllm-metamodel

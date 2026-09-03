@@ -23,19 +23,28 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
-COND = [  # (key, label, colour) -- categorical slots 1..3, fixed order
+COND_ALL = [  # (key, label, colour) -- categorical slots in fixed order; only conditions present are drawn
     ("nosteer", "no steering (hooks installed, idle)", "#2a78d6"),
     ("karvonen_add", "norm-matched add at layer 1 (one vector per request)", "#eb6834"),
     ("embed_replace", "embedding replacement (one vector per request)", "#1baf7a"),
+    ("embed_add", "norm-matched add on the embedding stream (one vector per request)", "#eb6834"),
 ]
 INK, INK_SOFT, GRID, AXIS = "#0b0b0b", "#52514e", "#e8e7e3", "#c3c2b7"
 
 
 def load(d: Path) -> dict:
-    s = json.loads((d / "summary.json").read_text())
+    if (d / "summary.json").exists():
+        s = json.loads((d / "summary.json").read_text())
+    else:  # raw results dir: summarise on the fly
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from test_injection_modes import summarize
+
+        s = summarize(d)
     panels: dict[tuple[str, str], dict] = {}
     for r in s["rows"]:
-        if not r["case"].startswith("throughput/"):
+        if not (r["case"].startswith("throughput") and "/" in r["case"]):
             continue
         cond = r["case"].split("/", 1)[1]
         panels.setdefault((r["model"], r["engine"]), {}).setdefault(cond, {})[int(r["batch"])] = r
@@ -47,16 +56,26 @@ def main() -> None:
     ap.add_argument("results_dir")
     ap.add_argument("--out-dir", default=None)
     ap.add_argument("--stem", default="injection_throughput")
+    ap.add_argument("--title", default=(
+        "Decode runs at the no-steering speed with one distinct vector per request: on Qwen3.6-27B the decode-step time of norm-matched "
+        "addition and embedding replacement is within ±1.7% of no steering, eager and with CUDA graphs\\n"
+        "(on Qwen3-1.7B a 0.5–2 s call cannot resolve per-step differences: error bars = min–max over interleaved repeats; the CUDA-graph "
+        "evidence there is the hook count, 3 vs 41 invocations)\\n"
+        "decode-step time = (wall at 80 new tokens − wall at 40) / 40 · 27B: min of 2 repeats, 1.7B: paired median of 3 · 96-token prompt · "
+        "bf16 · 1× B200 · vllm-metamodel 1.1.0.post2"))
     a = ap.parse_args()
     d = Path(a.results_dir)
     out_dir = Path(a.out_dir) if a.out_dir else d
     out_dir.mkdir(parents=True, exist_ok=True)
     panels = load(d)
+    present = {c for p_ in panels.values() for c in p_}
+    COND = [c for c in COND_ALL if c[0] in present]
+    assert len({c[2] for c in COND}) == len(COND), "conditions present share a colour slot"
     order = sorted(panels, key=lambda k: ("27B" not in k[0], k[0], k[1] != "eager", k[1]))
     n = len(order)
     fig, axes = plt.subplots(1, n, figsize=(4.3 * n + 0.8, 5.6), facecolor="white", squeeze=False)
     data_out: dict = {"conditions": [c[0] for c in COND], "panels": {}}
-    width = 0.24
+    width = 0.24 if len(COND) == 3 else 0.36
     for ax, key in zip(axes[0], order):
         model, engine = key
         by_cond = panels[key]
@@ -75,7 +94,7 @@ def main() -> None:
         spreads = []
         top = ymax
         for j, (ck, _label, colour) in enumerate(COND):
-            xs = [i + (j - 1) * (width + 0.03) for i in range(len(batches))]
+            xs = [i + (j - (len(COND) - 1) / 2) * (width + 0.03) for i in range(len(batches))]
             ys = [by_cond.get(ck, {}).get(b, {}).get(metric, float("nan")) for b in batches]
             ax.bar(xs, ys, width=width, color=colour, edgecolor="white", linewidth=1.5, zorder=3)
             for x, y, b in zip(xs, ys, batches):
@@ -112,13 +131,7 @@ def main() -> None:
         data_out["panels"][f"{model}|{engine}"] = pdata
     fig.legend(handles=[Patch(facecolor=c, label=l) for _k, l, c in COND], loc="lower center", ncol=3, frameon=False,
                fontsize=8.6, bbox_to_anchor=(0.5, 0.0))
-    fig.suptitle("Decode runs at the no-steering speed with one distinct vector per request: on Qwen3.6-27B the decode-step time of norm-matched "
-                 "addition and embedding replacement is within ±1.7% of no steering, eager and with CUDA graphs\n"
-                 "(on Qwen3-1.7B a 0.5–2 s call cannot resolve per-step differences: error bars = min–max over interleaved repeats; the CUDA-graph "
-                 "evidence there is the hook count, 3 vs 41 invocations)\n"
-                 "decode-step time = (wall at 80 new tokens − wall at 40) / 40 · 27B: min of 2 repeats, 1.7B: paired median of 3 · 96-token prompt · "
-                 "bf16 · 1× B200 · vllm-metamodel 1.1.0.post2",
-                 fontsize=10, color=INK, x=0.01, ha="left")
+    fig.suptitle(a.title.replace("\\n", "\n"), fontsize=10, color=INK, x=0.01, ha="left")
     fig.tight_layout(rect=(0, 0.07, 1, 0.86))
     fig.savefig(out_dir / f"{a.stem}.png", dpi=170, facecolor="white")
     fig.savefig(out_dir / f"{a.stem}.pdf", facecolor="white")

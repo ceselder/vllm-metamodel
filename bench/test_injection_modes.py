@@ -838,6 +838,11 @@ def throughput_checks(tp: dict, engine: str) -> list[dict[str, Any]]:
     return out
 
 
+THROUGHPUT_CHECKERS: dict[str, Any] = {"throughput": throughput_checks}
+"""case name -> function(case_record, engine) recomputing its checks offline;
+other throughput-like cases keep the checks stored at run time."""
+
+
 # ---------------------------------------------------------------------------
 # summary over a results directory (no GPU / vLLM needed)
 # ---------------------------------------------------------------------------
@@ -857,18 +862,19 @@ def summarize(d: Path) -> dict[str, Any]:
     checks = []
     for r in recs:
         eng = r["engine"] + (" +chunked" if r.get("chunked") else "")
-        own = [c for c in r["checks"] if c["case"] != "throughput"]
-        if "throughput" in r["cases"]:
-            own += throughput_checks(r["cases"]["throughput"], r["engine"])  # authoritative, from raw numbers
+        own = [c for c in r["checks"] if c["case"] not in THROUGHPUT_CHECKERS or c["case"] not in r["cases"]]
+        for tcase, fn in THROUGHPUT_CHECKERS.items():
+            if tcase in r["cases"]:
+                own += fn(r["cases"][tcase], r["engine"])  # authoritative, from raw numbers
         checks += [dict(c, model=r["model"], engine=eng) for c in own]
     rows = []
     for r in recs:
         eng = r["engine"] + (" +chunked" if r.get("chunked") else "")
         for case, recs_c in r["cases"].items():
-            if case == "throughput":
+            if isinstance(recs_c, dict) and "rows" in recs_c:  # throughput-like case
                 for cond, by_b in recs_c["rows"].items():
                     for B, v in by_b.items():
-                        rows.append({"model": r["model"], "engine": eng, "case": f"throughput/{cond}", "batch": int(B),
+                        rows.append({"model": r["model"], "engine": eng, "case": f"{case}/{cond}", "batch": int(B),
                                      "wall_s": v["wall_s"], "tok_per_s": v["tok_per_s"], "hook_passes": v["hook_passes"],
                                      "decode_step_ms": _step_estimate(v, int(recs_c.get("T", 40)))[0] if v.get("decode_step_ms") is not None else None,
                                      "decode_step_spread": _step_estimate(v, int(recs_c.get("T", 40)))[1] if v.get("decode_step_ms") is not None else None,
@@ -883,7 +889,8 @@ def summarize(d: Path) -> dict[str, Any]:
                           "max_other_embed_row_abs_delta", "max_layer0_pre_marker_abs_delta", "max_layerL_pre_marker_abs_delta",
                           "min_layer0_marker_abs_delta", "hf_cos", "hf_ratio", "clean_logprob_noise_vs_hf",
                           "steered_logprob_maxdiff_vs_hf", "greedy_all_equal", "n_greedy_equal", "add_min_cos",
-                          "add_max_abs_ratio_minus_1"):
+                          "add_max_abs_ratio_minus_1", "ref_max_abs_diff", "ref_impl_max_abs_diff", "logprob_effect_mean",
+                          "argmax_changed_frac", "nosteer_logprob_maxdiff", "n_split_requests", "steps_planned"):
                     if k in rec:
                         v = rec[k]
                         row[k] = (min(v) if k.endswith("cos") else max(v)) if isinstance(v, list) and v and isinstance(v[0], float) else v
@@ -918,7 +925,7 @@ def matrix_rows(summary: dict[str, Any]) -> tuple[list[list[str]], list[list[str
         by_key.setdefault((c["model"], c["engine"], c["case"]), []).append(c)
     out: list[list[str]] = []
     for r in summary["rows"]:
-        if r["case"].startswith("throughput/"):
+        if r["case"].startswith("throughput") and "/" in r["case"]:
             continue
         cs = by_key.get((r["model"], r["engine"], r["case"]), [])
         b = r.get("batch")
@@ -948,11 +955,12 @@ def matrix_rows(summary: dict[str, Any]) -> tuple[list[list[str]], list[list[str
                     _fmt(ratio, "{:.1e}"), _fmt(other, "{:.1e}"), hf, f"{n_ok}/{n}" + ("" if n_ok == n else " FAIL")])
     tp = []
     for r in summary["rows"]:
-        if not r["case"].startswith("throughput/"):
+        if not (r["case"].startswith("throughput") and "/" in r["case"]):
             continue
         cond = r["case"].split("/")[1]
-        label = {"embed_replace": "embed-replace", "karvonen_add": "karvonen-add"}.get(cond)
-        cs = [c for c in by_key.get((r["model"], r["engine"], "throughput"), []) if f"B={r['batch']}" in c["check"]
+        label = {"embed_replace": "embed-replace", "karvonen_add": "karvonen-add", "embed_add": "embed-add"}.get(cond)
+        tcase = r["case"].split("/")[0]
+        cs = [c for c in by_key.get((r["model"], r["engine"], tcase), []) if f"B={r['batch']}" in c["check"]
               and (label is None or label in c["check"] or "CUDA graphs" in c["check"] and cond == "embed_replace"
                    or "regression" in c["check"] and cond == "karvonen_add" or "wall ratio" in c["check"] and cond == "karvonen_add")]
         n_ok, n_f, n_i = sum(c["ok"] is True for c in cs), sum(c["ok"] is False for c in cs), sum(c["ok"] is None for c in cs)

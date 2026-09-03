@@ -59,8 +59,15 @@ class SteeringVector(BaseModel):
     """Scalar multiplier applied to the steering vector before addition."""
 
     norm_match: bool = False
-    """If True, rescale the modified hidden state to preserve the original
-    per-token L2 norm."""
+    """If True, scale the steering vector so the added magnitude equals the
+    residual stream's per-token L2 norm (times ``scale``):
+    ``h' = h + scale · ‖h‖ · v/‖v‖`` -- the Activation Oracles injection.
+    Does NOT renormalize ``h'`` back to ``‖h‖``.  ``‖h‖`` is the norm of the
+    FULL residual stream at that position (on fused-residual architectures
+    the layer's ``hidden_states + residual``, not the ``hidden_states`` half
+    alone -- upstream #7, ported in vllm-metamodel 1.1.0.post2; 1.1.0 used
+    the half and under-injected by ~8x on Qwen-style models).  With
+    ``mode="replace"``: ``h' = scale · ‖h‖ · v/‖v‖``."""
 
     position_indices: list[int] | None = None
     """Absolute token positions for 3D activations.  ``None`` means broadcast
@@ -74,8 +81,10 @@ class SteeringVector(BaseModel):
     embedding with α·v/‖v‖") and is the only well-defined injection on
     architectures whose decoder-layer outputs are not a single residual
     tensor (e.g. hyper-connection / multi-stream models like DeepSeek-V4) —
-    target the embedding stream via ``EMBED_LAYER_INDEX`` there.  Requires
-    3D (position-specific) activations."""
+    target the embedding stream via ``EMBED_LAYER_INDEX`` there.  On a
+    regular layer of a fused-residual model the FULL stream is replaced
+    (both the ``hidden_states`` and the ``residual`` half are rewritten).
+    Requires 3D (position-specific) activations."""
 
     @field_validator("activations", mode="before")
     @classmethod

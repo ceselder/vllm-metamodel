@@ -241,9 +241,11 @@ def _pack_steering(
 
     A request is block-packable when it has exactly one SteeringVector with
     ``(1, 1, hidden)`` activations (one layer, one position) -- the
-    per-request "steer this prompt's marker token" pattern.  Those are
-    stacked into one ``[n, hidden]`` CPU tensor for ``set_steering_block``;
-    everything else goes through ``set_steering_data_many``.
+    per-request "steer this prompt's marker token" pattern, including
+    ``mode="replace"`` and ``EMBED_LAYER_INDEX`` (the block carries per-entry
+    layer / position / scale / norm_match / mode).  Those are stacked into
+    one ``[n, hidden]`` CPU tensor for ``set_steering_block``; everything
+    else goes through ``set_steering_data_many``.
     """
     keys: list[str] = []
     vecs: list[torch.Tensor] = []
@@ -251,6 +253,7 @@ def _pack_steering(
     positions: list[int] = []
     scales: list[float] = []
     nms: list[bool] = []
+    modes: list[str] = []
     rest: dict[str, list[SteeringVector]] = {}
     for key, vectors in payloads.items():
         sv = vectors[0] if len(vectors) == 1 else None
@@ -270,6 +273,7 @@ def _pack_steering(
             )
             scales.append(float(sv.scale))
             nms.append(bool(sv.norm_match))
+            modes.append(str(sv.mode))
         else:
             rest[key] = vectors
     if not keys:
@@ -281,6 +285,7 @@ def _pack_steering(
         "positions": positions,
         "scales": scales,
         "norm_match": nms,
+        "modes": modes,
     }
     return block, rest
 

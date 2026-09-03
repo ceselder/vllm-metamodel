@@ -1,0 +1,679 @@
+{
+ "rows": [
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/nosteer",
+   "batch": 512,
+   "wall_s": 0.7063049399999954,
+   "tok_per_s": 28995.97445828445,
+   "hook_passes": 41,
+   "decode_step_ms": 12.03232167500019,
+   "wall_2T_s": 1.187597807000003,
+   "prefill_plus_overhead_s": 0.22501207299998782,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/nosteer",
+   "batch": 1024,
+   "wall_s": 1.109574301000002,
+   "tok_per_s": 36915.05829135089,
+   "hook_passes": 42,
+   "decode_step_ms": 19.36070442499993,
+   "wall_2T_s": 1.8840024779999993,
+   "prefill_plus_overhead_s": 0.3351461240000049,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/karvonen_add",
+   "batch": 512,
+   "wall_s": 0.7050836419999982,
+   "tok_per_s": 29046.199316023918,
+   "hook_passes": 41,
+   "decode_step_ms": 12.668374250000092,
+   "wall_2T_s": 1.2118186120000018,
+   "prefill_plus_overhead_s": 0.1983486719999945,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/karvonen_add",
+   "batch": 1024,
+   "wall_s": 1.1993380469999977,
+   "tok_per_s": 34152.172610930334,
+   "hook_passes": 42,
+   "decode_step_ms": 18.452460874999943,
+   "wall_2T_s": 1.9374364819999954,
+   "prefill_plus_overhead_s": 0.46123961199999997,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/embed_replace",
+   "batch": 512,
+   "wall_s": 0.725563287,
+   "tok_per_s": 28226.345471087763,
+   "hook_passes": 41,
+   "decode_step_ms": 12.433042199999988,
+   "wall_2T_s": 1.2228849749999995,
+   "prefill_plus_overhead_s": 0.2282415990000004,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "case": "throughput/embed_replace",
+   "batch": 1024,
+   "wall_s": 1.175032294999994,
+   "tok_per_s": 34858.61637530584,
+   "hook_passes": 42,
+   "decode_step_ms": 19.07881485000047,
+   "wall_2T_s": 1.9381848890000128,
+   "prefill_plus_overhead_s": 0.4118797009999753,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/nosteer",
+   "batch": 512,
+   "wall_s": 0.4605637860000087,
+   "tok_per_s": 44467.23911549488,
+   "hook_passes": 2,
+   "decode_step_ms": 6.750987949999754,
+   "wall_2T_s": 0.7306033039999988,
+   "prefill_plus_overhead_s": 0.19052426800001854,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/nosteer",
+   "batch": 1024,
+   "wall_s": 0.8876431400000087,
+   "tok_per_s": 46144.670255661076,
+   "hook_passes": 3,
+   "decode_step_ms": 12.448762899999721,
+   "wall_2T_s": 1.3855936559999975,
+   "prefill_plus_overhead_s": 0.3896926240000198,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/karvonen_add",
+   "batch": 512,
+   "wall_s": 0.498854773000005,
+   "tok_per_s": 41054.032372663685,
+   "hook_passes": 2,
+   "decode_step_ms": 6.7561491500001125,
+   "wall_2T_s": 0.7691007390000095,
+   "prefill_plus_overhead_s": 0.22860880700000052,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/karvonen_add",
+   "batch": 1024,
+   "wall_s": 0.9616356149999916,
+   "tok_per_s": 42594.09630954689,
+   "hook_passes": 3,
+   "decode_step_ms": 14.064184275000358,
+   "wall_2T_s": 1.524202986000006,
+   "prefill_plus_overhead_s": 0.3990682439999773,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/embed_replace",
+   "batch": 512,
+   "wall_s": 0.49838719699999956,
+   "tok_per_s": 41092.54837057947,
+   "hook_passes": 2,
+   "decode_step_ms": 6.80307252499972,
+   "wall_2T_s": 0.7705100979999884,
+   "prefill_plus_overhead_s": 0.22626429600001075,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "case": "throughput/embed_replace",
+   "batch": 1024,
+   "wall_s": 0.981217044999994,
+   "tok_per_s": 41744.07712210121,
+   "hook_passes": 3,
+   "decode_step_ms": 14.000649024999845,
+   "wall_2T_s": 1.5412430059999878,
+   "prefill_plus_overhead_s": 0.42119108400000016,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/nosteer",
+   "batch": 512,
+   "wall_s": 7.698640347000008,
+   "tok_per_s": 2660.2099951299333,
+   "hook_passes": 82,
+   "decode_step_ms": 119.41579094999994,
+   "wall_2T_s": 12.475271985000006,
+   "prefill_plus_overhead_s": 2.9220087090000106,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/nosteer",
+   "batch": 1024,
+   "wall_s": 13.274857751999974,
+   "tok_per_s": 3085.5321213388534,
+   "hook_passes": 123,
+   "decode_step_ms": 185.38038677500097,
+   "wall_2T_s": 20.690073223000013,
+   "prefill_plus_overhead_s": 5.859642280999935,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/karvonen_add",
+   "batch": 512,
+   "wall_s": 7.743406364000009,
+   "tok_per_s": 2644.8308454033727,
+   "hook_passes": 82,
+   "decode_step_ms": 119.34117665000059,
+   "wall_2T_s": 12.517053430000033,
+   "prefill_plus_overhead_s": 2.9697592979999854,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/karvonen_add",
+   "batch": 1024,
+   "wall_s": 13.306714440000007,
+   "tok_per_s": 3078.1452615285834,
+   "hook_passes": 123,
+   "decode_step_ms": 187.07957402499886,
+   "wall_2T_s": 20.789897400999962,
+   "prefill_plus_overhead_s": 5.823531479000053,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/embed_replace",
+   "batch": 512,
+   "wall_s": 7.745980881999969,
+   "tok_per_s": 2643.9517876414093,
+   "hook_passes": 82,
+   "decode_step_ms": 120.29860975000162,
+   "wall_2T_s": 12.557925272000034,
+   "prefill_plus_overhead_s": 2.9340364919999047,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "case": "throughput/embed_replace",
+   "batch": 1024,
+   "wall_s": 13.30746427500003,
+   "tok_per_s": 3077.971817437016,
+   "hook_passes": 123,
+   "decode_step_ms": 186.74092162499818,
+   "wall_2T_s": 20.777101139999957,
+   "prefill_plus_overhead_s": 5.837827410000102,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/nosteer",
+   "batch": 512,
+   "wall_s": 5.662755322000066,
+   "tok_per_s": 3616.6139688985418,
+   "hook_passes": 4,
+   "decode_step_ms": 69.88302904999841,
+   "wall_2T_s": 8.458076484000003,
+   "prefill_plus_overhead_s": 2.86743416000013,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/nosteer",
+   "batch": 1024,
+   "wall_s": 10.811228005999965,
+   "tok_per_s": 3788.6537937474086,
+   "hook_passes": 6,
+   "decode_step_ms": 129.61105327500206,
+   "wall_2T_s": 15.995670137000047,
+   "prefill_plus_overhead_s": 5.626785874999882,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/karvonen_add",
+   "batch": 512,
+   "wall_s": 5.717352457000061,
+   "tok_per_s": 3582.077570698871,
+   "hook_passes": 4,
+   "decode_step_ms": 70.78968622499815,
+   "wall_2T_s": 8.548939905999987,
+   "prefill_plus_overhead_s": 2.885765008000135,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/karvonen_add",
+   "batch": 1024,
+   "wall_s": 10.838885578000031,
+   "tok_per_s": 3778.9862901715264,
+   "hook_passes": 6,
+   "decode_step_ms": 131.4428553749991,
+   "wall_2T_s": 16.096599792999996,
+   "prefill_plus_overhead_s": 5.581171363000067,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/embed_replace",
+   "batch": 512,
+   "wall_s": 5.720812144000092,
+   "tok_per_s": 3579.91129309833,
+   "hook_passes": 4,
+   "decode_step_ms": 71.0410255499994,
+   "wall_2T_s": 8.562453166000068,
+   "prefill_plus_overhead_s": 2.879171122000116,
+   "T": 40
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "case": "throughput/embed_replace",
+   "batch": 1024,
+   "wall_s": 10.94510499699993,
+   "tok_per_s": 3742.3122036040036,
+   "hook_passes": 6,
+   "decode_step_ms": 128.0308486750016,
+   "wall_2T_s": 16.066338943999995,
+   "prefill_plus_overhead_s": 5.823871049999866,
+   "T": 40
+  }
+ ],
+ "checks": [
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "12.43 ms vs 12.03 ms per step (+3.3%); wall 40 tok: 0.73s vs 0.71s (+2.7%, +0.019s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "12.67 ms vs 12.03 ms per step (+5.3%); wall 40 tok: 0.71s vs 0.71s (-0.2%, +-0.001s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 0.71s vs recorded 1.40s (-49.8%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "19.08 ms vs 19.36 ms per step (-1.5%); wall 40 tok: 1.18s vs 1.11s (+5.9%, +0.065s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "18.45 ms vs 19.36 ms per step (-4.7%); wall 40 tok: 1.20s vs 1.11s (+8.1%, +0.090s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 1.20s vs recorded 2.25s (-46.7%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager"
+  },
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "6.80 ms vs 6.75 ms per step (+0.8%); wall 40 tok: 0.50s vs 0.46s (+8.2%, +0.038s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "6.76 ms vs 6.75 ms per step (+0.1%); wall 40 tok: 0.50s vs 0.46s (+8.3%, +0.038s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: CUDA graphs engage with embed-replace requests (hooks ran on \u2264 10 of 41 passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=2 add=2 nosteer=2",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: no regression vs bench/results_summary.json fork_graphs (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 0.50s vs recorded 0.84s (-40.6%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": false,
+   "detail": "14.00 ms vs 12.45 ms per step (+12.5%); wall 40 tok: 0.98s vs 0.89s (+10.5%, +0.094s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": false,
+   "detail": "14.06 ms vs 12.45 ms per step (+13.0%); wall 40 tok: 0.96s vs 0.89s (+8.3%, +0.074s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: CUDA graphs engage with embed-replace requests (hooks ran on \u2264 10 of 41 passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=3 add=3 nosteer=3",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: no regression vs bench/results_summary.json fork_graphs (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 0.96s vs recorded 1.63s (-41.1%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs"
+  },
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "120.30 ms vs 119.42 ms per step (+0.7%); wall 40 tok: 7.75s vs 7.70s (+0.6%, +0.047s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "119.34 ms vs 119.42 ms per step (-0.1%); wall 40 tok: 7.74s vs 7.70s (+0.6%, +0.045s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+   "ok": false,
+   "detail": "now 7.74s vs recorded 5.82s (+33.0%)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "186.74 ms vs 185.38 ms per step (+0.7%); wall 40 tok: 13.31s vs 13.27s (+0.2%, +0.033s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "187.08 ms vs 185.38 ms per step (+0.9%); wall 40 tok: 13.31s vs 13.27s (+0.2%, +0.032s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+   "ok": false,
+   "detail": "now 13.31s vs recorded 10.55s (+26.2%)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager"
+  },
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "71.04 ms vs 69.88 ms per step (+1.7%); wall 40 tok: 5.72s vs 5.66s (+1.0%, +0.058s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "70.79 ms vs 69.88 ms per step (+1.3%); wall 40 tok: 5.72s vs 5.66s (+1.0%, +0.055s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: CUDA graphs engage with embed-replace requests (hooks ran on \u2264 10 of 41 passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=4 add=4 nosteer=4",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: no regression vs bench/results_summary.json fork_graphs (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 5.72s vs recorded 5.50s (+4.0%)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "128.03 ms vs 129.61 ms per step (-1.2%); wall 40 tok: 10.95s vs 10.81s (+1.2%, +0.134s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": true,
+   "detail": "131.44 ms vs 129.61 ms per step (+1.4%); wall 40 tok: 10.84s vs 10.81s (+0.3%, +0.028s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: CUDA graphs engage with embed-replace requests (hooks ran on \u2264 10 of 41 passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=6 add=6 nosteer=6",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: no regression vs bench/results_summary.json fork_graphs (\u2264 +10%)",
+   "ok": true,
+   "detail": "now 10.84s vs recorded 10.53s (+2.9%)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs"
+  }
+ ],
+ "n_pass": 28,
+ "n_checks": 32,
+ "all_pass": false,
+ "runs": [
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post2"
+   },
+   "resolved_config": {
+    "enforce_eager": true,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "NONE",
+    "n_capture_sizes": 0,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 28
+   },
+   "engine_up_s": 32.786079551,
+   "hf_ref": false,
+   "hidden_dim": 2048,
+   "embed_marker_norm": 1.3797909021377563,
+   "h_full_marker_norm_layer_L": 23.16317367553711
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post2"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 28
+   },
+   "engine_up_s": 14.299677337999995,
+   "hf_ref": false,
+   "hidden_dim": 2048,
+   "embed_marker_norm": 1.3797909021377563,
+   "h_full_marker_norm_layer_L": 23.16317367553711
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "eager",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post2"
+   },
+   "resolved_config": {
+    "enforce_eager": true,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "NONE",
+    "n_capture_sizes": 0,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 64
+   },
+   "engine_up_s": 172.03236332900002,
+   "hf_ref": false,
+   "hidden_dim": 5120,
+   "embed_marker_norm": 0.9689575433731079,
+   "h_full_marker_norm_layer_L": 13.188996315002441
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post2"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 64
+   },
+   "engine_up_s": 141.72789441600003,
+   "hf_ref": false,
+   "hidden_dim": 5120,
+   "embed_marker_norm": 0.9689575433731079,
+   "h_full_marker_norm_layer_L": 13.188996315002441
+  }
+ ]
+}

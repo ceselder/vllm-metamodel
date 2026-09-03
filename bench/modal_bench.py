@@ -62,7 +62,7 @@ image_stock = (
 
 image_fork = (
     _base()
-    .pip_install("datasets>=4.0.0", "pydantic>=2.0", "zstandard>=0.23.0")
+    .pip_install("datasets>=4.0.0", "pydantic>=2.0", "zstandard>=0.23.0", "accelerate>=1.0")
     .add_local_dir(
         REPO,
         "/opt/vllm-lens-metamodel",
@@ -84,13 +84,14 @@ image_fork = (
     )
     .add_local_file(HERE / "bench_steering.py", "/bench/bench_steering.py")
     .add_local_file(HERE / "diag_engine.py", "/bench/diag_engine.py")
+    .add_local_file(HERE / "test_injection_modes.py", "/bench/test_injection_modes.py")
 )
 
 vol = modal.Volume.from_name("maemm-data")
 hf_secret = modal.Secret.from_name("maemm-hf")
 
 
-def _run_engines(model: str, engines: list[str], extra: str, offline: bool) -> dict:
+def _env(offline: bool) -> dict:
     env = os.environ.copy()
     env["TOKENIZERS_PARALLELISM"] = "false"
     if offline:
@@ -100,6 +101,15 @@ def _run_engines(model: str, engines: list[str], extra: str, offline: bool) -> d
     else:
         env["HF_HOME"] = "/root/hf_small"
         env.pop("HF_HUB_OFFLINE", None)
+    return env
+
+
+def _in_volume(model: str) -> bool:
+    return os.path.isdir(f"/data/hf_cache/hub/models--{model.replace('/', '--')}")
+
+
+def _run_engines(model: str, engines: list[str], extra: str, offline: bool) -> dict:
+    env = _env(offline)
     out: dict = {}
     for eng in engines:
         path = f"/tmp/{eng}.json"
@@ -155,6 +165,115 @@ def run_stock(model: str, engines: list[str], extra: str, offline: bool) -> dict
 )
 def run_fork(model: str, engines: list[str], extra: str, offline: bool) -> dict:
     return _run_engines(model, engines, extra, offline)
+
+
+@app.function(
+    image=image_fork,
+    gpu=GPU,
+    volumes={"/data": vol},
+    secrets=[hf_secret],
+    timeout=3 * 3600,
+)
+def run_injection_tests(model: str, extra: str, engines: list[str], chunked: bool, hf_ref: bool) -> dict:
+    """bench/test_injection_modes.py: HF reference, then one subprocess per engine
+    (eager / graphs, each optionally repeated with the chunked-prefill engine), all in
+    one container so the weights stay in the page cache."""
+    offline = _in_volume(model)
+    env = _env(offline)
+    if offline:
+        print(f"[modal] {model}: found in /data/hf_cache -> offline", flush=True)
+    out: dict = {}
+    ref_path = f"/tmp/hf_ref_{model.replace('/', '__')}.pt"
+    baseline = "/opt/vllm-lens-metamodel/bench/results_summary.json"
+
+    def run(tag: str, args: list[str]) -> dict:
+        cmd = [sys.executable, "/bench/test_injection_modes.py", "--model", model, *args, *extra.split()]
+        print(f"[modal] >>> {' '.join(cmd)}", flush=True)
+        t0 = time.time()
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        tail = proc.stdout[-12000:] + "\n--- stderr ---\n" + proc.stderr[-6000:]
+        print(tail, flush=True)
+        rec = {"returncode": proc.returncode, "elapsed_s": time.time() - t0, "log_tail": tail}
+        path = f"/tmp/{tag}.json"
+        if os.path.exists(path):
+            with open(path) as f:
+                rec["result"] = json.load(f)
+        print(f"[modal] <<< {tag} rc={proc.returncode} in {rec['elapsed_s']:.0f}s", flush=True)
+        return rec
+
+    if hf_ref:
+        out["hf_ref"] = run("hf_ref", ["--stage", "hf-ref", "--out", ref_path])
+        if out["hf_ref"]["returncode"] != 0:
+            ref_path = ""  # engines still run; HF comparisons are skipped
+    for eng in engines:
+        common = ["--stage", "vllm", "--engine", eng, "--ref", ref_path, "--baseline", baseline]
+        out[eng] = run(eng, [*common, "--out", f"/tmp/{eng}.json"])
+        if chunked:
+            out[f"{eng}_chunked"] = run(f"{eng}_chunked", [*common, "--chunked", "--out", f"/tmp/{eng}_chunked.json"])
+    return out
+
+
+@app.local_entrypoint()
+def test_injection(
+    model: str = "Qwen/Qwen3.6-27B",
+    small_model: str = "Qwen/Qwen3-1.7B",
+    engines: str = "eager,graphs",
+    coeffs: str = "1.0,4.0",
+    batches: str = "64,512",
+    tp_batches: str = "512,1024",
+    prompt_tokens: int = 96,
+    marker: int = 10,
+    inject_layer: int = 1,
+    attention_backend: str = "TRITON_ATTN",
+    skip_chunked: bool = False,
+    skip_hf_ref: bool = False,
+    skip_throughput: bool = False,
+    skip_big: bool = False,
+    extra_args: str = "",
+    out_dir: str = str(HERE / "results"),
+):
+    """GPU test matrix for the injection modes (see bench/test_injection_modes.py).
+
+        modal run bench/modal_bench.py::test_injection
+    """
+    from test_injection_modes import markdown_table, summarize
+
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(out_dir) / f"injection_{ts}"
+    dest.mkdir(parents=True, exist_ok=True)
+    common = (
+        f"--prompt-tokens {prompt_tokens} --marker {marker} --inject-layer {inject_layer} "
+        f"--coeffs {coeffs} --batches {batches} --tp-batches {tp_batches}"
+    )
+    if attention_backend:
+        common += f" --attention-backend {attention_backend}"
+    if skip_throughput:
+        common += " --skip-throughput"
+    if extra_args:
+        common += " " + extra_args
+    eng_list = [e for e in engines.split(",") if e]
+    jobs = []
+    if not skip_big:
+        jobs.append((model, run_injection_tests.spawn(model, common + " --language-model-only", eng_list, not skip_chunked, not skip_hf_ref)))
+    if small_model:
+        jobs.append((small_model, run_injection_tests.spawn(small_model, common, eng_list, not skip_chunked, not skip_hf_ref)))
+    print(f"[local] {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
+    for mtag, fut in jobs:
+        res = fut.get()
+        for tag, rec in res.items():
+            name = f"{mtag.replace('/', '__')}__{tag}"
+            (dest / f"{name}.json").write_text(json.dumps(rec, indent=1))
+            print(f"[local] saved {name}.json rc={rec['returncode']} ({rec['elapsed_s']:.0f}s)", flush=True)
+            if rec["returncode"] != 0:
+                print(rec["log_tail"][-4000:], flush=True)
+    summary = summarize(dest)
+    (dest / "summary.json").write_text(json.dumps(summary, indent=1))
+    (dest / "summary.md").write_text(markdown_table(summary))
+    print(markdown_table(summary))
+    for c in summary["checks"]:
+        print(f"[{'PASS' if c['ok'] else 'FAIL'}] {c['model']} {c['engine']} {c['case']}: {c['check']}  {c['detail'][:200]}")
+    print(f"{summary['n_pass']}/{summary['n_checks']} checks pass" + (" -- ALL PASS" if summary["all_pass"] else " -- SOME FAILED"))
+    print(f"[local] results in {dest}")
 
 
 @app.local_entrypoint()

@@ -67,7 +67,9 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
     """all_results[model][variant][engine] = {"returncode", "result": <bench json>, ...}."""
     tables: dict[str, Any] = {}
     assertions: list[dict[str, Any]] = []
-    for model, by_variant in all_results.items():
+    # headline model (the 27B) first: plots/README/report derive their order from this dict
+    for model in sorted(all_results, key=lambda m: ("27B" not in m, m)):
+        by_variant = all_results[model]
         series: dict[str, dict[int, dict[str, float]]] = {}
         probes: dict[str, dict] = {}
         meta: dict[str, Any] = {}

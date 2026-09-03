@@ -1,17 +1,32 @@
 # vllm-lens-port
 
-**A [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) fork that is much faster for RL-style workloads: one steering vector per prompt over large batches — indexed hook, prefill-only vectorised injection, CUDA graphs.** Drop-in replacement for vllm-lens 1.1.0 (same package name, same public API).
+**A [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) fork that is up to 38× faster for RL-style workloads — one steering vector per prompt over large batches (22× at 1,024 requests, 38× at 2,048 on Qwen3.6-27B / B200) — via an indexed hook, prefill-only vectorised injection and CUDA graphs.** Drop-in replacement for vllm-lens 1.1.0 (same package name, same public API).
 
 ```bash
 pip install git+https://github.com/ceselder/vllm-lens-port
 ```
 
 <!-- RESULTS:BEGIN -->
-**Measured on 1× B200, Qwen/Qwen3-1.7B bf16, 96-token prompts, 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 1,024 the fork is **59.3× faster** than stock 1.1.0 with CUDA graphs (35.2× from the indexed hook alone, 43.0× with the vectorised apply, eager), within 4% of the same engine running no steering at all; steering output is numerically identical to stock (55/55 correctness checks pass: injected delta cos = 1.000, magnitude ratio = 1.000, same hidden states and next-token logprobs).
+**Measured on 1× B200, Qwen/Qwen3.6-27B bf16, 96-token prompts, 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 2,048 the fork is **37.8× faster** than stock 1.1.0 with CUDA graphs (36.3× from the indexed hook alone, 36.8× with the vectorised apply, eager), +0.5% wall time vs the same engine running no steering at all; steering output is numerically identical to stock (110/110 correctness checks pass: injected delta cos = 1.000, magnitude ratio = 1.000, same hidden states and next-token logprobs).
 
 ![per-request steering throughput vs batch size](bench/steering_throughput.png)
 
-Wall time of one `LLM.generate()` call (Qwen/Qwen3-1.7B, speedup vs stock in bold):
+Wall time of one `LLM.generate()` call (Qwen/Qwen3.6-27B, speedup vs stock in bold):
+
+| configuration | B = 8 | B = 32 | B = 128 | B = 512 | B = 1,024 | B = 2,048 |
+|---|---:|---:|---:|---:|---:|---:|
+| stock vllm-lens 1.1.0 (eager forced) | 2.0 s | 3.6 s | 12.3 s | 76.3 s | 230.2 s | 777.6 s |
+| fork: indexed hook (eager) | 1.2 s (**1.6×**) | 1.3 s (**2.7×**) | 1.9 s (**6.4×**) | 5.8 s (**13.1×**) | 10.6 s (**21.6×**) | 21.4 s (**36.3×**) |
+| fork: indexed + vectorised apply (eager) | 1.3 s (**1.5×**) | 1.4 s (**2.5×**) | 2.0 s (**6.1×**) | 5.8 s (**13.1×**) | 10.5 s (**21.8×**) | 21.1 s (**36.8×**) |
+| fork: indexed + vectorised + CUDA graphs | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.6 s (**7.9×**) | 5.5 s (**13.9×**) | 10.5 s (**21.9×**) | 20.5 s (**37.8×**) |
+| no steering, same engine config (ceiling) | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.5 s (**8.0×**) | 5.5 s (**13.9×**) | 10.4 s (**22.1×**) | 20.4 s (**38.0×**) |
+| no steering, vLLM default compile + graphs (ceiling) | 0.5 s (**3.7×**) | 0.7 s (**4.9×**) | 1.5 s (**8.4×**) | 5.3 s (**14.5×**) | 10.1 s (**22.8×**) | 19.7 s (**39.5×**) |
+
+Eager rows ran with `max_num_seqs=2048` (B = 2,048 in one scheduler wave); the CUDA-graph rows with `max_num_seqs=1024` and vLLM's default capture ladder (`max_cudagraph_capture_size=1024`), so B = 2,048 is two waves there -- see the vLLM caveat below (packed GDN decode kernel grid limit). Decode at these sizes is compute-bound and scales linearly (2,048 takes 2x the 1,024 time in every configuration).
+
+Second panel, Qwen/Qwen3-1.7B (same protocol; small models are hook-overhead dominated, so the gap is larger):
+
+![Qwen/Qwen3-1.7B](bench/steering_throughput_qwen3-1.7b.png)
 
 | configuration | B = 8 | B = 32 | B = 128 | B = 512 | B = 1,024 |
 |---|---:|---:|---:|---:|---:|
@@ -25,7 +40,7 @@ Wall time of one `LLM.generate()` call (Qwen/Qwen3-1.7B, speedup vs stock in bol
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
-## Why this fork: N× faster per-request steering
+## Why this fork: 22–38× faster per-request steering
 
 The workload this fork targets is the activation-oracle / "meta-model" rollout used in RL:
 **every request in a batch carries its own steering vector**, applied at one layer on that

@@ -89,7 +89,7 @@ def main(results_dir: str) -> None:
         f"1.1.0 with CUDA graphs ({i.get(b_max, 0):.1f}× from the indexed hook alone, {v.get(b_max, 0):.1f}× with the "
         f"vectorised apply, eager)"
         + (
-            f", within {gap:.0f}% of the same engine running no steering at all"
+            f", {gap:+.1f}% wall time vs the same engine running no steering at all"
             if gap is not None
             else ""
         )

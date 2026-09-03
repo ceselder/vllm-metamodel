@@ -1,0 +1,477 @@
+{
+ "returncode": 0,
+ "elapsed_s": 1207.086888551712,
+ "log_tail": "NFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:31:20  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:31:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:31:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:31:42  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:31:45  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:31:53  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:31:57  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:32:05  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:32:08  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:32:16  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:32:22  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:32:30  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:32:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:32:44  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:32:49  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:32:57  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:33:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:33:11  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:33:16  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:33:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:33:33  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:33:41  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:33:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:33:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:33:59  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:34:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:34:12  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_fused_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:34:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_fused_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:34:14  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:34:22  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) INFO 09-03 21:34:25 [gpu_model_runner.py:6913] Graph capturing finished in 252 secs, took 1.58 GiB\n(Worker_TP0 pid=335) INFO 09-03 21:34:25 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP0 pid=335) INFO 09-03 21:34:25 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n2026-09-03 21:34:22  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP1 pid=336) INFO 09-03 21:34:25 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP1 pid=336) INFO 09-03 21:34:25 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n2026-09-03 21:34:22  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) INFO 09-03 21:34:25 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP2 pid=337) INFO 09-03 21:34:25 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n(Worker_TP3 pid=338) INFO 09-03 21:34:25 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP0 pid=335) INFO 09-03 21:34:25 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP1 pid=336) INFO 09-03 21:34:25 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP2 pid=337) INFO 09-03 21:34:25 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(EngineCore pid=189) INFO 09-03 21:34:26 [core.py:355] init engine (profile, create kv cache, warmup model) took 651.63 s\n(EngineCore pid=189) WARNING 09-03 21:34:27 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=189) WARNING 09-03 21:34:27 [vllm.py:1237] VLLM_USE_BREAKABLE_CUDAGRAPH is set, disabling vLLM's torch.compile pipeline. Equivalent to -cc.mode=none.\n(EngineCore pid=189) WARNING 09-03 21:34:27 [vllm.py:1247] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=189) INFO 09-03 21:34:27 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])\nWARNING 09-03 21:34:27 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=189) INFO 09-03 21:34:28 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant, allreduce_rms\n[inj 21:34:28] engine up 919s vllm=0.27.1 vllm-lens=1.1.0.post3 {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'n_capture_sizes': 83, 'max_num_batched_tokens': 4096, 'max_num_seqs': 1024, 'num_layers': 43, 'tensor_parallel_size': 4, 'kv_cache_dtype': 'fp8_ds_mla', 'moe_backend': 'deep_gemm', 'hc_mult': 4, 'enable_prefix_caching': False, 'expert_dtype': 'fp4'}\n[inj 21:34:28] reference impl (nla.utils.dsv4_fast_hooks) installed on layer 0: ['ok', 'ok', 'ok', 'ok']\n[inj 21:34:28] D=4096 |embed[M]|=1.5324 caps={'multi_stream': True, 'prompt_only': True, 'num_layers': 43, 'hooks_installed': True}\n[inj 21:34:28]   [PASS] probe: capabilities RPC reports a multi-stream (hyper-connection) architecture  {\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}\n[inj 21:34:28]   [PASS] probe: embedding-stream capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n(Worker_TP0 pid=335) WARNING 09-03 21:34:31 [jit_monitor.py:135] TileLang JIT compilation during inference: mhc_pre_big_fuse_broadcast_with_norm_tilelang. This causes a latency spike; consider extending warmup to cover this shape/config.\n(Worker_TP0 pid=335) 2026-09-03 21:34:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:34:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) WARNING 09-03 21:34:45 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _fwd_kernel_ep_scatter_1. This causes a latency spike; consider extending warmup to cover this shape/config.\n[inj 21:34:51]   clean-vs-clean control B=64: top-20 log-prob max|\u0394| = 0.000, argmax flips 0.0% (engine nondeterminism floor)\n(Worker_TP0 pid=335) 2026-09-03 21:34:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:35:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) WARNING 09-03 21:35:07 [jit_monitor.py:135] TileLang JIT compilation during inference: mhc_pre_big_fuse_with_norm_tilelang. This causes a latency spike; consider extending warmup to cover this shape/config.\n[inj 21:35:17]   [PASS] mixed: B=64 (even = embed-replace, odd = no steering): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=6.49e-03 min cos=0.999997 over 32 requests\n[inj 21:35:17]   [PASS] mixed: B=64 (even = embed-replace, odd = no steering): every other embedding row of steered requests untouched  max|\u0394|=0.00e+00\n[inj 21:35:17]   [PASS] mixed: B=64 (even = embed-replace, odd = no steering): unsteered requests' embedding stream identical to the clean batch  max|\u0394|=0.00e+00\n[inj 21:35:17]   [PASS] mixed: B=64: a fresh clean batch run AFTER the steered batches equals the first clean batch (no leakage from earlier steered requests into later unsteered ones; max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01))  max|\u0394|=0.000 vs floor 0.000; argmax flips 0.0%; max num_cached_tokens seen so far = 0\n[inj 21:35:17]   [PASS] mixed: B=64: no request ever read prefix-cached KV blocks (num_cached_tokens == 0 for every request so far)  max num_cached_tokens=0 over 5 generate calls\n[inj 21:35:17]   [FAIL] mixed: B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32  max|\u0394|=1.016 vs floor 0.000 (tol 0.010); argmax flips 0.0% vs floor 0.0%; steered requests: mean max|\u0394|=1.131, argmax changed 0%\n[inj 21:35:17]   [PASS] mixed: B=64: rows_replaced == B/2, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 32, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 21:35:18]   [PASS] effect_check: B=64 marker=93 scale=95.5: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=6.49e-03 min cos=0.999997 over 64 requests\n[inj 21:35:18]   [PASS] effect_check: B=64 marker=93 scale=95.5: every other embedding row of steered requests untouched  max|\u0394|=0.00e+00\n[inj 21:35:18]   [PASS] effect_check: B=64: replacing the embedding 2 tokens before the predicted position shifts the next-token distribution well above the clean-vs-clean floor (mean max|\u0394 top-20 logprob| > 10\u00b7floor + 0.05)  mean max|\u0394 top-20 logprob| 1.314 (floor 0.000); greedy argmax changed 0% (floor 0%)\n[inj 21:35:18]   [PASS] effect_check: B=64: rows_replaced == B, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n(Worker_TP0 pid=335) 2026-09-03 21:35:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:35:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) WARNING 09-03 21:35:18 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _count_expert_num_tokens. This causes a latency spike; consider extending warmup to cover this shape/config.\n(Worker_TP0 pid=335) WARNING 09-03 21:35:18 [jit_monitor.py:135] Triton kernel JIT compilation during inference: CombineTopkSwaIndicesKernel.kernel. This causes a latency spike; consider extending warmup to cover this shape/config.\n[inj 21:35:54]   rep0 nosteer        B=  512:  27.79s (40 tok)   6.28s (80 tok) -> best decode step -537.70 ms, prefill+overhead 49.30s, hook passes=14\n[inj 21:36:01]   rep0 embed_replace  B=  512:   2.92s (40 tok)   4.00s (80 tok) -> best decode step 26.88 ms, prefill+overhead 1.85s, hook passes=14\n[inj 21:36:08]   rep0 embed_add      B=  512:   2.96s (40 tok)   4.02s (80 tok) -> best decode step 26.55 ms, prefill+overhead 1.89s, hook passes=14\n[inj 21:36:14]   rep1 nosteer        B=  512:   2.85s (40 tok)   3.84s (80 tok) -> best decode step 24.74 ms, prefill+overhead 1.86s, hook passes=14\n[inj 21:36:21]   rep1 embed_replace  B=  512:   2.92s (40 tok)   3.89s (80 tok) -> best decode step 24.34 ms, prefill+overhead 1.94s, hook passes=14\n[inj 21:36:28]   rep1 embed_add      B=  512:   2.92s (40 tok)   3.89s (80 tok) -> best decode step 24.46 ms, prefill+overhead 1.94s, hook passes=14\n[inj 21:36:37]   rep2 nosteer        B=  512:   5.40s (40 tok)   3.84s (80 tok) -> best decode step 24.74 ms, prefill+overhead 1.86s, hook passes=15\n[inj 21:36:44]   rep2 embed_replace  B=  512:   2.94s (40 tok)   3.91s (80 tok) -> best decode step 24.34 ms, prefill+overhead 1.94s, hook passes=14\n[inj 21:36:51]   rep2 embed_add      B=  512:   2.95s (40 tok)   4.07s (80 tok) -> best decode step 24.46 ms, prefill+overhead 1.94s, hook passes=14\n[inj 21:37:03]   rep0 nosteer        B= 1024:   5.42s (40 tok)   6.75s (80 tok) -> best decode step 33.23 ms, prefill+overhead 4.09s, hook passes=30\n[inj 21:37:18]   rep0 embed_replace  B= 1024:   5.39s (40 tok)   9.35s (80 tok) -> best decode step 98.92 ms, prefill+overhead 1.43s, hook passes=29\n[inj 21:37:31]   rep0 embed_add      B= 1024:   5.59s (40 tok)   6.97s (80 tok) -> best decode step 34.57 ms, prefill+overhead 4.21s, hook passes=30\n[inj 21:37:45]   rep1 nosteer        B= 1024:   5.23s (40 tok)   9.11s (80 tok) -> best decode step 38.03 ms, prefill+overhead 3.71s, hook passes=29\n[inj 21:37:57]   rep1 embed_replace  B= 1024:   5.39s (40 tok)   6.88s (80 tok) -> best decode step 37.17 ms, prefill+overhead 3.90s, hook passes=29\n[inj 21:38:10]   rep1 embed_add      B= 1024:   5.79s (40 tok)   7.18s (80 tok) -> best decode step 34.57 ms, prefill+overhead 4.21s, hook passes=30\n[inj 21:38:24]   rep2 nosteer        B= 1024:   5.88s (40 tok)   7.49s (80 tok) -> best decode step 38.03 ms, prefill+overhead 3.71s, hook passes=29\n[inj 21:38:36]   rep2 embed_replace  B= 1024:   5.69s (40 tok)   7.00s (80 tok) -> best decode step 37.17 ms, prefill+overhead 3.90s, hook passes=29\n[inj 21:38:49]   rep2 embed_add      B= 1024:   5.45s (40 tok)   6.80s (80 tok) -> best decode step 33.94 ms, prefill+overhead 4.09s, hook passes=29\n[inj 21:38:49]   [FAIL] throughput_dsv4: B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)  24.34 ms vs -39.18 ms per decode step (-162.1%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.072s per call = shipping 512 vectors + prefill hook)\n[inj 21:38:49]   [FAIL] throughput_dsv4: B=512: embed-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)  26.55 ms vs -39.18 ms per decode step (-167.8%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.070s per call = shipping 512 vectors + prefill hook)\n[inj 21:38:49]   [PASS] throughput_dsv4: B=512: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 12 + 10; eager would be \u2248 52)  hook passes: embed=14 add=14 nosteer=15\n[inj 21:38:49]   [n/a ] throughput_dsv4: B=1024: embed-replace decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)  37.17 ms vs 40.12 ms per decode step (-7.4%); wall 40 tok 5.39s vs 5.23s (+3.1%, +0.160s per call = shipping 1024 vectors + prefill hook)\n[inj 21:38:49]   [n/a ] throughput_dsv4: B=1024: embed-add (norm_match) decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)  34.57 ms vs 40.12 ms per decode step (-13.8%); wall 40 tok 5.45s vs 5.23s (+4.1%, +0.217s per call = shipping 1024 vectors + prefill hook)\n[inj 21:38:49]   [PASS] throughput_dsv4: B=1024: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 24 + 10; eager would be \u2248 64)  hook passes: embed=29 add=29 nosteer=29\n[inj 21:38:49] done (mixed+throughput): 14/17 gated checks pass\nINFO 09-03 21:38:49 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore\n(EngineCore pid=189) INFO 09-03 21:38:49 [core.py:1332] [shutdown] EngineCore: trigger received signal=SIGTERM\n(EngineCore pid=189) INFO 09-03 21:38:49 [core.py:1468] [shutdown] EngineCore: start mode=abort timeout=0s\n(EngineCore pid=189) INFO 09-03 21:38:49 [core.py:1499] [shutdown] EngineCore: request processing complete; starting resource teardown\n(EngineCore pid=189) INFO 09-03 21:38:49 [core.py:1345] [shutdown] EngineCore: exiting busy loop\n(Worker_TP0 pid=335) 2026-09-03 21:35:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:35:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:35:38  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:35:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) INFO 09-03 21:38:49 [multiproc_executor.py:804] Parent process exited, terminating worker queues\n(EngineCore pid=189) INFO 09-03 21:38:49 [multiproc_executor.py:440] [shutdown] Executor: waiting for worker exit count=4\n(Worker_TP1 pid=336) 2026-09-03 21:34:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 21:34:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 21:34:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 21:35:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 21:35:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 21:35:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 21:35:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 21:35:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 21:35:38  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 21:35:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 21:34:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 21:34:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 21:34:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 21:35:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 21:35:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 21:35:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 21:35:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 21:35:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 21:35:38  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 21:35:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n[rank2]:[W903 21:38:50.963585809 TCPStore.cpp:125] [c10d] recvValue failed on SocketImpl(fd=75, addr=[localhost]:30153, remote=[localhost]:60082): Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?\nException raised from recvBytes at /__w/pytorch/pytorch/torch/csrc/distributed/c10d/Utils.hpp:787 (most recent call first):\nframe #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x2b04cbd57bfd in /usr/local/lib/python3.12/site-packages/torch/lib/libc10.so)\nframe #1: c10::DistError::DistError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x2b04cbd58bd2 in /usr/local/lib/python3.12/site-packages/torch/lib/libc10.so)\nframe #2: c10::DistNetworkError::DistNetworkError(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x72 (0x2b04cbd59092 in /usr/local/lib/python3.12/site-packages/torch/lib/libc10.so)\nframe #3: <unknown function> + 0x66acf0d (0x2b055a284f0d in /usr/local/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)\nframe #4: c10d::TCPStore::check(std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&) + 0x383 (0x2b055a27e3e3 in /usr/local/lib/python3.12/site-packages/torch/lib/libtorch_cpu.so)\nframe #5: c10d::ProcessGroupNCCL::HeartbeatMonitor::runLoop() + 0x43d (0x2b056993519d in /usr/local/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so)\nframe #6: <unknown function> + 0xecdb4 (0x2b04fb70cdb4 in /usr/lib/x86_64-linux-gnu/libstdc++.so.6)\nframe #7: <unknown function> + 0x9cb84 (0x2b04cae03b84 in /usr/lib/x86_64-linux-gnu/libc.so.6)\nframe #8: <unknown function> + 0x129d6c (0x2b04cae90d6c in /usr/lib/x86_64-linux-gnu/libc.so.6)\n\n[rank2]:[W903 21:38:50.965405591 ProcessGroupNCCL.cpp:1876] [PG ID 0 PG GUID 0 Rank 2] Failed to check the \"should dump\" flag on TCPStore, (maybe TCPStore server has shut down too early), with error: Failed to recv, got 0 bytes. Connection was likely closed. Did the remote server shutdown or crash?\n(Worker_TP2 pid=337) 2026-09-03 21:34:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:34:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:34:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:35:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:35:07  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:35:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:35:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:35:32  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:35:38  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:35:45  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\nWARNING 09-03 21:38:54 [utils.py:632] [shutdown] Process manager: force killing remaining processes count=1\nWARNING 09-03 21:38:54 [utils.py:637] [shutdown] Process manager: force killing remaining process EngineCore pid 189\n/usr/local/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked shared_memory objects to clean up at shutdown\n  warnings.warn('resource_tracker: There appear to be %d '\n",
+ "gpu": "B200:4",
+ "result": {
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "engine": "graphs",
+  "chunked": false,
+  "multi_stream": true,
+  "gpu": "NVIDIA B200 x4",
+  "versions": {
+   "vllm": "0.27.1",
+   "torch": "2.13.0+cu130",
+   "vllm_lens": "1.1.0.post3"
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "n_capture_sizes": 83,
+   "max_num_batched_tokens": 4096,
+   "max_num_seqs": 1024,
+   "num_layers": 43,
+   "tensor_parallel_size": 4,
+   "kv_cache_dtype": "fp8_ds_mla",
+   "moe_backend": "deep_gemm",
+   "hc_mult": 4,
+   "enable_prefix_caching": false,
+   "expert_dtype": "fp4"
+  },
+  "engine_up_s": 918.651720034,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "alpha": 95.5,
+  "layer": -1,
+  "hf_ref": false,
+  "cases": {
+   "mixed": [
+    {
+     "n_checked": 64,
+     "scale": 95.5,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.006493506493506494,
+     "min_cos_marker_row": 0.9999973773956299,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_unsteered_request_abs_delta": 0.0,
+     "batch": 64,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 32,
+      "embed_apply_steps": 3,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     },
+     "nosteer_logprob_maxdiff": 1.0160603523254395,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "clean_argmax_flip_noise": 0.0,
+     "logprob_effect_mean": 1.131059691309929,
+     "argmax_changed_frac": 0.0,
+     "fresh_clean_vs_first_clean_maxdiff": 0.0,
+     "fresh_clean_argmax_flip": 0.0,
+     "max_num_cached_tokens": 0
+    }
+   ],
+   "effect_check": [
+    {
+     "n_checked": 64,
+     "scale": 95.5,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.006493506493506494,
+     "min_cos_marker_row": 0.9999973773956299,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_unsteered_request_abs_delta": null,
+     "batch": 64,
+     "marker": 93,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 64,
+      "embed_apply_steps": 3,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     },
+     "logprob_effect_mean": 1.3137685917317867,
+     "argmax_changed_frac": 0.0,
+     "clean_noise": 0.0,
+     "clean_argmax_flip_noise": 0.0
+    }
+   ],
+   "throughput_dsv4": {
+    "rows": {
+     "nosteer": {
+      "512": {
+       "wall_s": 2.845626761999938,
+       "wall_2T_s": 3.835375288000023,
+       "repeats": [
+        {
+         "wall_s": 27.792062048999924,
+         "wall_2T_s": 6.28394504400012
+        },
+        {
+         "wall_s": 2.845626761999938,
+         "wall_2T_s": 3.835375288000023
+        },
+        {
+         "wall_s": 5.403763591000143,
+         "wall_2T_s": 3.8366852840001684
+        }
+       ],
+       "tok_per_s": 7197.008502129222,
+       "gen_tokens": 20480,
+       "decode_step_ms": 24.743713150002122,
+       "prefill_plus_overhead_s": 1.8558782359998531,
+       "hook_passes": 15,
+       "hook_passes_2T": 14,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 15,
+        "steps_idle": 15,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 5.228803710999955,
+       "wall_2T_s": 6.750140975000022,
+       "repeats": [
+        {
+         "wall_s": 5.420885426000041,
+         "wall_2T_s": 6.750140975000022
+        },
+        {
+         "wall_s": 5.228803710999955,
+         "wall_2T_s": 9.109494799000004
+        },
+        {
+         "wall_s": 5.883215914999937,
+         "wall_2T_s": 7.488090199999988
+        }
+       ],
+       "tok_per_s": 7833.531772063178,
+       "gen_tokens": 40960,
+       "decode_step_ms": 38.03343160000168,
+       "prefill_plus_overhead_s": 3.707466446999888,
+       "hook_passes": 29,
+       "hook_passes_2T": 29,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 29,
+        "steps_idle": 29,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     },
+     "embed_replace": {
+      "512": {
+       "wall_s": 2.9178043930000968,
+       "wall_2T_s": 3.891589968000062,
+       "repeats": [
+        {
+         "wall_s": 2.9249518169999646,
+         "wall_2T_s": 3.9999770019999232
+        },
+        {
+         "wall_s": 2.9178043930000968,
+         "wall_2T_s": 3.891589968000062
+        },
+        {
+         "wall_s": 2.942876986000101,
+         "wall_2T_s": 3.907607364999876
+        }
+       ],
+       "tok_per_s": 7018.976340268784,
+       "gen_tokens": 20480,
+       "decode_step_ms": 24.344639374999133,
+       "prefill_plus_overhead_s": 1.9440188180001314,
+       "hook_passes": 14,
+       "hook_passes_2T": 14,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 14,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 512,
+        "embed_apply_steps": 14,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 3223,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 5.389093222000156,
+       "wall_2T_s": 6.875981314000001,
+       "repeats": [
+        {
+         "wall_s": 5.389711169000066,
+         "wall_2T_s": 9.346702356999913
+        },
+        {
+         "wall_s": 5.389093222000156,
+         "wall_2T_s": 6.875981314000001
+        },
+        {
+         "wall_s": 5.69050745100003,
+         "wall_2T_s": 6.9971063410000625
+        }
+       ],
+       "tok_per_s": 7600.536549040757,
+       "gen_tokens": 40960,
+       "decode_step_ms": 37.172202299996115,
+       "prefill_plus_overhead_s": 3.9022051300003113,
+       "hook_passes": 29,
+       "hook_passes_2T": 30,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 29,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 1024,
+        "embed_apply_steps": 29,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 14775,
+        "errors": 0
+       }
+      }
+     },
+     "embed_add": {
+      "512": {
+       "wall_s": 2.9153874929997983,
+       "wall_2T_s": 3.893898790999856,
+       "repeats": [
+        {
+         "wall_s": 2.9551100529999985,
+         "wall_2T_s": 4.016916351999953
+        },
+        {
+         "wall_s": 2.9153874929997983,
+         "wall_2T_s": 3.893898790999856
+        },
+        {
+         "wall_s": 2.950291229999948,
+         "wall_2T_s": 4.068933219999963
+        }
+       ],
+       "tok_per_s": 7024.795177030492,
+       "gen_tokens": 20480,
+       "decode_step_ms": 24.46278245000144,
+       "prefill_plus_overhead_s": 1.9368761949997406,
+       "hook_passes": 14,
+       "hook_passes_2T": 15,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 14,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 512,
+        "rows_replaced": 0,
+        "embed_apply_steps": 14,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 3211,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 5.445493547000069,
+       "wall_2T_s": 6.802994304000094,
+       "repeats": [
+        {
+         "wall_s": 5.588983224999993,
+         "wall_2T_s": 6.97187653900005
+        },
+        {
+         "wall_s": 5.792186206999986,
+         "wall_2T_s": 7.17664162899996
+        },
+        {
+         "wall_s": 5.445493547000069,
+         "wall_2T_s": 6.802994304000094
+        }
+       ],
+       "tok_per_s": 7521.815910068414,
+       "gen_tokens": 40960,
+       "decode_step_ms": 33.93751892500063,
+       "prefill_plus_overhead_s": 4.087992790000044,
+       "hook_passes": 29,
+       "hook_passes_2T": 29,
+       "stats": {
+        "steps_fast_idle": 0,
+        "steps_planned": 29,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 1024,
+        "rows_replaced": 0,
+        "embed_apply_steps": 29,
+        "embed_errors": 0,
+        "unsupported_layer_output": 0,
+        "rows_skipped_generated": 14800,
+        "errors": 0
+       }
+      }
+     }
+    },
+    "T": 40,
+    "repeats": 3,
+    "max_num_batched_tokens": 4096,
+    "baseline_series": null
+   }
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "capabilities RPC reports a multi-stream (hyper-connection) architecture",
+    "ok": true,
+    "detail": "{\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}"
+   },
+   {
+    "case": "probe",
+    "check": "embedding-stream capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 (even = embed-replace, odd = no steering): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=6.49e-03 min cos=0.999997 over 32 requests"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 (even = embed-replace, odd = no steering): every other embedding row of steered requests untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 (even = embed-replace, odd = no steering): unsteered requests' embedding stream identical to the clean batch",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: a fresh clean batch run AFTER the steered batches equals the first clean batch (no leakage from earlier steered requests into later unsteered ones; max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01))",
+    "ok": true,
+    "detail": "max|\u0394|=0.000 vs floor 0.000; argmax flips 0.0%; max num_cached_tokens seen so far = 0"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: no request ever read prefix-cached KV blocks (num_cached_tokens == 0 for every request so far)",
+    "ok": true,
+    "detail": "max num_cached_tokens=0 over 5 generate calls"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32",
+    "ok": false,
+    "detail": "max|\u0394|=1.016 vs floor 0.000 (tol 0.010); argmax flips 0.0% vs floor 0.0%; steered requests: mean max|\u0394|=1.131, argmax changed 0%"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: rows_replaced == B/2, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 32, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "effect_check",
+    "check": "B=64 marker=93 scale=95.5: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=6.49e-03 min cos=0.999997 over 64 requests"
+   },
+   {
+    "case": "effect_check",
+    "check": "B=64 marker=93 scale=95.5: every other embedding row of steered requests untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "effect_check",
+    "check": "B=64: replacing the embedding 2 tokens before the predicted position shifts the next-token distribution well above the clean-vs-clean floor (mean max|\u0394 top-20 logprob| > 10\u00b7floor + 0.05)",
+    "ok": true,
+    "detail": "mean max|\u0394 top-20 logprob| 1.314 (floor 0.000); greedy argmax changed 0% (floor 0%)"
+   },
+   {
+    "case": "effect_check",
+    "check": "B=64: rows_replaced == B, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": false,
+    "detail": "24.34 ms vs -39.18 ms per decode step (-162.1%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.072s per call = shipping 512 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=512: embed-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": false,
+    "detail": "26.55 ms vs -39.18 ms per decode step (-167.8%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.070s per call = shipping 512 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=512: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 12 + 10; eager would be \u2248 52)",
+    "ok": true,
+    "detail": "hook passes: embed=14 add=14 nosteer=15"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=1024: embed-replace decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)",
+    "ok": null,
+    "detail": "37.17 ms vs 40.12 ms per decode step (-7.4%); wall 40 tok 5.39s vs 5.23s (+3.1%, +0.160s per call = shipping 1024 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=1024: embed-add (norm_match) decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)",
+    "ok": null,
+    "detail": "34.57 ms vs 40.12 ms per decode step (-13.8%); wall 40 tok 5.45s vs 5.23s (+4.1%, +0.217s per call = shipping 1024 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput_dsv4",
+    "check": "B=1024: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 24 + 10; eager would be \u2248 64)",
+    "ok": true,
+    "detail": "hook passes: embed=29 add=29 nosteer=29"
+   }
+  ],
+  "hidden_dim": 4096,
+  "embed_marker_norm": 1.5323737859725952,
+  "capabilities": {
+   "multi_stream": true,
+   "prompt_only": true,
+   "num_layers": 43,
+   "hooks_installed": true
+  },
+  "reference_arithmetic": "nla.utils.dsv4.scale_vector_to_alpha",
+  "n_prefill_passes_max": 24,
+  "max_num_cached_tokens": 0,
+  "all_pass": false
+ }
+}

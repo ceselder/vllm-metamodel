@@ -1,0 +1,163 @@
+{
+ "rows": [
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager",
+   "case": "mixed",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 95.5,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.006493506493506494,
+   "min_cos_marker_row": 0.9999973773956299,
+   "max_other_embed_row_abs_delta": 0.0,
+   "logprob_effect_mean": 1.1519794315099716,
+   "argmax_changed_frac": 0.0,
+   "nosteer_logprob_maxdiff": 0.0
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager",
+   "case": "effect_check",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 95.5,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.006493506493506494,
+   "min_cos_marker_row": 0.9999973773956299,
+   "max_other_embed_row_abs_delta": 0.0,
+   "logprob_effect_mean": 1.2998483143746853,
+   "argmax_changed_frac": 0.0
+  }
+ ],
+ "checks": [
+  {
+   "case": "probe",
+   "check": "capabilities RPC reports a multi-stream (hyper-connection) architecture",
+   "ok": true,
+   "detail": "{\"multi_stream\": true, \"prompt_only\": false, \"num_layers\": 43, \"hooks_installed\": true}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "probe",
+   "check": "embedding-stream capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=6.49e-03 min cos=0.999997 over 32 requests",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): every other embedding row of steered requests untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): unsteered requests' embedding stream identical to the clean batch",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32",
+   "ok": true,
+   "detail": "max|\u0394|=0.000 vs floor 0.000 (tol 0.010); argmax flips 0.0% vs floor 0.0%; steered requests: mean max|\u0394|=1.152, argmax changed 0%",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: rows_replaced == B/2, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 32, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64 marker=93 scale=95.5: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=6.49e-03 min cos=0.999997 over 64 requests",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64 marker=93 scale=95.5: every other embedding row of steered requests untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64: replacing the embedding 2 tokens before the predicted position visibly changes the next-token distribution (argmax changed for > clean-vs-clean flip floor + 25% of requests)",
+   "ok": false,
+   "detail": "argmax changed 0% (floor 0%); mean max|\u0394 top-20 logprob| 1.300 (floor 0.000)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64: rows_replaced == B, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 4, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 4, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager"
+  }
+ ],
+ "n_pass": 10,
+ "n_fail": 1,
+ "n_info": 0,
+ "n_gated": 11,
+ "n_checks": 11,
+ "all_pass": false,
+ "runs": [
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "eager",
+   "chunked": false,
+   "gpu": "NVIDIA B200 x4",
+   "throughput_only": false,
+   "source": null,
+   "versions": {
+    "vllm": "0.27.1",
+    "torch": "2.13.0+cu130",
+    "vllm_lens": "1.1.0.post3"
+   },
+   "resolved_config": {
+    "enforce_eager": true,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "NONE",
+    "n_capture_sizes": 0,
+    "max_num_batched_tokens": 4096,
+    "max_num_seqs": 1024,
+    "num_layers": 43,
+    "tensor_parallel_size": 4,
+    "kv_cache_dtype": "fp8_ds_mla",
+    "moe_backend": "deep_gemm",
+    "hc_mult": 4,
+    "expert_dtype": "fp4"
+   },
+   "engine_up_s": 618.042543955,
+   "hf_ref": false,
+   "hidden_dim": 4096,
+   "embed_marker_norm": 1.5323737859725952,
+   "h_full_marker_norm_layer_L": null
+  }
+ ]
+}

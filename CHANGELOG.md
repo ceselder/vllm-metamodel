@@ -10,6 +10,59 @@ branches from upstream **v1.1.0** and keeps the distribution name
 pip install git+https://github.com/ceselder/vllm-metamodel
 ```
 
+## v1.1.0.post3 (3 September 2026) — hyper-connection architectures (DeepSeek-V4), vLLM 0.27 compatibility
+
+Tested on **DeepSeek-V4-Flash-0731** (284B MoE, mHC `hc_mult=4`, fp8 + fp4 experts) with
+**vLLM 0.27.1 at TP4 on 4× B200** (`bench/test_injection_dsv4.py`,
+`bench/modal_bench_dsv4.py`; results in the README section "Hyper-connection
+architectures"). Fell back from the requested 4× H200: the checkpoint's experts are
+`expert_dtype="fp4"`, served by DeepGEMM's SM100 fp8×fp4 kernels (`moe_backend=deep_gemm`,
+the configuration the DSv4 NLA session validated); Hopper has no FP4 tensor cores and would
+need vLLM's Marlin-mxfp4 fallback, untested for this model.
+
+- **Multi-stream guard.** DeepSeek-V4's decoder layers return
+  `(x, residual[T, 4, D], post_mix, res_mix)` — a deferred fold, not a residual
+  stream. post2 would have broadcast `output[0] + output[1]` on capture and added
+  steering vectors into `x` (mis-injection into the fold) without complaint.
+  post3 detects hyper-connection architectures at hook install (`hf_config.hc_mult
+  > 1`, override `VLLM_LENS_MULTI_STREAM`), exposes it through a new
+  `lens_capabilities` RPC, and refuses layer-output steering / capture with a
+  `ValueError` at three levels: client-side in `LLM.generate` / `AsyncLLM.generate`
+  before the request is submitted (engine stays alive), worker-side in
+  `_prepare_vectors` / `set_steering_block`, and a runtime
+  `UnsupportedLayerOutputError` from the layer hook (counted in
+  `unsupported_layer_output`, re-raised — never swallowed into a warning). The
+  embedding stream (`EMBED_LAYER_INDEX`: replace / add, ± `norm_match`, capture
+  as layer -1) is fully supported on these models.
+- **vLLM ≥ 0.27.** `_build_step_plan` no longer requires an attention-metadata
+  entry with `query_start_loc` (0.27 moved it off several backends' metadata — the
+  reason vllm-lens 1.2.1's per-request hooks silently no-op'd there); the model
+  runner's host buffers are the primary source. The plugin sets
+  `VLLM_ALLOW_INSECURE_SERIALIZATION=1` (0.27 refuses pickled `collective_rpc`
+  payloads otherwise).
+- **Measured on DeepSeek-V4-Flash-0731 (TP4, 4× B200, vLLM 0.27.1; `bench/results/dsv4_final`):**
+  embedding replacement with a distinct vector per request at B ∈ {64, 512}, ± `norm_match`,
+  at `scale = ‖e‖`, `scale = 95.5` (the NLA session's alpha) and `scale = 1.0` with `norm_match`:
+  marker rows within bf16 rounding of the target (rel ≤ 6.5e-3, cos ≥ 0.999997), every other
+  embedding row bit-identical; the prescaled form (`activations = alpha·v/‖v‖`, `scale = 1`) is
+  **bit-identical** (max|Δ| = 0) to the NLA session's `nla.utils.dsv4.scale_vector_to_alpha` and to
+  the row written by the session's own worker-side pre-hook (`nla.utils.dsv4_fast_hooks`) on the
+  same engine; chunked prefill (`max_num_batched_tokens = 4096`, 13 prefill passes at B = 512,
+  marker in a non-first chunk) lands every row exactly once; all four layer-output steering /
+  capture attempts are refused with a `ValueError` and the engine stays alive; with CUDA graphs
+  (`FULL_DECODE_ONLY`, 83 capture sizes) the hooks run only in the prefill passes (14 and 29 per
+  call at B = 512 / 1024 vs ~52 / 64 eager) and the stall-free decode-step time is at parity:
+  24.7 / 24.3 / 24.5 ms (B = 512) and 38.0 / 37.2 / 33.9 ms (B = 1024) for no-steer / embed-replace /
+  embed-add.  Engine load is ~10–16 min per container (167 GB checkpoint from a Modal volume).
+- Finding (engine, not fork): on the CUDA-graph engine, UNSTEERED requests co-batched with
+  embed-replaced requests show next-token top-20 log-probs that differ from a clean batch by up
+  to 1.02 (clean-vs-clean is bit-exact, prefix caching off, `num_cached_tokens = 0`, their
+  embedding stream bit-identical to clean, no leakage across `generate()` calls); the same
+  experiment on the eager engine gives 0.000.  See the README section for the hook-free
+  control that attributes this to batch-composition sensitivity of the vLLM 0.27.1 DeepSeek-V4
+  kernels rather than to the fork.
+- 5 new CPU tests (43 total).
+
 ## v1.1.0.post2 (3 September 2026) — injection modes: embedding replacement, norm_match on the full residual stream
 
 Two things land together: the new **embedding-replacement** injection

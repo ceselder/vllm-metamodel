@@ -36,13 +36,22 @@ def merge(dirs: list[str], out: Path) -> dict:
             rec = json.loads(f.read_text())
             if "result" in rec:
                 rec["result"]["source"] = f"{Path(d).name}/{f.name}"
-                if "throughput" in f.stem:
+                if "throughput" in f.stem and "mixed" not in rec["result"].get("cases", {}):
                     rec["result"]["throughput_only"] = True
             recs.append((f"{Path(d).name}__{f.name}", rec))
-    superseded = {rec["result"]["engine"] for name, rec in recs if "result" in rec and name.endswith("_mixed.json")}
+    def is_mixed_run(r: dict) -> bool:  # --only-mixed / --mixed-then-throughput runs (with the leak diagnostics)
+        return "mixed" in r.get("cases", {}) and "embed_replace" not in r.get("cases", {})
+
+    superseded = {rec["result"]["engine"] for name, rec in recs if "result" in rec and is_mixed_run(rec["result"])}
+    tp_superseded = {rec["result"]["engine"] for name, rec in recs if "result" in rec and is_mixed_run(rec["result"])
+                     and "throughput_dsv4" in rec["result"].get("cases", {})}
     for name, rec in recs:
         r = rec.get("result")
-        if r and r["engine"] in superseded and not name.endswith("_mixed.json") and not r.get("throughput_only"):
+        if r and r["engine"] in tp_superseded and not is_mixed_run(r) and r["cases"].pop("throughput_dsv4", None) is not None:
+            # the later interleaved 3-repeat measurement supersedes the 2-repeat one (whose first call paid JIT warm-up)
+            r["checks"] = [c for c in r["checks"] if c["case"] != "throughput_dsv4"]
+            r["superseded_cases"] = r.get("superseded_cases", []) + ["throughput_dsv4"]
+        if r and r["engine"] in superseded and not is_mixed_run(r):
             for case in ("mixed", "effect_check"):
                 if r["cases"].pop(case, None) is not None:
                     r["checks"] = [c for c in r["checks"] if c["case"] != case]
@@ -61,12 +70,12 @@ def main(dirs: list[str]) -> None:
     s = merge(dirs, out)
     runs = s["runs"]
     gpu = next((r["gpu"] for r in runs if r.get("gpu")), "GPU").replace("NVIDIA ", "")
-    ver = next((r["versions"] for r in runs if r.get("versions")), {})
+    ver = max((r["versions"] for r in runs if r.get("versions")), key=lambda v: str(v.get("vllm_lens")), default={})
     rc = next((r["resolved_config"] for r in runs if r.get("resolved_config")), {})
     has_tp = any(r["case"].startswith("throughput_dsv4/") for r in s["rows"])
     fig = ""
     if has_tp:
-        subprocess.run([sys.executable, str(HERE / "plot_injection.py"), str(out), "--out-dir", str(HERE), "--stem", "dsv4_throughput",
+        subprocess.run([sys.executable, str(HERE / "plot_injection.py"), str(out), "--out-dir", str(HERE), "--stem", "dsv4_throughput", "--estimator", "min",
                         "--title", ("Embedding-stream injection on DeepSeek-V4-Flash (hyper-connection architecture) costs no decode time: "
                                     "decode-step time of embedding replacement and embedding add vs no steering, one distinct vector per request\\n"
                                     f"vLLM {ver.get('vllm')} · TP{rc.get('tensor_parallel_size')} · {gpu} · fp8 + fp4 experts · kv fp8_ds_mla · "

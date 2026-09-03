@@ -170,8 +170,8 @@ def run2(extra: str = ""):
 
 
 @app.local_entrypoint()
-def run3(extra: str = "--only-throughput --tp-repeats 3"):
-    """(3) throughput repeat with interleaved repeats (error bars), graphs."""
+def run3(extra: str = "--mixed-then-throughput --tp-repeats 3"):
+    """(3) graphs: mixed-batch leak diagnostics, then the throughput repeat (interleaved, 3 repeats = error bars)."""
     dest = _dest("run3_graphs_tp")
     _save(dest, "graphs_throughput", run_dsv4.remote("graphs", extra, "graphs_throughput"))
     _summarize(dest)
@@ -182,6 +182,14 @@ def run1b(extra: str = "--only-mixed"):
     """(1b) eager: mixed batch + effect probe only (with the clean-vs-clean noise control)."""
     dest = _dest("run1b_eager_mixed")
     _save(dest, "eager_mixed", run_dsv4.remote("eager", extra, "eager_mixed"))
+    _summarize(dest)
+
+
+@app.local_entrypoint()
+def run4(engine: str = "graphs", extra: str = "--only-diag"):
+    """(4) batch-composition diagnostics: hook-free controls for the mixed-batch log-prob drift."""
+    dest = _dest(f"run4_{engine}_diag")
+    _save(dest, f"{engine}_diag", run_dsv4.remote(engine, extra, f"{engine}_diag"))
     _summarize(dest)
 
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -56,6 +57,9 @@ def main() -> None:
     ap.add_argument("results_dir")
     ap.add_argument("--out-dir", default=None)
     ap.add_argument("--stem", default="injection_throughput")
+    ap.add_argument("--estimator", choices=["median", "min"], default="median",
+                    help="decode-step estimate per bar: paired median over repeats (default) or the stall-robust "
+                         "(min wall_2T - min wall_T)/T")
     ap.add_argument("--title", default=(
         "Decode runs at the no-steering speed with one distinct vector per request: on Qwen3.6-27B the decode-step time of norm-matched "
         "addition and embedding replacement is within ±1.7% of no steering, eager and with CUDA graphs\\n"
@@ -73,7 +77,8 @@ def main() -> None:
     assert len({c[2] for c in COND}) == len(COND), "conditions present share a colour slot"
     order = sorted(panels, key=lambda k: ("27B" not in k[0], k[0], k[1] != "eager", k[1]))
     n = len(order)
-    fig, axes = plt.subplots(1, n, figsize=(4.3 * n + 0.8, 5.6), facecolor="white", squeeze=False)
+    fig_w = max(4.3 * n + 0.8, 10.0)
+    fig, axes = plt.subplots(1, n, figsize=(fig_w, 5.6), facecolor="white", squeeze=False)
     data_out: dict = {"conditions": [c[0] for c in COND], "panels": {}}
     width = 0.24 if len(COND) == 3 else 0.36
     for ax, key in zip(axes[0], order):
@@ -88,10 +93,13 @@ def main() -> None:
         ax.grid(True, axis="y", color=GRID, linewidth=0.8)
         ax.set_axisbelow(True)
         metric = "decode_step_ms" if all(v.get("decode_step_ms") is not None for c in by_cond.values() for v in c.values()) else "wall_s"
+        if metric == "decode_step_ms" and a.estimator == "min" and all(v.get("decode_step_min_ms") is not None for c in by_cond.values() for v in c.values()):
+            metric = "decode_step_min_ms"
         ymax = max(v[metric] for c in by_cond.values() for v in c.values())
         pdata: dict = {"batches": batches, "series": {}}
         T = 40
         spreads = []
+        ctrl_range: list[tuple[float, float]] = []
         top = ymax
         for j, (ck, _label, colour) in enumerate(COND):
             xs = [i + (j - (len(COND) - 1) / 2) * (width + 0.03) for i in range(len(batches))]
@@ -102,10 +110,12 @@ def main() -> None:
                     continue
                 reps = by_cond.get(ck, {}).get(b, {}).get("repeats")
                 lo = hi = None
-                if reps and metric == "decode_step_ms":  # min..max of the paired per-repeat estimates
+                if reps and metric in ("decode_step_ms", "decode_step_min_ms"):  # min..max of the paired per-repeat estimates
                     ests = [(r["wall_2T_s"] - r["wall_s"]) / T * 1000.0 for r in reps]
                     lo, hi = min(ests), max(ests)
                     top = max(top, hi)
+                    if ck == "nosteer":
+                        ctrl_range.append((lo, hi))
                     ax.plot([x, x], [lo, hi], color=INK_SOFT, linewidth=1.2, zorder=4)
                     ax.plot([x - 0.05, x + 0.05], [lo, lo], color=INK_SOFT, linewidth=1.0, zorder=4)
                     ax.plot([x - 0.05, x + 0.05], [hi, hi], color=INK_SOFT, linewidth=1.0, zorder=4)
@@ -118,21 +128,29 @@ def main() -> None:
         pdata["metric"] = metric
         ax.set_xticks(range(len(batches)))
         ax.set_xticklabels([f"B = {b:,}" for b in batches])
+        top = min(top, 2.5 * ymax)  # error bars from JIT-stall repeats may exceed the axis; the bar labels stay readable
         ax.set_ylim(0, top * 1.22)
-        ax.set_ylabel(("decode-step time (ms), from wall(80 tok) − wall(40 tok)" if metric == "decode_step_ms"
+        ax.set_ylabel(("decode-step time (ms), from wall(80 tok) − wall(40 tok)" if metric in ("decode_step_ms", "decode_step_min_ms")
                        else "wall time of one generate() call (s)") if ax is axes[0][0] else "", color=INK_SOFT, fontsize=9)
         hp = by_cond.get("embed_replace", {}).get(max(batches), {}).get("hook_passes")
         hp_ns = by_cond.get("nosteer", {}).get(max(batches), {}).get("hook_passes")
         mode = "CUDA graphs" if engine.startswith("graphs") else "eager"
         sub = f"layer-0 pre-hook invocations per generate() call: {hp} (no-steering {hp_ns})"
-        if spreads:
-            sub += f"\ncontrol's repeat spread {max(spreads):.0%} → smaller differences are noise"
-        ax.set_title(f"{model.split('/')[-1]} — {mode}\n{sub}", fontsize=8.6, color=INK, loc="left")
+        if ctrl_range:
+            lo_all, hi_all = min(r[0] for r in ctrl_range), max(r[1] for r in ctrl_range)
+            sub += (f"\ncontrol's per-repeat estimates span {lo_all:.0f}…{hi_all:.0f} ms; bars = "
+                    + ("min-over-repeats (stall-robust)" if metric == "decode_step_min_ms" else "paired median"))
+        ax.set_title(f"{model.split('/')[-1]} — {mode}\n{sub}", fontsize=8.0, color=INK, loc="left")
         data_out["panels"][f"{model}|{engine}"] = pdata
-    fig.legend(handles=[Patch(facecolor=c, label=l) for _k, l, c in COND], loc="lower center", ncol=3, frameon=False,
+    total_label_chars = sum(len(l) for _k, l, _c in COND)
+    ncol = len(COND) if total_label_chars * 0.085 < fig_w else max(1, len(COND) // 2)
+    fig.legend(handles=[Patch(facecolor=c, label=l) for _k, l, c in COND], loc="lower center", ncol=ncol, frameon=False,
                fontsize=8.6, bbox_to_anchor=(0.5, 0.0))
-    fig.suptitle(a.title.replace("\\n", "\n"), fontsize=10, color=INK, x=0.01, ha="left")
-    fig.tight_layout(rect=(0, 0.07, 1, 0.86))
+    width_chars = int(fig_w * 11.5)
+    title = "\n".join(textwrap.fill(line, width_chars) for line in a.title.replace("\\n", "\n").split("\n"))
+    fig.suptitle(title, fontsize=10, color=INK, x=0.01, ha="left")
+    n_title_lines = title.count("\n") + 1
+    fig.tight_layout(rect=(0, 0.05 + 0.03 * (ncol < len(COND)), 1, 1 - 0.035 * n_title_lines - 0.02))
     fig.savefig(out_dir / f"{a.stem}.png", dpi=170, facecolor="white")
     fig.savefig(out_dir / f"{a.stem}.pdf", facecolor="white")
     (out_dir / f"{a.stem}_data.json").write_text(json.dumps(data_out, indent=1))

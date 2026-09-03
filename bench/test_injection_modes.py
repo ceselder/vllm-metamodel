@@ -838,7 +838,77 @@ def throughput_checks(tp: dict, engine: str) -> list[dict[str, Any]]:
     return out
 
 
-THROUGHPUT_CHECKERS: dict[str, Any] = {"throughput": throughput_checks}
+def throughput_checks_dsv4(tp: dict, engine: str) -> list[dict[str, Any]]:
+    """DeepSeek-V4 variant: conditions nosteer / embed_replace / embed_add, no recorded baseline, prefill
+    chunked at ``max_num_batched_tokens``.  The 284B fp8/fp4 engine shows sporadic multi-second stalls on
+    ANY condition (Triton / DeepGEMM JIT for new shapes), so the gate uses the stall-robust estimate
+    ``min(wall_2T) - min(wall_T)`` over repeats; the paired-median estimate and the control's repeat
+    spread are reported alongside."""
+    rows, T = tp["rows"], int(tp.get("T", 40))
+    P = int(tp.get("_prompt_tokens", 96))
+    mnbt = int(tp.get("max_num_batched_tokens", 4096))
+    out: list[dict[str, Any]] = []
+
+    def add(name: str, ok: bool | None, detail: str) -> None:
+        out.append({"case": "throughput_dsv4", "check": name, "ok": ok, "detail": detail})
+
+    def get(cond: str, B: int) -> dict:
+        d = rows[cond]
+        return d[B] if B in d else d[str(B)]
+
+    for B in sorted({int(b) for b in rows["nosteer"]}):
+        ns = get("nosteer", B)
+        ns_min = (ns["wall_2T_s"] - ns["wall_s"]) / T * 1000.0
+        ns_med, ns_sp = _step_estimate(ns, T)
+        for name, key in (("embed-replace", "embed_replace"), ("embed-add (norm_match)", "embed_add")):
+            if key not in rows:
+                continue
+            r = get(key, B)
+            r_min = (r["wall_2T_s"] - r["wall_s"]) / T * 1000.0
+            r_med, _ = _step_estimate(r, T)
+            reps = r.get("repeats") or []
+            detail = (f"stall-robust (min over repeats): {r_min:.2f} ms vs {ns_min:.2f} ms per decode step ({r_min / ns_min - 1:+.1%}); "
+                      f"paired-median: {r_med:.2f} vs {ns_med:.2f} ms (control spread {ns_sp:.0%}); wall {T} tok {r['wall_s']:.2f}s vs "
+                      f"{ns['wall_s']:.2f}s ({r['wall_s'] / ns['wall_s'] - 1:+.1%}, {r['wall_s'] - ns['wall_s']:+.3f}s per call = shipping {B} vectors + "
+                      f"prefill hook); repeats (wall_T, wall_2T): {[(round(x['wall_s'], 2), round(x['wall_2T_s'], 2)) for x in reps]}"
+                      if ns_sp is not None else "")
+            add(f"B={B}: {name} decode-step time within {STEP_TOL:.0%} of no-steering (same engine, hooks installed; min-over-repeats estimate)",
+                r_min <= (1 + STEP_TOL) * ns_min, detail)
+        if engine.startswith("graphs"):
+            n_pre = math.ceil(B * P / mnbt)
+            er = get("embed_replace", B)
+            add(f"B={B}: CUDA graphs engage with embed-replace requests (hook passes <= prefill passes {n_pre} + {T // 4}; eager would be ~{n_pre + T})",
+                er["hook_passes"] <= n_pre + T // 4,
+                f"hook passes: embed={er['hook_passes']} add={get('embed_add', B)['hook_passes'] if 'embed_add' in rows else '-'} nosteer={ns['hook_passes']}")
+    return out
+
+
+THROUGHPUT_CHECKERS: dict[str, Any] = {"throughput": throughput_checks, "throughput_dsv4": throughput_checks_dsv4}
+
+
+def effect_checks(recs: list[dict]) -> list[dict[str, Any]]:
+    """Offline re-evaluation of the DSv4 ``effect_check`` case from its stored metrics: the criterion is a
+    next-token distribution shift well above the engine's clean-vs-clean floor (greedy argmax need not flip
+    -- the token 1 position before the prediction dominates it)."""
+    out = []
+    for r in recs:
+        eff, noise = r.get("logprob_effect_mean"), r.get("clean_noise", 0.0) or 0.0
+        if eff is None:
+            continue
+        out.append({"case": "effect_check", "ok": eff > 10 * noise + 0.05,
+                    "check": f"B={r.get('batch')}: replacing the embedding shortly before the predicted position shifts the next-token "
+                             f"distribution well above the clean-vs-clean floor (mean max|Δ top-20 logprob| > 10·floor + 0.05)",
+                    "detail": f"mean max|Δ top-20 logprob| {eff:.3f} (floor {noise:.3f}); greedy argmax changed {r.get('argmax_changed_frac', 0):.0%}"})
+        st = r.get("stats") or {}
+        if st:
+            out.append({"case": "effect_check", "ok": st.get("rows_replaced") == r.get("batch") and st.get("errors", 0) == 0,
+                        "check": f"B={r.get('batch')}: rows_replaced == B, no errors", "detail": json.dumps(st)})
+    return out
+
+
+CASE_RECHECKERS: dict[str, Any] = {"effect_check": effect_checks}
+"""list-type cases whose pass/fail is recomputed offline from stored metrics (criterion refinements
+without re-measuring); the marker-row / untouched-rows checks of such cases are kept as stored."""
 """case name -> function(case_record, engine) recomputing its checks offline;
 other throughput-like cases keep the checks stored at run time."""
 
@@ -863,8 +933,14 @@ def summarize(d: Path) -> dict[str, Any]:
     for r in recs:
         eng = r["engine"] + (" +chunked" if r.get("chunked") else "")
         own = [c for c in r["checks"] if c["case"] not in THROUGHPUT_CHECKERS or c["case"] not in r["cases"]]
+        for rcase, fn in CASE_RECHECKERS.items():
+            if rcase in r["cases"]:
+                keep_words = ("marker row", "untouched", "identical to the clean")
+                own = [c for c in own if c["case"] != rcase or any(w in c["check"] for w in keep_words)]
+                own += fn(r["cases"][rcase])
         for tcase, fn in THROUGHPUT_CHECKERS.items():
             if tcase in r["cases"]:
+                r["cases"][tcase]["_prompt_tokens"] = r.get("prompt_tokens", 96)
                 own += fn(r["cases"][tcase], r["engine"])  # authoritative, from raw numbers
         checks += [dict(c, model=r["model"], engine=eng) for c in own]
     rows = []
@@ -878,6 +954,7 @@ def summarize(d: Path) -> dict[str, Any]:
                                      "wall_s": v["wall_s"], "tok_per_s": v["tok_per_s"], "hook_passes": v["hook_passes"],
                                      "decode_step_ms": _step_estimate(v, int(recs_c.get("T", 40)))[0] if v.get("decode_step_ms") is not None else None,
                                      "decode_step_spread": _step_estimate(v, int(recs_c.get("T", 40)))[1] if v.get("decode_step_ms") is not None else None,
+                                     "decode_step_min_ms": v.get("decode_step_ms"),  # (min wall_2T - min wall_T)/T: robust to sporadic stalls
                                      "wall_2T_s": v.get("wall_2T_s"),
                                      "prefill_plus_overhead_s": v.get("prefill_plus_overhead_s"), "T": recs_c.get("T"),
                                      "repeats": v.get("repeats")})

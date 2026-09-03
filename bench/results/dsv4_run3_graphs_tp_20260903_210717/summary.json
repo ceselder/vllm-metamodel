@@ -1,0 +1,396 @@
+{
+ "rows": [
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "mixed",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 95.5,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.006493506493506494,
+   "min_cos_marker_row": 0.9999973773956299,
+   "max_other_embed_row_abs_delta": 0.0,
+   "logprob_effect_mean": 1.131059691309929,
+   "argmax_changed_frac": 0.0,
+   "nosteer_logprob_maxdiff": 1.0160603523254395
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "effect_check",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 95.5,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.006493506493506494,
+   "min_cos_marker_row": 0.9999973773956299,
+   "max_other_embed_row_abs_delta": 0.0,
+   "logprob_effect_mean": 1.3137685917317867,
+   "argmax_changed_frac": 0.0
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/nosteer",
+   "batch": 512,
+   "wall_s": 2.845626761999938,
+   "tok_per_s": 7197.008502129222,
+   "hook_passes": 15,
+   "decode_step_ms": -39.17695767499936,
+   "decode_step_spread": -3.056021335995109,
+   "wall_2T_s": 3.835375288000023,
+   "prefill_plus_overhead_s": 1.8558782359998531,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 27.792062048999924,
+     "wall_2T_s": 6.28394504400012
+    },
+    {
+     "wall_s": 2.845626761999938,
+     "wall_2T_s": 3.835375288000023
+    },
+    {
+     "wall_s": 5.403763591000143,
+     "wall_2T_s": 3.8366852840001684
+    }
+   ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/nosteer",
+   "batch": 1024,
+   "wall_s": 5.228803710999955,
+   "tok_per_s": 7833.531772063178,
+   "hook_passes": 29,
+   "decode_step_ms": 40.12185712500127,
+   "decode_step_spread": 1.1231852905026505,
+   "wall_2T_s": 6.750140975000022,
+   "prefill_plus_overhead_s": 3.707466446999888,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 5.420885426000041,
+     "wall_2T_s": 6.750140975000022
+    },
+    {
+     "wall_s": 5.228803710999955,
+     "wall_2T_s": 9.109494799000004
+    },
+    {
+     "wall_s": 5.883215914999937,
+     "wall_2T_s": 7.488090199999988
+    }
+   ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/embed_replace",
+   "batch": 512,
+   "wall_s": 2.9178043930000968,
+   "tok_per_s": 7018.976340268784,
+   "hook_passes": 14,
+   "decode_step_ms": 24.344639374999133,
+   "decode_step_spread": 0.10979920390613386,
+   "wall_2T_s": 3.891589968000062,
+   "prefill_plus_overhead_s": 1.9440188180001314,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 2.9249518169999646,
+     "wall_2T_s": 3.9999770019999232
+    },
+    {
+     "wall_s": 2.9178043930000968,
+     "wall_2T_s": 3.891589968000062
+    },
+    {
+     "wall_s": 2.942876986000101,
+     "wall_2T_s": 3.907607364999876
+    }
+   ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/embed_replace",
+   "batch": 1024,
+   "wall_s": 5.389093222000156,
+   "tok_per_s": 7600.536549040757,
+   "hook_passes": 29,
+   "decode_step_ms": 37.172202299996115,
+   "decode_step_spread": 1.1778686922262531,
+   "wall_2T_s": 6.875981314000001,
+   "prefill_plus_overhead_s": 3.9022051300003113,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 5.389711169000066,
+     "wall_2T_s": 9.346702356999913
+    },
+    {
+     "wall_s": 5.389093222000156,
+     "wall_2T_s": 6.875981314000001
+    },
+    {
+     "wall_s": 5.69050745100003,
+     "wall_2T_s": 6.9971063410000625
+    }
+   ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/embed_add",
+   "batch": 512,
+   "wall_s": 2.9153874929997983,
+   "tok_per_s": 7024.795177030492,
+   "hook_passes": 14,
+   "decode_step_ms": 26.54515747499886,
+   "decode_step_spread": 0.13307928272647046,
+   "wall_2T_s": 3.893898790999856,
+   "prefill_plus_overhead_s": 1.9368761949997406,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 2.9551100529999985,
+     "wall_2T_s": 4.016916351999953
+    },
+    {
+     "wall_s": 2.9153874929997983,
+     "wall_2T_s": 3.893898790999856
+    },
+    {
+     "wall_s": 2.950291229999948,
+     "wall_2T_s": 4.068933219999963
+    }
+   ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "throughput_dsv4/embed_add",
+   "batch": 1024,
+   "wall_s": 5.445493547000069,
+   "tok_per_s": 7521.815910068414,
+   "hook_passes": 29,
+   "decode_step_ms": 34.57233285000143,
+   "decode_step_spread": 0.019604108013413033,
+   "wall_2T_s": 6.802994304000094,
+   "prefill_plus_overhead_s": 4.087992790000044,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 5.588983224999993,
+     "wall_2T_s": 6.97187653900005
+    },
+    {
+     "wall_s": 5.792186206999986,
+     "wall_2T_s": 7.17664162899996
+    },
+    {
+     "wall_s": 5.445493547000069,
+     "wall_2T_s": 6.802994304000094
+    }
+   ]
+  }
+ ],
+ "checks": [
+  {
+   "case": "probe",
+   "check": "capabilities RPC reports a multi-stream (hyper-connection) architecture",
+   "ok": true,
+   "detail": "{\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "probe",
+   "check": "embedding-stream capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=6.49e-03 min cos=0.999997 over 32 requests",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): every other embedding row of steered requests untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 (even = embed-replace, odd = no steering): unsteered requests' embedding stream identical to the clean batch",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: a fresh clean batch run AFTER the steered batches equals the first clean batch (no leakage from earlier steered requests into later unsteered ones; max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01))",
+   "ok": true,
+   "detail": "max|\u0394|=0.000 vs floor 0.000; argmax flips 0.0%; max num_cached_tokens seen so far = 0",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: no request ever read prefix-cached KV blocks (num_cached_tokens == 0 for every request so far)",
+   "ok": true,
+   "detail": "max num_cached_tokens=0 over 5 generate calls",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32",
+   "ok": false,
+   "detail": "max|\u0394|=1.016 vs floor 0.000 (tol 0.010); argmax flips 0.0% vs floor 0.0%; steered requests: mean max|\u0394|=1.131, argmax changed 0%",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: rows_replaced == B/2, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 32, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64 marker=93 scale=95.5: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=6.49e-03 min cos=0.999997 over 64 requests",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64 marker=93 scale=95.5: every other embedding row of steered requests untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64: replacing the embedding 2 tokens before the predicted position shifts the next-token distribution well above the clean-vs-clean floor (mean max|\u0394 top-20 logprob| > 10\u00b7floor + 0.05)",
+   "ok": true,
+   "detail": "mean max|\u0394 top-20 logprob| 1.314 (floor 0.000); greedy argmax changed 0% (floor 0%)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "effect_check",
+   "check": "B=64: rows_replaced == B, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": false,
+   "detail": "24.34 ms vs -39.18 ms per decode step (-162.1%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.072s per call = shipping 512 vectors + prefill hook)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=512: embed-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+   "ok": false,
+   "detail": "26.55 ms vs -39.18 ms per decode step (-167.8%); wall 40 tok 2.92s vs 2.85s (+2.5%, +0.070s per call = shipping 512 vectors + prefill hook)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=512: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 12 + 10; eager would be \u2248 52)",
+   "ok": true,
+   "detail": "hook passes: embed=14 add=14 nosteer=15",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=1024: embed-replace decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)",
+   "ok": null,
+   "detail": "37.17 ms vs 40.12 ms per decode step (-7.4%); wall 40 tok 5.39s vs 5.23s (+3.1%, +0.160s per call = shipping 1024 vectors + prefill hook)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=1024: embed-add (norm_match) decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread 112%; informational)",
+   "ok": null,
+   "detail": "34.57 ms vs 40.12 ms per decode step (-13.8%); wall 40 tok 5.45s vs 5.23s (+4.1%, +0.217s per call = shipping 1024 vectors + prefill hook)",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "throughput_dsv4",
+   "check": "B=1024: CUDA graphs engage with embed-replace requests (hook passes \u2264 prefill passes 24 + 10; eager would be \u2248 64)",
+   "ok": true,
+   "detail": "hook passes: embed=29 add=29 nosteer=29",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  }
+ ],
+ "n_pass": 14,
+ "n_fail": 3,
+ "n_info": 2,
+ "n_gated": 17,
+ "n_checks": 19,
+ "all_pass": false,
+ "runs": [
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "chunked": false,
+   "gpu": "NVIDIA B200 x4",
+   "throughput_only": false,
+   "source": null,
+   "versions": {
+    "vllm": "0.27.1",
+    "torch": "2.13.0+cu130",
+    "vllm_lens": "1.1.0.post3"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 4096,
+    "max_num_seqs": 1024,
+    "num_layers": 43,
+    "tensor_parallel_size": 4,
+    "kv_cache_dtype": "fp8_ds_mla",
+    "moe_backend": "deep_gemm",
+    "hc_mult": 4,
+    "enable_prefix_caching": false,
+    "expert_dtype": "fp4"
+   },
+   "engine_up_s": 918.651720034,
+   "hf_ref": false,
+   "hidden_dim": 4096,
+   "embed_marker_norm": 1.5323737859725952,
+   "h_full_marker_norm_layer_L": null
+  }
+ ]
+}

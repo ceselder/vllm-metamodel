@@ -256,6 +256,86 @@ summary and `python bench/render_injection_readme.py bench/results/injection_<ts
 `VLLM_LENS_CUDA_GRAPHS=1 python bench/test_injection_modes.py --model Qwen/Qwen3-1.7B --stage vllm --engine graphs --ref ref.pt --out graphs.json`.
 <!-- INJECTION:END -->
 
+## Hyper-connection architectures (DeepSeek-V4-Flash, vLLM 0.27.1, TP4)
+
+DeepSeek-V4 (mHC, `hc_mult=4`) keeps four residual streams between layers; in vLLM each
+decoder layer returns `(x, residual[T, 4, D], post_mix, res_mix)` and the true stream is a
+deferred fold computed by the *next* layer. There is no single `[tokens, hidden]` tensor at
+a layer boundary, so **layer-output steering and capture are undefined there** — 1.1.0.post3
+detects this (`hc_mult > 1`, override `VLLM_LENS_MULTI_STREAM=0/1`) and refuses
+`layer_indices=[k]` / `output_residual_stream=[k]` with a `ValueError` before the request
+reaches the engine (engine stays alive); a runtime `UnsupportedLayerOutputError` backstop
+is raised — never swallowed — if a multi-stream tuple ever reaches the layer hook. The
+embedding entering layer 0 is a plain `[T, D]` tensor, so `EMBED_LAYER_INDEX` injection
+(replace or add, ± `norm_match`) and `output_residual_stream=[EMBED_LAYER_INDEX]` work
+unchanged. post3 also stops depending on `query_start_loc` being present on the attention
+metadata (vLLM ≥ 0.27 moved it; the runner's host buffers are used), which is what made
+vllm-lens 1.2.1's hooks silently no-op on vLLM 0.27, and sets
+`VLLM_ALLOW_INSECURE_SERIALIZATION=1` for its own pickled RPC payloads.
+
+<!-- INJECTION-DSV4:BEGIN -->
+`bench/test_injection_dsv4.py` on B200 x4 (TP4, vLLM 0.27.1, torch 2.13.0+cu130, vllm-lens 1.1.0.post3;
+`kv_cache_dtype=fp8_ds_mla`, `kernel_config.moe_backend=deep_gemm`, `max_num_batched_tokens=4096` so prefill is chunked;
+`hc_mult=4`, `expert_dtype=fp4`): **125/126 gated checks pass**
+(NOT all; 8 informational). Layer outputs on this architecture are a
+deferred 4-stream fold, so the fork refuses layer-output steering / capture with a `ValueError` (engine alive) and everything
+goes through the embedding stream (`EMBED_LAYER_INDEX`). The reference is the NLA session's own arithmetic
+(`nla.utils.dsv4.scale_vector_to_alpha`, `alpha·v/‖v‖`) and its worker-side pre-hook (`nla.utils.dsv4_fast_hooks`),
+run on the same engine; "bf16 rel err" in the table is the max relative error of the written marker row against the target.
+
+| model | engine | case | B | coeff / scale | cos(Δ, v) | ‖Δ‖/(c·‖h‖) − 1 or bf16 rel err | other rows max\|Δ\| | vs HF reference | checks |
+|---|---|---|---:|---|---:|---:|---:|---|---|
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 64 | scale 1.53 | 1.00000 | 6.3e-03 | 0.0e+00 | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 64 | scale 1.00 (norm_match) | 1.00000 | 2.9e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 512 | scale 1.53 | 1.00000 | 5.9e-03 | 0.0e+00 | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 512 | scale 95.50 | 1.00000 | 6.1e-03 | 0.0e+00 | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace | 512 | scale 1.00 (norm_match) | 1.00000 | 3.0e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace_prescaled | 64 | scale 95.50 | — | — | 0.0e+00 | — | 2/2 |
+| DeepSeek-V4-Flash-0731 | eager | embed_replace_prescaled | 512 | scale 95.50 | — | — | 0.0e+00 | — | 2/2 |
+| DeepSeek-V4-Flash-0731 | eager | reference_impl | 64 | scale 95.50 | — | — | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | eager | chunked_m70_embed_replace | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | eager | chunked_m70_embed_replace | 512 | scale 95.50 | 1.00000 | 6.1e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | eager | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | eager | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 5/5 |
+| DeepSeek-V4-Flash-0731 | eager | effect_check | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 64 | scale 1.53 | 1.00000 | 6.3e-03 | 0.0e+00 | — | 6/6 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/6 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 64 | scale 1.00 (norm_match) | 1.00000 | 2.9e-03 | 0.0e+00 | — | 3/3 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 512 | scale 1.53 | 1.00000 | 5.9e-03 | 0.0e+00 | — | 6/6 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 512 | scale 95.50 | 1.00000 | 6.1e-03 | 0.0e+00 | — | 6/6 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 512 | scale 1.00 (norm_match) | 1.00000 | 3.0e-03 | 0.0e+00 | — | 3/3 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace_prescaled | 64 | scale 95.50 | — | — | 0.0e+00 | — | 2/2 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace_prescaled | 512 | scale 95.50 | — | — | 0.0e+00 | — | 2/2 |
+| DeepSeek-V4-Flash-0731 | graphs | reference_impl | 64 | scale 95.50 | — | — | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | graphs | chunked_m70_embed_replace | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 3/3 |
+| DeepSeek-V4-Flash-0731 | graphs | chunked_m70_embed_replace | 512 | scale 95.50 | 1.00000 | 6.1e-03 | 0.0e+00 | — | 3/3 |
+| DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
+| DeepSeek-V4-Flash-0731 | graphs | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/7 FAIL |
+| DeepSeek-V4-Flash-0731 | graphs | effect_check | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 4/4 |
+
+| model | engine | condition | B | wall, 40 new tok (s) | wall, 80 new tok (s) | decode step (ms) | prefill + per-call overhead (s) | tok/s | hook passes | checks |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| DeepSeek-V4-Flash-0731 | graphs | nosteer | 512 | 2.85 | 3.84 | -39.18 | 1.86 | 7,197 | 15 | — |
+| DeepSeek-V4-Flash-0731 | graphs | nosteer | 1024 | 5.23 | 6.75 | 40.12 | 3.71 | 7,834 | 29 | — |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 512 | 2.92 | 3.89 | 24.34 | 1.94 | 7,019 | 14 | 2/2 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_replace | 1024 | 5.39 | 6.88 | 37.17 | 3.90 | 7,601 | 29 | 2/2 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_add | 512 | 2.92 | 3.89 | 26.55 | 1.94 | 7,025 | 14 | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | embed_add | 1024 | 5.45 | 6.80 | 34.57 | 4.09 | 7,522 | 29 | 1/1 |
+
+![DeepSeek-V4 throughput by injection mode](bench/dsv4_throughput.png)
+
+Re-run: `MODAL_PROFILE=safety-sahan modal run bench/modal_bench_dsv4.py::run1` (eager correctness), `::run2` (CUDA graphs:
+correctness + throughput), `::run3` (throughput repeat, interleaved, 3 repeats); then
+`python bench/render_dsv4_readme.py bench/results/dsv4_run1_eager_<ts> bench/results/dsv4_run2_graphs_<ts> bench/results/dsv4_run3_graphs_tp_<ts>`.
+<!-- INJECTION-DSV4:END -->
+
 ## Overview of changes
 | | stock 1.1.0 | vllm-metamodel |
 |---|---|---|
@@ -268,6 +348,8 @@ summary and `python bench/render_injection_readme.py bench/results/injection_<ts
 | injection modes | add a vector to a decoder layer's output | add **or replace** (`mode="replace"`), at a layer output or at the embedding stream (`EMBED_LAYER_INDEX`) — the NLA-style injection, and the only well-defined one on multi-stream architectures |
 | `norm_match=True` reference norm | the `hidden_states` half of a fused-residual layer output (MLP delta; ≈ 0.12× the stream norm on Qwen3.6-27B) | the **full residual stream** `hidden_states + residual` (upstream #7 port) — `scale=coeff` is exactly `h + coeff·‖h‖·v/‖v‖` |
 | hidden-states lookup for the layer-0 pre-hook | — | positional **and keyword** inputs, exactly one candidate required, hard error (`EmbedInjectionError`) on a miss |
+| multi-stream (hyper-connection) layer outputs | `output[0] + output[1]` broadcasts silently / steering mis-injects into the deferred fold | detected (`hc_mult`), layer-output steering & capture refused with `ValueError`; `UnsupportedLayerOutputError` backstop; embedding stream fully supported |
+| vLLM ≥ 0.27 | — | pass plan from the runner's host buffers even when the attention metadata has no `query_start_loc`; pickled RPC opt-in set |
 
 ### What changed (small, upstreamable diff)
 Two library files carry the change against upstream `v1.1.0` (`_worker_ext.py`,

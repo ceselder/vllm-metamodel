@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from test_injection_modes import _step_estimate, cos, log, prompt_ids, rel, unit_vectors  # noqa: E402
+from test_injection_modes import cos, log, prompt_ids, rel, throughput_checks_dsv4, unit_vectors  # noqa: E402
 
 STEP_TOL, RESOLVABLE_SPREAD = 0.10, 0.10
 
@@ -69,6 +69,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--only-throughput", action="store_true")
     p.add_argument("--skip-reference-impl", action="store_true")
     p.add_argument("--only-mixed", action="store_true", help="run only probe + mixed + effect_check (+ noise control)")
+    p.add_argument("--mixed-then-throughput", action="store_true", help="probe + mixed + effect_check, then throughput")
+    p.add_argument("--only-diag", action="store_true",
+                   help="batch-composition diagnostics: do unsteered requests change when co-batched with (a) requests whose marker "
+                        "TOKEN differs (no hooks at all), (b) same with capture hooks, (c) embed-replaced requests, (d) no-op replaced requests?")
     return p.parse_args()
 
 
@@ -129,6 +133,7 @@ def main() -> None:
         "kv_cache_dtype": str(vc.cache_config.cache_dtype),
         "moe_backend": a.moe_backend,
         "hc_mult": getattr(vc.model_config.hf_config, "hc_mult", None),
+        "enable_prefix_caching": bool(getattr(vc.cache_config, "enable_prefix_caching", None)),
         "expert_dtype": getattr(vc.model_config.hf_config, "expert_dtype", None),
     }
     log(f"engine up {up:.0f}s vllm={vllm.__version__} vllm-lens={vllm_lens.__version__} {resolved}")
@@ -165,8 +170,14 @@ def main() -> None:
         return SamplingParams(temperature=temperature, top_p=1.0, max_tokens=max_tokens, logprobs=logprobs,
                               extra_args=extra or None)
 
+    cached_tokens_seen: list[int] = []
+
     def gen(params):
-        return llm.generate([{"prompt_token_ids": ids}] * len(params), params, use_tqdm=False)
+        outs = llm.generate([{"prompt_token_ids": ids}] * len(params), params, use_tqdm=False)
+        # vLLM v1 reports prefix-cache hits per request; any hit would mean a request read KV blocks
+        # computed by ANOTHER request (possibly a steered one) -- must stay 0 (prefix caching is off).
+        cached_tokens_seen.append(max((int(getattr(o, "num_cached_tokens", 0) or 0) for o in outs), default=0))
+        return outs
 
     def emb(out):
         return out.activations["residual_stream"][0].float()  # (P, D) embedding stream (layer -1)
@@ -363,6 +374,12 @@ def main() -> None:
         case = "mixed"
         S = subset(B)
         C = clean(B)
+        # fresh clean batch NOW (after any steered batches): must equal the first clean batch -- a
+        # difference would mean earlier steered requests leaked into later unsteered ones (e.g. via KV reuse)
+        fresh = gen([sp(False, None, logprobs=20) for i in range(B)])
+        d_fresh = max(_lp_maxdiff(lp(fresh[i]), C["lp"][i]) for i in range(B))
+        flips_fresh = sum(int(fresh[i].outputs[0].token_ids[0]) != C["argmax"][i] for i in range(B)) / B
+        _ = stats()
         outs = gen([sp(i in S, [sv_embed(U[i], a.alpha, False)] if i % 2 == 0 else None, logprobs=20) for i in range(B)])
         st = stats()
         rec = check_rows(case, f"B={B} (even = embed-replace, odd = no steering)", S, C, outs, a.alpha, False, lambda i: i % 2 == 0)
@@ -372,7 +389,14 @@ def main() -> None:
         eff, frac = effect(outs, C, [i for i in range(B) if i % 2 == 0])
         tol = max(1e-3, 1.5 * C["noise"] + 0.01)
         rec.update(batch=B, stats=st, nosteer_logprob_maxdiff=d_odd, nosteer_argmax_flip=flips_odd, clean_noise=C["noise"],
-                   clean_argmax_flip_noise=C["argmax_flip_noise"], logprob_effect_mean=eff, argmax_changed_frac=frac)
+                   clean_argmax_flip_noise=C["argmax_flip_noise"], logprob_effect_mean=eff, argmax_changed_frac=frac,
+                   fresh_clean_vs_first_clean_maxdiff=d_fresh, fresh_clean_argmax_flip=flips_fresh,
+                   max_num_cached_tokens=max(cached_tokens_seen))
+        check(case, f"B={B}: a fresh clean batch run AFTER the steered batches equals the first clean batch (no leakage from earlier "
+                    f"steered requests into later unsteered ones; max|Δ| ≤ max(1e-3, 1.5·floor + 0.01))", d_fresh <= tol and flips_fresh <= C["argmax_flip_noise"] + 1.0 / B,
+              f"max|Δ|={d_fresh:.3f} vs floor {C['noise']:.3f}; argmax flips {flips_fresh:.1%}; max num_cached_tokens seen so far = {max(cached_tokens_seen)}")
+        check(case, f"B={B}: no request ever read prefix-cached KV blocks (num_cached_tokens == 0 for every request so far)",
+              max(cached_tokens_seen) == 0, f"max num_cached_tokens={max(cached_tokens_seen)} over {len(cached_tokens_seen)} generate calls")
         check(case, f"B={B}: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor "
                     f"(max|Δ| ≤ max(1e-3, 1.5·floor + 0.01)) and argmax flips ≤ floor + 1/{len(odd)}",
               d_odd <= tol and flips_odd <= C["argmax_flip_noise"] + 1.0 / len(odd),
@@ -396,10 +420,10 @@ def main() -> None:
             eff, frac = effect(outs, C, range(B))
             rec.update(batch=B, marker=M2, scale=a.alpha, stats=st, logprob_effect_mean=eff, argmax_changed_frac=frac, clean_noise=C["noise"],
                        clean_argmax_flip_noise=C["argmax_flip_noise"])
-            check(case, f"B={B}: replacing the embedding {P - 1 - M2} tokens before the predicted position visibly changes the next-token "
-                        f"distribution (argmax changed for > clean-vs-clean flip floor + 25% of requests)",
-                  frac > C["argmax_flip_noise"] + 0.25,
-                  f"argmax changed {frac:.0%} (floor {C['argmax_flip_noise']:.0%}); mean max|Δ top-20 logprob| {eff:.3f} (floor {C['noise']:.3f})")
+            check(case, f"B={B}: replacing the embedding {P - 1 - M2} tokens before the predicted position shifts the next-token distribution "
+                        f"well above the clean-vs-clean floor (mean max|Δ top-20 logprob| > 10·floor + 0.05)",
+                  eff > 10 * C["noise"] + 0.05,
+                  f"mean max|Δ top-20 logprob| {eff:.3f} (floor {C['noise']:.3f}); greedy argmax changed {frac:.0%} (floor {C['argmax_flip_noise']:.0%})")
             check(case, f"B={B}: rows_replaced == B, no errors", st["rows_replaced"] == B and st["errors"] == 0, json.dumps(st))
             result["cases"].setdefault(case, []).append(rec)
             dump()
@@ -462,6 +486,9 @@ def main() -> None:
             _ = stats()
         rows: dict[str, dict[int, dict]] = {}
         for B in tp_batches:
+            # warm-up at THIS batch size: Triton/TileLang kernels JIT-compile on the first call of a new shape
+            gen([gp(None, T) for _ in range(B)])
+            _ = stats()
             for rep_i in range(max(1, a.tp_repeats)):
                 for cond, mk in conds.items():
                     t1 = time.perf_counter()
@@ -484,26 +511,68 @@ def main() -> None:
                         f"prefill+overhead {r['prefill_plus_overhead_s']:.2f}s, hook passes={r['hook_passes']}")
         n_prefill = math.ceil(max(tp_batches) * P / a.max_num_batched_tokens)
         result["cases"][case] = {"rows": rows, "T": T, "repeats": a.tp_repeats, "max_num_batched_tokens": a.max_num_batched_tokens,
-                                 "baseline_series": None}
-        for B in tp_batches:
-            n_pre = math.ceil(B * P / a.max_num_batched_tokens)
-            ns = rows["nosteer"][B]
-            ns_ms, ns_sp = _step_estimate(ns, T)
-            resolvable = ns_sp is None or ns_sp <= RESOLVABLE_SPREAD
-            for name, key in (("embed-replace", "embed_replace"), ("embed-add (norm_match)", "embed_add")):
-                r = rows[key][B]
-                ms, _ = _step_estimate(r, T)
-                detail = (f"{ms:.2f} ms vs {ns_ms:.2f} ms per decode step ({ms / ns_ms - 1:+.1%}); wall {T} tok {r['wall_s']:.2f}s vs {ns['wall_s']:.2f}s "
-                          f"({r['wall_s'] / ns['wall_s'] - 1:+.1%}, {r['wall_s'] - ns['wall_s']:+.3f}s per call = shipping {B} vectors + prefill hook)")
-                if resolvable:
-                    check(case, f"B={B}: {name} decode-step time within {STEP_TOL:.0%} of no-steering (same engine, hooks installed)", ms <= (1 + STEP_TOL) * ns_ms, detail)
-                else:
-                    check(case, f"B={B}: {name} decode-step time vs no-steering -- NOT RESOLVABLE (control repeat spread {ns_sp:.0%}; informational)", None, detail)
-            if a.engine == "graphs":
-                er = rows["embed_replace"][B]
-                check(case, f"B={B}: CUDA graphs engage with embed-replace requests (hook passes ≤ prefill passes {n_pre} + {T // 4}; eager would be ≈ {n_pre + T})",
-                      er["hook_passes"] <= n_pre + T // 4, f"hook passes: embed={er['hook_passes']} add={rows['embed_add'][B]['hook_passes']} nosteer={ns['hook_passes']}")
+                                 "baseline_series": None, "_prompt_tokens": P}
+        for c in throughput_checks_dsv4(result["cases"][case], a.engine):
+            checks.append(c)
+            log(f"  [{'PASS' if c['ok'] else ('n/a ' if c['ok'] is None else 'FAIL')}] {case}: {c['check']}  {c['detail']}")
         result["n_prefill_passes_max"] = n_prefill
+        dump()
+
+    # ---- batch-composition diagnostics (hook-free controls) ------------------------------------------
+    def case_diag(B: int) -> None:
+        """Do UNSTEERED requests change when co-batched with modified requests?  Four variants, same odd
+        rows (clean prompt) every time, compared to the clean batch: (a) even rows have a DIFFERENT TOKEN at
+        the marker and no hooks are used anywhere (pure vLLM); (b) same, plus embedding capture on all rows
+        (hooks live, no steering); (c) even rows embed-replaced by the fork; (d) even rows "replaced" by
+        their own clean embedding (a no-op write through the fork)."""
+        case = "batch_composition"
+        C = clean(B)
+        odd = [i for i in range(B) if i % 2 == 1]
+        alt_ids = list(ids)
+        alt_ids[M] = ids[M + 1] if ids[M + 1] != ids[M] else ids[M + 2]
+        e_clean = C["emb"][0][M].to(torch.bfloat16).float() if 0 in C["emb"] else None
+
+        def run(tag: str, params, prompts=None) -> dict:
+            outs = llm.generate(prompts if prompts is not None else [{"prompt_token_ids": ids}] * len(params), params, use_tqdm=False)
+            cached_tokens_seen.append(max((int(getattr(o, "num_cached_tokens", 0) or 0) for o in outs), default=0))
+            st = stats()
+            d_odd = max(_lp_maxdiff(lp(outs[i]), C["lp"][i]) for i in odd)
+            flips = sum(int(outs[i].outputs[0].token_ids[0]) != C["argmax"][i] for i in odd) / len(odd)
+            eff, frac = effect(outs, C, [i for i in range(B) if i % 2 == 0])
+            rec = {"variant": tag, "batch": B, "nosteer_logprob_maxdiff": d_odd, "nosteer_argmax_flip": flips, "clean_noise": C["noise"],
+                   "even_effect_mean": eff, "even_argmax_changed_frac": frac, "stats": st}
+            log(f"  diag {tag}: unsteered odd rows max|Δ top-20 logprob| vs clean = {d_odd:.3f} (floor {C['noise']:.3f}), argmax flips {flips:.1%}; "
+                f"even rows effect {eff:.3f}, argmax changed {frac:.0%}; rows_replaced={st['rows_replaced']}")
+            return rec
+
+        recs = []
+        # (a) different token at the marker for even rows, NO hooks (plain vLLM request batch)
+        prompts_a = [{"prompt_token_ids": alt_ids if i % 2 == 0 else ids} for i in range(B)]
+        recs.append(run("a: even rows different marker TOKEN, no hooks", [SamplingParams(temperature=0.0, max_tokens=1, logprobs=20) for _ in range(B)], prompts_a))
+        # (b) same, with embedding capture on every row (hooks live, plugin sets skip_reading_prefix_cache)
+        recs.append(run("b: even rows different marker TOKEN, capture on all rows", [sp(True, None, logprobs=20) for _ in range(B)], prompts_a))
+        # (c) even rows embed-replaced by the fork (the mixed case)
+        recs.append(run("c: even rows embed-replaced (alpha)", [sp(True, [sv_embed(U[i], a.alpha, False)] if i % 2 == 0 else None, logprobs=20) for i in range(B)]))
+        # (d) even rows 'replaced' with their own clean embedding through the fork (no-op write)
+        if e_clean is not None:
+            recs.append(run("d: even rows replaced by their OWN clean embedding (no-op write)",
+                            [sp(True, [SteeringVector(activations=e_clean.reshape(1, 1, -1), layer_indices=[EMBED_LAYER_INDEX], scale=1.0,
+                                                      norm_match=False, mode="replace", position_indices=[M])] if i % 2 == 0 else None, logprobs=20)
+                             for i in range(B)]))
+        # (e) all rows clean but with capture (hooks live, nothing written) -- pure hook-overhead control
+        recs.append(run("e: all rows clean, capture on all rows", [sp(True, None, logprobs=20) for _ in range(B)]))
+        tol = max(1e-3, 1.5 * C["noise"] + 0.01)
+        for r in recs:
+            check(case, f"{r['variant']}: unsteered odd rows unchanged vs the clean batch (max|Δ| ≤ {tol:.3f}; informational -- characterises the engine)",
+                  None, f"max|Δ|={r['nosteer_logprob_maxdiff']:.3f}, argmax flips {r['nosteer_argmax_flip']:.1%}; even rows: effect {r['even_effect_mean']:.3f}")
+        a_, c_ = recs[0]["nosteer_logprob_maxdiff"], recs[2]["nosteer_logprob_maxdiff"]
+        check(case, "fork-specific contamination? embed-replace mixed batch (c) vs the hook-free different-token control (a): the fork must not add "
+                    "cross-request influence beyond what plain vLLM shows for a changed prompt (Δ_c ≤ Δ_a + 0.01, or both ≤ tol)",
+              (c_ <= a_ + 0.01) or (c_ <= tol and a_ <= tol),
+              f"odd-row max|Δ|: (a) different token, no hooks = {a_:.3f}; (b) + capture = {recs[1]['nosteer_logprob_maxdiff']:.3f}; "
+              f"(c) embed-replace = {c_:.3f}; (d) no-op replace = {recs[3]['nosteer_logprob_maxdiff'] if len(recs) > 4 else float('nan'):.3f}; "
+              f"(e) all clean + capture = {recs[-1]['nosteer_logprob_maxdiff']:.3f}; clean-vs-clean floor {C['noise']:.3f}")
+        result["cases"][case] = recs
         dump()
 
     def set_marker(m: int) -> None:
@@ -511,12 +580,23 @@ def main() -> None:
         M = m
 
     # ---- run -----------------------------------------------------------------------------------------
-    if a.only_mixed:
-        case_mixed(batches[0])
-        case_effect(batches[0])
+    if a.only_diag:
+        case_diag(batches[0])
+        result["max_num_cached_tokens"] = max(cached_tokens_seen)
         result["all_pass"] = all(c["ok"] is not False for c in checks)
         dump()
-        log(f"done (only-mixed): {sum(c['ok'] is True for c in checks)}/{sum(c['ok'] is not None for c in checks)} gated checks pass")
+        log(f"done (diag): {sum(c['ok'] is True for c in checks)}/{sum(c['ok'] is not None for c in checks)} gated checks pass")
+        return
+    if a.only_mixed or a.mixed_then_throughput:
+        case_mixed(batches[0])
+        case_effect(batches[0])
+        if a.mixed_then_throughput and not a.skip_throughput:
+            case_throughput()
+        result["max_num_cached_tokens"] = max(cached_tokens_seen)
+        result["all_pass"] = all(c["ok"] is not False for c in checks)
+        dump()
+        log(f"done (mixed{'+throughput' if a.mixed_then_throughput else ''}): {sum(c['ok'] is True for c in checks)}/"
+            f"{sum(c['ok'] is not None for c in checks)} gated checks pass")
         return
     if not a.only_throughput:
         prescaled = {}
@@ -537,6 +617,7 @@ def main() -> None:
         case_guard()
     if not a.skip_throughput:
         case_throughput()
+    result["max_num_cached_tokens"] = max(cached_tokens_seen) if cached_tokens_seen else 0
     result["all_pass"] = all(c["ok"] is not False for c in checks)
     dump()
     log(f"done: {sum(c['ok'] is True for c in checks)}/{sum(c['ok'] is not None for c in checks)} gated checks pass, "

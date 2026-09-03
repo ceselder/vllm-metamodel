@@ -1,7 +1,9 @@
 # vllm-metamodel
+
 <p align="center">
   <img width="300" alt="vllm-metamodel logo" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
 </p>
+
 **This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) for usage with meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs, it's 30-59× faster at high batch sizes.** 
 
 Meta-models recquire steering or soft-tokens. Because vllm doesn't support this, we generally use a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a vllm plugin that allows for steering residual stream.

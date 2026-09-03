@@ -54,7 +54,7 @@ The gap is even bigger on smaller models, where the hook is actually the majorit
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
-Changelog: [CHANGELOG.md](CHANGELOG.md) (current: **1.1.0.post2** — embedding replacement + `norm_match` on the full residual stream).
+Changelog: [CHANGELOG.md](CHANGELOG.md) (current: **1.1.0.post4** — fast hidden-state readout: gather capture, `ReadoutVector` projections, early exit).
 
 ## Embedding replacement (NLA / metamodels on hyper-connection architectures)
 
@@ -352,6 +352,58 @@ correctness + throughput), `::run3` (throughput repeat, interleaved, 3 repeats);
 `python bench/render_dsv4_readme.py bench/results/dsv4_run1_eager_<ts> bench/results/dsv4_run2_graphs_<ts> bench/results/dsv4_run3_graphs_tp_<ts>`.
 <!-- INJECTION-DSV4:END -->
 
+## Fast hidden-state readout (1.1.0.post4)
+
+The other half of a meta-model training loop is *reading* the residual stream back out:
+an RL reward or eval re-encodes every generated text through the clean base model and
+looks at layer L (for us: layer 42 of 64 on Qwen3.6-27B, a per-token cosine with a
+per-request target direction, max over the last 5 tokens).  Stock vllm-lens can do this
+(`output_residual_stream=[42]`) but pays for it three times: every one of the 64 layer
+hooks loops over the batch, the captured layer does one blocking `.cpu()` per request,
+and retrieval is one zstd-compressed RPC per request carrying the whole `[T, 5120]`
+tensor.  1.1.0.post4 adds three things, all opt-in per request and all working under
+CUDA graphs (they only ever touch prompt positions):
+
+```python
+from vllm_lens import ReadoutVector
+
+# 1. capture only what you need: one gather + one pinned async copy per layer-step,
+#    one RPC per generate() call
+SamplingParams(max_tokens=1, extra_args={"output_residual_stream": [42],
+                                         "capture_positions": {"last": 5}})   # or [0, -1], or "all"
+out.activations["residual_stream"]  # [1, 5, 5120] bf16;  out.activations["positions"] -> [131, ..., 135]
+
+# 2. projection in the worker: only float32 scalars leave the GPU
+SamplingParams(max_tokens=1, extra_args={"apply_readout_vectors": [
+    ReadoutVector(activations=direction.view(1, 5120), layer_indices=[42],
+                  positions={"last": 5}, metric="cos")]})          # or metric="dot", bias=b (SAE features)
+out.readout[0]["values"]     # [1, 5] float32 cosines;  out.readout[0]["positions"]
+reward = out.readout[0]["values"].max()
+
+# 3. early exit: layers 43..63 never run when every request in the pass is readout-only
+SamplingParams(max_tokens=1, extra_args={"apply_readout_vectors": [...], "lens_early_exit": True})
+```
+
+Early exit needs `enable_prefix_caching=False` (skipped layers would leave stale KV blocks
+a later request could reuse) and PP = 1; `llm.collective_rpc("lens_capabilities")[0]["early_exit"]`
+tells you whether the engine allows it, and the plugin refuses (clear `ValueError`, engine stays
+alive) otherwise, or when `max_tokens != 1`.  The sampled token of an early-exit request is
+garbage — ignore it.  A batch that mixes generating requests with readout requests simply
+runs to the end (no exit), so an RL rollout engine can score with `lora_request=None`
+between generation calls without any mode switch.
+
+<!-- READOUT_RESULTS:BEGIN -->
+<!-- READOUT_RESULTS:END -->
+
+**CUDA graphs and generated positions.** Hooks do not run inside replayed decode graphs,
+so with `VLLM_LENS_CUDA_GRAPHS=1` capture and readout see *prompt* positions only (a
+prefill-only `max_tokens=1` request is therefore fully graph-compatible, and early exit
+works there too since prefill batches run eagerly).  To read *generated* positions you have
+two options: run the whole engine eagerly and capture during decode (`gen_cap_all` rows
+above), or generate under graphs and re-encode prompt+completion in a second, prefill-only
+pass (`gen_then_read` rows) — the second is cheaper as soon as the batch is large, and it is
+exactly the "clean base model, LoRA off" pass an RL reward wants anyway.
+
 ## Overview of changes
 | | stock 1.1.0 | vllm-metamodel |
 |---|---|---|
@@ -366,6 +418,9 @@ correctness + throughput), `::run3` (throughput repeat, interleaved, 3 repeats);
 | hidden-states lookup for the layer-0 pre-hook | — | positional **and keyword** inputs, exactly one candidate required, hard error (`EmbedInjectionError`) on a miss |
 | multi-stream (hyper-connection) layer outputs | `output[0] + output[1]` broadcasts silently / steering mis-injects into the deferred fold | detected (`hc_mult`), layer-output steering & capture refused with `ValueError`; `UnsupportedLayerOutputError` backstop; embedding stream fully supported |
 | vLLM ≥ 0.27 | — | pass plan from the runner's host buffers even when the attention metadata has no `query_start_loc`; pickled RPC opt-in set |
+| reading hidden states out | blocking `.cpu()` per request per layer-step, one zstd RPC per request, all positions | one gather + one pinned async copy per layer-step, one RPC per `generate()`, `capture_positions` (`{"last": k}`, lists) |
+| projections / rewards | move `[T, 5120]` tensors to the host, compute there | `ReadoutVector`: cosine / dot (+ bias) computed in the worker, float32 scalars returned (`output.readout`) |
+| layers past the read layer | always computed | `lens_early_exit`: forward pass stops after the deepest requested layer when every request in the pass is readout-only |
 
 ### What changed (small, upstreamable diff)
 Two library files carry the change against upstream `v1.1.0` (`_worker_ext.py`,

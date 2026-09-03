@@ -10,6 +10,65 @@ branches from upstream **v1.1.0** and keeps the distribution name
 pip install git+https://github.com/ceselder/vllm-metamodel
 ```
 
+## v1.1.0.post4 (4 September 2026) — fast hidden-state readout: gather-capture, in-engine projection, early exit
+
+Reading the layer-L residual stream out of vLLM (the "re-encode N texts through the
+clean base model and score layer 42" pass of an RL reward / eval loop) is now a
+first-class, cheap operation.  Measured on 1× B200 (Qwen3.6-27B bf16, 1,024 texts of
+96–136 tokens, layer 42 of 64; numbers in the README section "Fast hidden-state readout"
+and `bench/results/readout_*`).
+
+- **Gather capture** (`_capture_gather`, default; `VLLM_LENS_FAST_CAPTURE=0` restores the
+  1.1.0 path).  Per layer-step the hook now does ONE `index_select` over every capturing
+  row's requested positions and ONE asynchronous pinned device→host copy (a CUDA event
+  is waited on at retrieval), instead of a blocking `.cpu()` slice per request.  On
+  fused-residual layers `hidden_states + residual` is formed on the selected rows only.
+  The offline `LLM.generate` retrieves every request of the call in ONE
+  `get_captured_states_many` RPC (uncompressed pickle — activations do not compress)
+  instead of one zstd-compressed `get_captured_states` RPC per request.
+- **Position specs**: `extra_args["capture_positions"] = "all" | {"last": k} | [positions]`
+  (`CAPTURE_POSITIONS_KEY`).  `{"last": k}` returns the last `k` prompt positions (plus
+  every generated position when running eagerly); explicit lists are absolute, negative
+  values count back from the end of the prompt.  `output.activations` gains a
+  `"positions"` list; `_trim_activations` / `serialize_activations` / PP merge understand it.
+- **`ReadoutVector`** (`extra_args["apply_readout_vectors"]`): an in-engine projection.
+  At each requested layer / position the worker computes `metric(h, v) + bias`
+  (`metric="cos"|"dot"`, float32, chunked so temporaries stay ≤ 168 MB) with a
+  per-request direction and returns only the scalars — `output.readout` is a list (one
+  entry per vector) of `{"values": Tensor[n_layers, n_pos], "positions": [...], "layers":
+  [...]}`.  Directions travel in one `[n, hidden]` block RPC (`set_readout_block`; general
+  multi-layer / multi-vector requests via `set_readout_data_many`), results come back in
+  one `get_readouts_many` RPC.  The async `AsyncLLM.generate` path uses
+  `set_readout_data` / `get_readouts` per request; `vllm serve` responses carry `readout`
+  (values base64-serialised).  `bias` with `metric="dot"` gives SAE-feature
+  pre-activations (`bias = b_enc[f] - b_dec·w_f`).
+- **Early exit** (`extra_args["lens_early_exit"] = True`, `EARLY_EXIT_KEY`): for a
+  `max_tokens=1` capture / readout request.  When EVERY request in a forward pass is such
+  a request, the hook of the deepest requested layer raises `_EarlyExit` and the wrapped
+  `model_runner._model_forward` returns a zero `[tokens, hidden]` placeholder — the
+  remaining layers never run (layer 42 of 64 skips ~34 % of the prefill FLOPs).  The
+  sampled token of an early-exit request is meaningless.  Guarded: PP == 1, no aux
+  hidden-state outputs, generative model, and **`enable_prefix_caching=False`** (skipped
+  layers would leave stale KV blocks a later request could reuse); the engine reports
+  `lens_capabilities()["early_exit"]` / `["early_exit_reason"]` and the plugin rejects
+  early-exit requests client-side (clear `ValueError`, engine stays alive) when
+  unsupported, when `max_tokens != 1`, or with `output_residual_stream=True`.  Mixed
+  batches (a generating request in the same pass) simply run to the end.
+- New RPCs: `set_readout_block`, `set_readout_data`, `set_readout_data_many`,
+  `clear_readout_data`, `clear_readout_data_many`, `get_captured_states_many`,
+  `get_readouts`, `get_readouts_many`, `clear_readouts`, `set_fast_capture`;
+  `lens_capabilities` gains `fast_capture`, `readout`, `early_exit`, `early_exit_reason`;
+  `steering_stats` gains `capture_layer_steps`, `capture_rows`, `hook_capture_s`,
+  `readout_layer_steps`, `readout_rows`, `hook_readout_s`, `early_exits`, `retrieval_s`.
+- CUDA-graph rule, unchanged but now documented with numbers: prompt-position capture /
+  readout is graph-compatible (prefill batches run eagerly); generated-position capture
+  needs `enforce_eager` (hooks do not run inside replayed decode graphs) or a re-encode
+  pass.  Exports: `ReadoutVector`, `CAPTURE_POSITIONS_KEY`, `EARLY_EXIT_KEY`.
+- Bench: `bench/bench_readout.py` (+ `modal run bench/modal_bench.py::readout`) — stock
+  1.1.0 vs fork capture (legacy / gather / last-k) vs readout vs early exit vs an HF
+  `read_resid`-style early-exit forward (batch 128), with HF-reference correctness
+  checks.  33 new CPU tests (`vllm_lens/tests/test_readout.py`; 76 total).
+
 ## v1.1.0.post3 (3 September 2026) — hyper-connection architectures (DeepSeek-V4), vLLM 0.27 compatibility
 
 Tested on **DeepSeek-V4-Flash-0731** (284B MoE, mHC `hc_mult=4`, fp8 + fp4 experts) with

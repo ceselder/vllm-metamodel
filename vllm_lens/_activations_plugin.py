@@ -24,6 +24,18 @@ vllm-lens-metamodel environment variables:
     ``set_steering_block`` RPC (falls back to ``set_steering_data_many``).
 ``VLLM_LENS_DISABLE=1``
     Make the plugin a no-op (plain vLLM), e.g. for baselines.
+``VLLM_LENS_FAST_CAPTURE=0``
+    Fall back to the 1.1.0 capture path (one blocking ``.cpu()`` slice per
+    request per layer-step, one ``get_captured_states`` RPC per request).
+    Default on: one gather + one pinned async copy per layer-step, one RPC per
+    ``generate()`` call, ``extra_args["capture_positions"]`` honoured.
+``VLLM_LENS_EARLY_EXIT=0``
+    Never short-circuit forward passes (``extra_args["lens_early_exit"]`` is
+    then rejected client-side).
+
+Readout (vllm-metamodel): ``extra_args["apply_readout_vectors"] = [ReadoutVector(...)]``
+returns ``output.readout`` (per-position cosine / dot products with a per-request
+direction, computed in the worker -- no hidden states leave the GPU).
 """
 
 from __future__ import annotations
@@ -38,8 +50,14 @@ from typing import TYPE_CHECKING, Any
 import torch
 import zstandard as zstd
 
-from vllm_lens._helpers._serialize import serialize_activations
-from vllm_lens._helpers.types import EMBED_LAYER_INDEX, SteeringVector
+from vllm_lens._helpers._serialize import serialize_activations, serialize_tensor
+from vllm_lens._helpers.types import (
+    CAPTURE_POSITIONS_KEY,
+    EARLY_EXIT_KEY,
+    EMBED_LAYER_INDEX,
+    ReadoutVector,
+    SteeringVector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +116,10 @@ def _merge_captured_states(
     if len(parts) == 1:
         return parts[0]["activations"]
     merged = torch.cat([p["activations"]["residual_stream"] for p in parts], dim=0)
-    return {"residual_stream": merged}
+    out: dict[str, Any] = {"residual_stream": merged}
+    if "positions" in parts[0]["activations"]:
+        out["positions"] = parts[0]["activations"]["positions"]
+    return out
 
 
 def _trim_activations(
@@ -117,11 +138,111 @@ def _trim_activations(
     residual stream shape is always deterministic.
     """
     rs = activations.get("residual_stream")
+    pos = activations.get("positions")
+    if pos is not None:
+        # fast path: keep the captured positions below expected_len (surplus pass)
+        keep = [i for i, p in enumerate(pos) if p < expected_len]
+        if len(keep) != len(pos):
+            activations["positions"] = [pos[i] for i in keep]
+            if rs is not None:
+                activations["residual_stream"] = rs[:, keep, :]
+        return
     if rs is not None and rs.shape[1] > expected_len:
         activations["residual_stream"] = rs[:, :expected_len, :]
     ids = activations.get("input_ids")
     if ids is not None and len(ids) > expected_len:
         activations["input_ids"] = ids[:expected_len]
+
+
+def _trim_readout(readout: list[dict[str, Any]], expected_len: int) -> None:
+    for r in readout:
+        pos = r.get("positions") or []
+        keep = [i for i, p in enumerate(pos) if p < expected_len]
+        if len(keep) != len(pos):
+            r["positions"] = [pos[i] for i in keep]
+            r["values"] = r["values"][:, keep]
+
+
+def _coerce_readouts(readouts: Any) -> list[ReadoutVector] | None:
+    if readouts is None:
+        return None
+    if isinstance(readouts, str):
+        readouts = [ReadoutVector.model_validate(d) for d in json.loads(readouts)]
+    elif isinstance(readouts, ReadoutVector):
+        readouts = [readouts]
+    else:
+        readouts = [r if isinstance(r, ReadoutVector) else ReadoutVector.model_validate(r) for r in readouts]
+    return list(readouts)
+
+
+def _check_readout_request(
+    caps: dict[str, Any] | None,
+    readouts: Sequence[ReadoutVector] | None,
+    early_exit: Any,
+    max_tokens: int | None,
+    capture_layers: Any,
+) -> None:
+    """vllm-metamodel: validate readout / early-exit requests before submission."""
+    if readouts:
+        if caps and caps.get("readout") is False:
+            raise ValueError("vllm-lens: this engine's worker has no readout support")
+        if caps and caps.get("multi_stream"):
+            bad = sorted({int(l) for rv in readouts for l in rv.layer_indices if l != EMBED_LAYER_INDEX})
+            if bad:
+                raise ValueError(
+                    f"vllm-lens: readout at decoder layer(s) {bad} is unsupported on this hyper-connection "
+                    "architecture; use layer_indices=[EMBED_LAYER_INDEX]."
+                )
+    if early_exit:
+        if max_tokens != 1:
+            raise ValueError(
+                f"vllm-lens: {EARLY_EXIT_KEY} requires max_tokens=1 (the pass stops after the deepest "
+                f"requested layer; nothing can be generated), got max_tokens={max_tokens}"
+            )
+        if capture_layers is True:
+            raise ValueError(f"vllm-lens: {EARLY_EXIT_KEY} needs an explicit layer list, not output_residual_stream=True")
+        if capture_layers is None and not readouts:
+            raise ValueError(f"vllm-lens: {EARLY_EXIT_KEY} without output_residual_stream or apply_readout_vectors")
+        if caps is not None and caps and not caps.get("early_exit", False):
+            raise ValueError(
+                "vllm-lens: early exit is unavailable on this engine: "
+                f"{caps.get('early_exit_reason', 'worker predates early exit')}"
+            )
+
+
+def _pack_readouts(
+    payloads: dict[str, list[ReadoutVector]],
+) -> tuple[dict[str, Any] | None, dict[str, list[ReadoutVector]]]:
+    """Single-layer, single-vector keys -> one ``set_readout_block`` payload; the rest
+    go through ``set_readout_data_many``."""
+    keys: list[str] = []
+    vecs: list[torch.Tensor] = []
+    layers: list[int] = []
+    positions: list[Any] = []
+    metrics: list[str] = []
+    biases: list[float] = []
+    rest: dict[str, list[ReadoutVector]] = {}
+    for key, rvs in payloads.items():
+        if len(rvs) == 1 and rvs[0].activations.shape[0] == 1:
+            rv = rvs[0]
+            keys.append(key)
+            vecs.append(rv.activations[0].detach().float().cpu())
+            layers.append(int(rv.layer_indices[0]))
+            positions.append(rv.positions)
+            metrics.append(rv.metric)
+            biases.append(float(rv.bias))
+        else:
+            rest[key] = rvs
+    if not keys:
+        return None, rest
+    return {
+        "keys": keys,
+        "vecs": torch.stack(vecs).contiguous(),
+        "layers": layers,
+        "positions": positions,
+        "metric": metrics,
+        "bias": biases,
+    }, rest
 
 
 # ---------------------------------------------------------------------------
@@ -368,16 +489,17 @@ async def _patched_generate(
         steering_vectors = [
             SteeringVector.model_validate(d) for d in json.loads(steering_vectors)
         ]
-    _check_graph_mode_request(
-        steering_vectors,
-        wants_activations,
-        getattr(effective_params, "max_tokens", None),
-    )
+    readouts = _coerce_readouts(extra.pop("apply_readout_vectors", None))
+    if isinstance(extra.get(CAPTURE_POSITIONS_KEY), str) and extra[CAPTURE_POSITIONS_KEY].startswith(("{", "[")):
+        extra[CAPTURE_POSITIONS_KEY] = json.loads(extra[CAPTURE_POSITIONS_KEY])  # vllm_xargs JSON string
+    max_tokens = getattr(effective_params, "max_tokens", None)
+    _check_graph_mode_request(steering_vectors, wants_activations, max_tokens)
 
     # Allow explicit prefix-cache bypass via extra_args.
     skip_kv_cache = extra.pop("skip_reading_prefix_cache", None)
 
-    needs_hooks = wants_activations or steering_vectors is not None
+    wants_readout = bool(readouts)
+    needs_hooks = wants_activations or steering_vectors is not None or wants_readout
     if needs_hooks or skip_kv_cache:
         # Hooks rely on forward passes firing; prefix-cached tokens skip
         # computation entirely, so force a fresh prefill for this request.
@@ -386,36 +508,51 @@ async def _patched_generate(
         await self.collective_rpc("install_hooks")
         setattr(self, "_hooks_installed", True)
     if needs_hooks:
-        _check_layer_support(
-            await _lens_capabilities_async(self), steering_vectors, extra.get("output_residual_stream")
+        caps = await _lens_capabilities_async(self)
+        _check_layer_support(caps, steering_vectors, extra.get("output_residual_stream"))
+        _check_readout_request(
+            caps, readouts, extra.get(EARLY_EXIT_KEY), max_tokens, extra.get("output_residual_stream")
         )
 
-    # Send steering data to workers before the forward pass begins.
+    # Send steering / readout data to workers before the forward pass begins.
     if steering_vectors is not None:
         await self.collective_rpc(
             "set_steering_data",
             args=(request_id, pickle.dumps(steering_vectors)),
         )
+    if wants_readout:
+        await self.collective_rpc("set_readout_data", args=(request_id, pickle.dumps(readouts)))
 
     assert _original_generate is not None
     try:
         async for output in _original_generate(
             self, prompt, sampling_params, request_id, **kwargs
         ):
+            if output.finished and (wants_activations or wants_readout):
+                n_prompt = len(output.prompt_token_ids)
+                n_gen = len(output.outputs[0].token_ids)
             if output.finished and wants_activations:
                 states = await self.collective_rpc(
                     "get_captured_states", args=(request_id,)
                 )
                 activations = _merge_captured_states(states)
                 if activations is not None:
-                    n_prompt = len(output.prompt_token_ids)
-                    n_gen = len(output.outputs[0].token_ids)
                     _trim_activations(activations, n_prompt + n_gen - 1)
                     output.activations = activations
+            if output.finished and wants_readout:
+                res = await self.collective_rpc("get_readouts", args=(request_id,))
+                blob = next((r for r in res if r is not None), None) if res else None
+                if blob is not None:
+                    readout = pickle.loads(blob)
+                    _trim_readout(readout, n_prompt + n_gen - 1)
+                    output.readout = readout
             yield output
     finally:
         if steering_vectors is not None:
             await self.collective_rpc("clear_steering_data", args=(request_id,))
+        if wants_readout:
+            await self.collective_rpc("clear_readout_data", args=(request_id,))
+            await self.collective_rpc("clear_readouts", args=(request_id,))
         if wants_activations:
             await self.collective_rpc("clear_captured_states", args=(request_id,))
 
@@ -476,13 +613,17 @@ def _patched_llm_generate(
     # extra_args before vLLM serialises SamplingParams (tensors don't
     # survive msgspec), but keep them for the RPC call.
     steering_payloads: dict[str, list[SteeringVector]] = {}  # steering_id -> vectors
-    per_request: list[tuple[list[SteeringVector] | None, Any]] = []
+    readout_payloads: dict[str, list[ReadoutVector]] = {}  # readout_id -> vectors
+    per_request: list[tuple[list[SteeringVector] | None, Any, list[ReadoutVector] | None, Any, int | None]] = []
     for idx, sp in enumerate(params_list):
         extra = sp.extra_args or {}
         vectors = extra.pop("apply_steering_vectors", None)
         if isinstance(vectors, str):
             vectors = [SteeringVector.model_validate(d) for d in json.loads(vectors)]
-        per_request.append((vectors, extra.get("output_residual_stream")))
+        readouts = _coerce_readouts(extra.pop("apply_readout_vectors", None))
+        per_request.append(
+            (vectors, extra.get("output_residual_stream"), readouts, extra.get(EARLY_EXIT_KEY), sp.max_tokens)
+        )
         if vectors is not None:
             _check_graph_mode_request(vectors, False, None)
             steering_id = f"_steer_{idx}"
@@ -490,6 +631,12 @@ def _patched_llm_generate(
             if sp.extra_args is None:
                 sp.extra_args = {}
             sp.extra_args["_steering_id"] = steering_id
+        if readouts:
+            readout_id = f"_read_{idx}"
+            readout_payloads[readout_id] = readouts
+            if sp.extra_args is None:
+                sp.extra_args = {}
+            sp.extra_args["_readout_id"] = readout_id
     if wants_activations:
         _check_graph_mode_request(
             None,
@@ -504,7 +651,8 @@ def _patched_llm_generate(
             any_skip_kv_cache = True
 
     has_steering = len(steering_payloads) > 0
-    needs_hooks = wants_activations or has_steering
+    wants_readout = len(readout_payloads) > 0
+    needs_hooks = wants_activations or has_steering or wants_readout
     if needs_hooks or any_skip_kv_cache:
         for sp in params_list:
             sp.skip_reading_prefix_cache = True
@@ -514,9 +662,11 @@ def _patched_llm_generate(
         self._hooks_installed = True  # type: ignore[reportAttributeAccessIssue]
     if needs_hooks:
         caps = _lens_capabilities_sync(self)
-        for vectors, cap in per_request:
+        for vectors, cap, readouts, early_exit, max_tokens in per_request:
             if vectors is not None or cap is not None:
                 _check_layer_support(caps, vectors, cap)
+            if readouts or early_exit:
+                _check_readout_request(caps, readouts, early_exit, max_tokens, cap)
 
     # Send steering data to workers before generation: one block RPC for the
     # single-position per-request vectors, one "many" RPC for the rest
@@ -531,18 +681,44 @@ def _patched_llm_generate(
             self.collective_rpc("set_steering_block", args=(pickle.dumps(block),))
         if rest:
             self.collective_rpc("set_steering_data_many", args=(pickle.dumps(rest),))
+    if wants_readout:
+        rblock, rrest = _pack_readouts(readout_payloads)
+        if rblock is not None:
+            self.collective_rpc("set_readout_block", args=(pickle.dumps(rblock),))
+        if rrest:
+            self.collective_rpc("set_readout_data_many", args=(pickle.dumps(rrest),))
 
     assert _original_llm_generate is not None
     try:
         outputs = _original_llm_generate(self, prompts, sampling_params, **kwargs)
     finally:
-        # Clean up steering data (also on error, so keys never leak).
+        # Clean up steering / readout data (also on error, so keys never leak).
         if has_steering:
             self.collective_rpc(
                 "clear_steering_data_many", args=(list(steering_payloads),)
             )
+        if wants_readout:
+            self.collective_rpc("clear_readout_data_many", args=(list(readout_payloads),))
 
-    if wants_activations:
+    fast = _env_truthy("VLLM_LENS_FAST_CAPTURE", "1")
+    if wants_activations and fast:
+        # vllm-metamodel: ONE RPC for every request of this call (per-PP-rank blobs).
+        blobs = self.collective_rpc("get_captured_states_many", args=([o.request_id for o in outputs],))
+        parts = [pickle.loads(b) for b in blobs if b is not None]
+        for output in outputs:
+            found = [p[output.request_id] for p in parts if output.request_id in p]
+            if not found:
+                continue
+            activations = found[0]
+            if len(found) > 1:  # PP: lower ranks hold earlier layers
+                activations = {"residual_stream": torch.cat([f["residual_stream"] for f in found], dim=0)}
+                if "positions" in found[0]:
+                    activations["positions"] = found[0]["positions"]
+            n_prompt = len(output.prompt_token_ids)
+            n_gen = len(output.outputs[0].token_ids)
+            _trim_activations(activations, n_prompt + n_gen - 1)
+            output.activations = activations
+    elif wants_activations:
         for output in outputs:
             req_id = output.request_id
             states = self.collective_rpc("get_captured_states", args=(req_id,))
@@ -552,6 +728,18 @@ def _patched_llm_generate(
                 n_gen = len(output.outputs[0].token_ids)
                 _trim_activations(activations, n_prompt + n_gen - 1)
                 output.activations = activations
+    if wants_readout:
+        blobs = self.collective_rpc("get_readouts_many", args=([o.request_id for o in outputs],))
+        parts = [pickle.loads(b) for b in blobs if b is not None]
+        for output in outputs:
+            found = [p[output.request_id] for p in parts if output.request_id in p]
+            if not found:
+                continue
+            readout = found[0]
+            n_prompt = len(output.prompt_token_ids)
+            n_gen = len(output.outputs[0].token_ids)
+            _trim_readout(readout, n_prompt + n_gen - 1)
+            output.readout = readout
 
     return outputs
 
@@ -569,6 +757,14 @@ def _patched_completion_response(self, final_res_batch, *args, **kwargs):
         activations = getattr(res, "activations", None)
         if activations is not None:
             response.activations = serialize_activations(activations)
+            break
+    for res in final_res_batch or ():
+        readout = getattr(res, "readout", None)
+        if readout is not None:
+            try:
+                response.readout = [{**r, "values": serialize_tensor(r["values"])} for r in readout]
+            except Exception:  # noqa: BLE001 - response model without extra fields
+                logger.warning("vllm-lens: could not attach readout to the completion response", exc_info=True)
             break
     return response
 
@@ -602,6 +798,12 @@ async def _patched_chat_full_generator(
         activations = getattr(last_output, "activations", None)
         if activations is not None:
             response.activations = serialize_activations(activations)
+        readout = getattr(last_output, "readout", None)
+        if readout is not None:
+            try:
+                response.readout = [{**r, "values": serialize_tensor(r["values"])} for r in readout]
+            except Exception:  # noqa: BLE001
+                logger.warning("vllm-lens: could not attach readout to the chat response", exc_info=True)
 
     return response
 

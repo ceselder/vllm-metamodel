@@ -21,6 +21,24 @@ norm of the FULL residual stream ``hidden_states + residual`` (see
 ``_apply_steering``).  ``mode="replace"`` and ``EMBED_LAYER_INDEX`` (the
 embedding stream entering layer 0, applied in the layer-0 pre-hook) are
 fork additions.
+
+Fast hidden-state readout (vllm-metamodel 1.1.0.post4):
+
+* capture gathers every capturing row's requested positions of a layer with
+  ONE ``index_select`` and ONE pinned, asynchronous device->host copy per
+  layer-step (``_capture_gather``; the 1.1.0 path did a blocking ``.cpu()``
+  per request), honours ``extra_args["capture_positions"]`` (``"all"``,
+  ``{"last": k}``, explicit list) and returns all requests of a
+  ``generate()`` call in one RPC (``get_captured_states_many``);
+* ``ReadoutVector`` (``apply_readout_vectors``): the hook computes
+  cosine / dot products of the selected residual-stream rows with a
+  per-request direction *in the worker* and returns float32 scalars only
+  (``_readout_layer``, ``get_readouts_many``);
+* early exit (``extra_args["lens_early_exit"]``): when every request of a
+  forward pass is a ``max_tokens=1`` capture / readout request, the hook of
+  the deepest requested layer raises ``_EarlyExit`` and the wrapped
+  ``model_runner._model_forward`` returns a zero placeholder instead of
+  running the remaining layers.
 """
 
 from __future__ import annotations
@@ -28,16 +46,24 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+import time
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import torch
 import zstandard as zstd
 from vllm.forward_context import get_forward_context, is_forward_context_available
 from vllm.model_executor.models.utils import PPMissingLayer
 
-from vllm_lens._helpers.types import SteeringVector
+from vllm_lens._helpers.types import (
+    CAPTURE_POSITIONS_KEY,
+    EARLY_EXIT_KEY,
+    ReadoutVector,
+    SteeringVector,
+    normalize_positions,
+)
 
 if TYPE_CHECKING:
     from jaxtyping import Float
@@ -229,6 +255,101 @@ class _ReqPlan:
     num_prompt: int
     """Prompt length; rows at/after it are generated positions."""
     replace_layers: frozenset[int] = frozenset()
+    cap_pos: tuple[str, Any] = ("all", None)
+    """Normalised ``capture_positions`` spec (fast capture path only)."""
+    reads: tuple[_ReadEntry, ...] = ()
+    """Readout vectors registered for this request (in order)."""
+    early_exit: bool = False
+    """Request opted into early exit and is eligible (max_tokens == 1, finite layer set)."""
+    exit_layer: int = -1
+    """Deepest layer this request needs (capture or readout); -1 if not eligible."""
+
+
+@dataclass(slots=True)
+class _ReadEntry:
+    """One ``ReadoutVector`` as stored on the worker: its direction rows live in a
+    float32 ``[n, hidden]`` device block shared by the RPC that registered it."""
+
+    key: str
+    seq: int
+    """Index of this vector among the request's readout vectors (result order)."""
+    block: torch.Tensor
+    layer_rows: dict[int, int]
+    """layer -> row of ``block`` holding that layer's direction."""
+    spec: tuple[str, Any]
+    cos: bool
+    bias: float
+    layers: frozenset[int] = frozenset()
+
+
+@dataclass(slots=True)
+class _HostBlock:
+    """One layer-step's device->host copy: ``host`` (pinned) holds the rows of
+    several requests back to back; ``segments`` = ``(internal_req_id, n_rows,
+    abs_positions[, readout seq])`` in that order; ``event`` completes when the
+    copy has landed (None on CPU)."""
+
+    host: torch.Tensor
+    event: Any
+    layer: int
+    segments: list[tuple]
+
+
+class _EarlyExit(Exception):
+    """Raised by the layer hook to stop the forward pass after the deepest
+    requested layer; caught by the wrapped ``model_runner._model_forward``,
+    which returns ``placeholder`` (zeros, ``[tokens, hidden]``) as the model
+    output so logits / sampling still run (on garbage the caller ignores)."""
+
+    def __init__(self, placeholder: torch.Tensor) -> None:
+        super().__init__("vllm-lens early exit")
+        self.placeholder = placeholder
+
+
+def _select_positions(
+    spec: tuple[str, Any], start: int, end: int, a0: int, num_prompt: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Rows of this pass's ``[tokens, hidden]`` tensor that ``spec`` selects for a
+    request whose chunk occupies flat rows ``[start, end)`` = absolute positions
+    ``[a0, a0 + n)``.  Returns ``(flat_row_indices, absolute_positions)``, both
+    ascending.  ``"last": k`` = prompt positions ``>= num_prompt - k`` plus every
+    generated position; an explicit list is absolute (negative = from the end
+    of the prompt)."""
+    n = end - start
+    kind, arg = spec
+    if kind == "all":
+        return np.arange(start, end, dtype=np.int64), np.arange(a0, a0 + n, dtype=np.int64)
+    if kind == "last":
+        first = max(a0, num_prompt - int(arg), 0)
+        if first >= a0 + n:
+            return np.empty(0, dtype=np.int64), np.empty(0, dtype=np.int64)
+        return (
+            np.arange(first - a0 + start, end, dtype=np.int64),
+            np.arange(first, a0 + n, dtype=np.int64),
+        )
+    keep = sorted({(p if p >= 0 else num_prompt + p) for p in arg})
+    keep = [p for p in keep if a0 <= p < a0 + n]
+    return (
+        np.array([p - a0 + start for p in keep], dtype=np.int64),
+        np.array(keep, dtype=np.int64),
+    )
+
+
+def _to_host(t: torch.Tensor) -> tuple[torch.Tensor, Any]:
+    """One asynchronous device->host copy into pinned memory (PyTorch's caching
+    host allocator makes repeated allocations of the same size cheap); the
+    returned CUDA event completes when the data has landed.  CPU tensors are
+    cloned; a failed pin falls back to a blocking copy."""
+    if t.device.type != "cuda":
+        return t.clone(), None
+    try:
+        host = torch.empty(t.shape, dtype=t.dtype, pin_memory=True)
+    except RuntimeError:  # pragma: no cover - no pinned memory available
+        return t.cpu(), None
+    host.copy_(t, non_blocking=True)
+    ev = torch.cuda.Event()
+    ev.record()
+    return host, ev
 
 
 @dataclass(slots=True)
@@ -248,6 +369,17 @@ class _StepPlan:
     ctx_id: int = 0
     replace_layers: set[int] = field(default_factory=set)
     """Layers where some scheduled row uses ``mode="replace"`` this pass."""
+    cap_sel: dict[int, tuple[np.ndarray, np.ndarray]] = field(default_factory=dict)
+    """row -> (flat rows, absolute positions) selected for capture this pass (fast path)."""
+    read_by_layer: dict[int, list[tuple[int, _ReadEntry, np.ndarray, np.ndarray]]] = field(
+        default_factory=dict
+    )
+    """layer -> [(row, readout entry, flat rows, absolute positions)]."""
+    exit_layer: int | None = None
+    """Raise ``_EarlyExit`` after this layer's hook (every row of the pass is a
+    readout-only request that needs nothing deeper); None = run to the end."""
+    cap_concat: dict[tuple[int, ...], tuple[np.ndarray, list[tuple]]] = field(default_factory=dict)
+    """Cache: capture row set -> (concatenated flat rows, segments)."""
 
     def capture_rows(self, layer_idx: int) -> list[int]:
         rows = self.cap_by_layer.get(layer_idx)
@@ -312,11 +444,27 @@ def _resolve_request(
         broadcast |= e.broadcast
         min_pos, max_pos = min(min_pos, e.min_pos), max(max_pos, e.max_pos)
     cap = extra.get("output_residual_stream") if extra else None
-    if cap is not None:
+    reads = _resolve_reads(extension, req_id, extra)
+    if cap is not None or reads:
         extension._capture_live.add(req_id)
     num_prompt = getattr(req_state, "num_prompt_tokens", None)
     if num_prompt is None:
         num_prompt = len(req_state.prompt_token_ids or ())
+    cap_pos: tuple[str, Any] = ("all", None)
+    if extra and extra.get(CAPTURE_POSITIONS_KEY) is not None:
+        try:
+            cap_pos = normalize_positions(extra[CAPTURE_POSITIONS_KEY])
+        except ValueError:
+            logger.warning("vllm-lens: bad %s for %s, capturing all positions", CAPTURE_POSITIONS_KEY, req_id, exc_info=True)
+    cap_set = frozenset(cap) if isinstance(cap, list) else None
+    early_exit, exit_layer = False, -1
+    if extra and extra.get(EARLY_EXIT_KEY):
+        need: set[int] = set(cap_set) if cap_set is not None else set()
+        for e in reads:
+            need.update(e.layers)
+        max_tokens = getattr(sp, "max_tokens", None)
+        if max_tokens == 1 and need and not (cap is not None and cap_set is None):
+            early_exit, exit_layer = True, max(0, max(need))
     return _ReqPlan(
         gen=gen,
         configs=configs,
@@ -325,10 +473,32 @@ def _resolve_request(
         min_pos=min_pos,
         max_pos=max_pos,
         cap_any=cap is not None,
-        cap_set=frozenset(cap) if isinstance(cap, list) else None,
+        cap_set=cap_set,
         num_prompt=int(num_prompt),
         replace_layers=frozenset(replace_layers),
+        cap_pos=cap_pos,
+        reads=tuple(reads),
+        early_exit=early_exit,
+        exit_layer=exit_layer,
     )
+
+
+def _resolve_reads(
+    extension: HiddenStatesExtension, internal_req_id: str, extra_args: dict[str, Any] | None
+) -> list[_ReadEntry]:
+    """Readout entries for a request: same matching as steering (``"-"``-boundary
+    prefixes of the internal id, then the ``_readout_id`` sentinel)."""
+    index = getattr(extension, "_readout_index", None)
+    if not index:
+        return []
+    found: list[_ReadEntry] = []
+    for key in _prefix_keys(internal_req_id):
+        found.extend(index.get(key, ()))
+    if extra_args:
+        rid = extra_args.get("_readout_id")
+        if rid:
+            found.extend(index.get(rid, ()))
+    return found
 
 
 def _build_step_plan(
@@ -373,19 +543,29 @@ def _build_step_plan(
     should_capture = getattr(extension, "_should_capture", True)
     stats = extension._stats
 
+    fast_capture = getattr(extension, "_fast_capture", True)
     steer: dict[int, list[tuple[int, list[SteeringVector]]]] = {}
     replace_layers: set[int] = set()
     cap_all: list[int] = []
     cap_by_layer: dict[int, list[int]] = {}
+    cap_sel: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+    read_by_layer: dict[int, list[tuple[int, _ReadEntry, np.ndarray, np.ndarray]]] = {}
+    all_exit = bool(getattr(extension, "_early_exit_ok", False))
+    exit_max = -1
     for i in range(num_reqs):
         req_id = req_ids[i]
         plan = cache.get(req_id)
         if plan is None or plan.gen != gen:
             plan = _resolve_request(extension, runner, req_id, gen)
             if plan is None:
+                all_exit = False
                 continue
             cache[req_id] = plan
-        if not plan.configs and not plan.cap_any:
+        if plan.early_exit:
+            exit_max = max(exit_max, plan.exit_layer)
+        else:
+            all_exit = False
+        if not plan.configs and not plan.cap_any and not plan.reads:
             continue
         a0 = abs_start[i]
         if prompt_only and a0 >= plan.num_prompt:
@@ -393,20 +573,37 @@ def _build_step_plan(
             # never touch them so behaviour does not depend on batch mix.
             stats["rows_skipped_generated"] += 1
             continue
+        start, end = qsl[i], qsl[i + 1]
         if plan.configs and (
             plan.broadcast
-            or (plan.max_pos >= a0 and plan.min_pos < a0 + (qsl[i + 1] - qsl[i]))
+            or (plan.max_pos >= a0 and plan.min_pos < a0 + (end - start))
         ):
             for layer_idx in plan.layers:
                 steer.setdefault(layer_idx, []).append((i, plan.configs))
             if plan.replace_layers:
                 replace_layers.update(plan.replace_layers)
         if plan.cap_any and should_capture:
-            if plan.cap_set is None:
-                cap_all.append(i)
+            if fast_capture:
+                sel = _select_positions(plan.cap_pos, start, end, a0, plan.num_prompt)
+                if len(sel[0]) == 0:
+                    sel = None
+                else:
+                    cap_sel[i] = sel
             else:
-                for layer_idx in plan.cap_set:
-                    cap_by_layer.setdefault(layer_idx, []).append(i)
+                sel = True  # legacy per-request .cpu() path captures the whole chunk
+            if sel is not None:
+                if plan.cap_set is None:
+                    cap_all.append(i)
+                else:
+                    for layer_idx in plan.cap_set:
+                        cap_by_layer.setdefault(layer_idx, []).append(i)
+        if plan.reads and should_capture:
+            for entry in plan.reads:
+                idx, pos = _select_positions(entry.spec, start, end, a0, plan.num_prompt)
+                if len(idx) == 0:
+                    continue
+                for layer_idx in entry.layers:
+                    read_by_layer.setdefault(layer_idx, []).append((i, entry, idx, pos))
 
     if len(cache) > num_reqs + _REQ_CACHE_SLACK:
         live = runner.requests
@@ -415,10 +612,19 @@ def _build_step_plan(
         extension._capture_live = {r for r in extension._capture_live if r in live}
 
     stats["steps_planned"] += 1
-    if not steer and not cap_all and not cap_by_layer:
+    if not steer and not cap_all and not cap_by_layer and not read_by_layer:
         stats["steps_idle"] += 1
     return _StepPlan(
-        qsl, abs_start, steer, cap_all, cap_by_layer, id(ctx), replace_layers
+        qsl,
+        abs_start,
+        steer,
+        cap_all,
+        cap_by_layer,
+        id(ctx),
+        replace_layers,
+        cap_sel,
+        read_by_layer,
+        exit_max if (all_exit and num_reqs > 0 and exit_max >= 0) else None,
     )
 
 
@@ -855,7 +1061,11 @@ def _hook_inner(
             return None
     todo = plan.steer.get(layer_idx)
     cap_rows = plan.capture_rows(layer_idx)
-    if not todo and not cap_rows:
+    reads = plan.read_by_layer.get(layer_idx)
+    do_exit = plan.exit_layer is not None and layer_idx >= plan.exit_layer
+    if not todo and not cap_rows and not reads:
+        if do_exit:
+            raise _EarlyExit(torch.zeros_like(output[0] if isinstance(output, tuple) else output))
         return None
     query_start_loc = plan.qsl
 
@@ -895,14 +1105,131 @@ def _hook_inner(
                 )
 
     # --- Phase 3: capture activations (rank 0 only) -----------------
-    if cap_rows:
+    if cap_rows or reads:
         if modified_output is not None:
             stream, residual, _ = _split_layer_output(modified_output, layer_idx)
-        hidden_states: Float[torch.Tensor, "total_tokens hidden_dim"]  # type: ignore[reportUndefinedVariable]
-        hidden_states = stream + residual if residual is not None else stream
-        _capture_rows(extension, runner, layer_idx, hidden_states, query_start_loc, cap_rows)
+    if cap_rows:
+        if extension._fast_capture:
+            _capture_gather(extension, runner, layer_idx, stream, residual, plan, cap_rows)
+        else:
+            hidden_states: Float[torch.Tensor, "total_tokens hidden_dim"]  # type: ignore[reportUndefinedVariable]
+            hidden_states = stream + residual if residual is not None else stream
+            _capture_rows(extension, runner, layer_idx, hidden_states, query_start_loc, cap_rows)
+
+    # --- Phase 4: in-engine readout (projection onto per-request directions) --
+    if reads:
+        _readout_layer(extension, runner, layer_idx, stream, residual, reads)
+
+    # --- Phase 5: early exit: nothing deeper is needed by any row of this pass --
+    if do_exit:
+        raise _EarlyExit(torch.zeros_like(stream))
 
     return modified_output
+
+
+def _capture_gather(
+    extension: HiddenStatesExtension,
+    runner: Any,
+    layer_idx: int,
+    stream: torch.Tensor,
+    residual: torch.Tensor | None,
+    plan: _StepPlan,
+    cap_rows: list[int],
+) -> None:
+    """vllm-metamodel fast capture: ONE ``index_select`` over every capturing
+    row's selected positions (``plan.cap_sel``) and ONE asynchronous pinned
+    device->host copy per layer-step, split per request lazily at retrieval
+    (``_flush_host_blocks``).  On fused-residual layers the stream
+    ``hidden_states + residual`` is formed on the selected rows only."""
+    t0 = time.perf_counter()
+    key = tuple(cap_rows)
+    cached = plan.cap_concat.get(key)
+    if cached is None:
+        req_ids = runner.input_batch.req_ids
+        parts: list[np.ndarray] = []
+        segments: list[tuple] = []
+        for i in cap_rows:
+            sel = plan.cap_sel.get(i)
+            if sel is None:
+                continue
+            parts.append(sel[0])
+            segments.append((req_ids[i], int(len(sel[0])), sel[1]))
+        if not parts:
+            return
+        cached = (np.concatenate(parts), segments)
+        plan.cap_concat[key] = cached
+    idx_np, segments = cached
+    idx = torch.from_numpy(idx_np).to(stream.device)
+    sel_rows = stream.index_select(0, idx)
+    if residual is not None:
+        sel_rows += residual.index_select(0, idx)
+    host, ev = _to_host(sel_rows)
+    extension._cap_blocks.append(_HostBlock(host, ev, layer_idx, segments))
+    st = extension._stats
+    st["capture_layer_steps"] += 1
+    st["capture_rows"] += int(len(idx_np))
+    st["hook_capture_s"] += time.perf_counter() - t0
+
+
+_READOUT_CHUNK = 8192  # rows per float32 chunk in _readout_layer (8192 x 5120 x 4 B = 168 MB)
+
+
+def _readout_layer(
+    extension: HiddenStatesExtension,
+    runner: Any,
+    layer_idx: int,
+    stream: torch.Tensor,
+    residual: torch.Tensor | None,
+    todo: list[tuple[int, _ReadEntry, np.ndarray, np.ndarray]],
+) -> None:
+    """Compute ``metric(h_pos, v_req) + bias`` for every (row, readout entry,
+    position) of this layer-step and ship only the float32 scalars to the host.
+    Rows are grouped by (direction block, metric); each group is one
+    ``index_select`` of hidden rows + one of directions, reduced in float32
+    chunks of ``_READOUT_CHUNK`` rows (bounded temporary memory)."""
+    t0 = time.perf_counter()
+    req_ids = runner.input_batch.req_ids
+    groups: dict[tuple[int, bool], dict[str, list]] = {}
+    for i, entry, idx, pos in todo:
+        row = entry.layer_rows.get(layer_idx)
+        if row is None:
+            continue
+        g = groups.setdefault((id(entry.block), entry.cos), {"block": entry.block, "idx": [], "vrow": [], "bias": [], "seg": []})
+        g["idx"].append(idx)
+        g["vrow"].append(np.full(len(idx), row, dtype=np.int64))
+        g["bias"].append(np.full(len(idx), entry.bias, dtype=np.float32))
+        g["seg"].append((req_ids[i], int(len(idx)), pos, entry.seq))
+    dev = stream.device
+    n_rows = 0
+    for (_bid, use_cos), g in groups.items():
+        idx_np = np.concatenate(g["idx"])
+        idx = torch.from_numpy(idx_np).to(dev)
+        vrow = torch.from_numpy(np.concatenate(g["vrow"])).to(dev)
+        block: torch.Tensor = g["block"]
+        n = int(len(idx_np))
+        n_rows += n
+        out = torch.empty(n, dtype=torch.float32, device=dev)
+        for s0 in range(0, n, _READOUT_CHUNK):
+            s1 = min(n, s0 + _READOUT_CHUNK)
+            sub = idx[s0:s1]
+            h = stream.index_select(0, sub)
+            if residual is not None:
+                h = h + residual.index_select(0, sub)
+            h = h.float()
+            v = block.index_select(0, vrow[s0:s1])
+            d = (h * v).sum(-1)
+            if use_cos:
+                d = d / (h.norm(dim=-1) * v.norm(dim=-1)).clamp_min(1e-6)
+            out[s0:s1] = d
+        bias_np = np.concatenate(g["bias"])
+        if np.any(bias_np != 0.0):
+            out += torch.from_numpy(bias_np).to(dev)
+        host, ev = _to_host(out)
+        extension._read_blocks.append(_HostBlock(host, ev, layer_idx, g["seg"]))
+    st = extension._stats
+    st["readout_layer_steps"] += 1
+    st["readout_rows"] += n_rows
+    st["hook_readout_s"] += time.perf_counter() - t0
 
 
 def _capture_rows(
@@ -948,6 +1275,8 @@ def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
         """
         try:
             return _hook_inner(extension, layer_idx, output)
+        except _EarlyExit:
+            raise
         except UnsupportedLayerOutputError:
             extension._stats["errors"] += 1
             extension._stats["unsupported_layer_output"] += 1
@@ -1012,16 +1341,22 @@ def _make_pre_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable
             return
         todo = plan.steer.get(EMBED_LAYER_INDEX)
         cap_rows = plan.cap_by_layer.get(EMBED_LAYER_INDEX)
-        if not todo and not cap_rows:
+        reads = plan.read_by_layer.get(EMBED_LAYER_INDEX)
+        if not todo and not cap_rows and not reads:
             return
         try:
             target = _find_hidden_states_arg(args, kwargs, plan.qsl[num_reqs])
             if todo:
                 _apply_embed(todo, target, plan, extension._stats)
             if cap_rows:  # post-injection embedding stream, explicit layer -1 only
-                _capture_rows(
-                    extension, runner, EMBED_LAYER_INDEX, target, plan.qsl, cap_rows
-                )
+                if extension._fast_capture:
+                    _capture_gather(extension, runner, EMBED_LAYER_INDEX, target, None, plan, cap_rows)
+                else:
+                    _capture_rows(
+                        extension, runner, EMBED_LAYER_INDEX, target, plan.qsl, cap_rows
+                    )
+            if reads:
+                _readout_layer(extension, runner, EMBED_LAYER_INDEX, target, None, reads)
         except Exception:
             extension._stats["errors"] += 1
             extension._stats["embed_errors"] += 1
@@ -1077,6 +1412,14 @@ def _new_stats() -> dict[str, int]:
         "embed_errors": 0,
         "unsupported_layer_output": 0,
         "rows_skipped_generated": 0,
+        "capture_layer_steps": 0,
+        "capture_rows": 0,
+        "hook_capture_s": 0.0,
+        "readout_layer_steps": 0,
+        "readout_rows": 0,
+        "hook_readout_s": 0.0,
+        "early_exits": 0,
+        "retrieval_s": 0.0,
         "errors": 0,
     }
 
@@ -1127,11 +1470,21 @@ class HiddenStatesExtension:
     _agg_max_pos: int = -1
     _agg_embed: bool = False
     _multi_stream: bool = False  # hyper-connection architecture (hc_mult > 1): embed-only
-    _stats: dict[str, int] = _new_stats()
+    _stats: dict[str, Any] = _new_stats()
     _vectorized: bool = True
     _prompt_only: bool = (
         False  # CUDA graphs active for decode: hooks only see prompt rows
     )
+    # vllm-metamodel fast readout state.
+    _fast_capture: bool = True  # gather + pinned async D2H per layer-step (VLLM_LENS_FAST_CAPTURE)
+    _cap_blocks: list[_HostBlock] = []  # pending capture copies, flushed at retrieval
+    _read_blocks: list[_HostBlock] = []  # pending readout copies
+    _captured_positions: dict[str, dict[int, list[np.ndarray]]] = {}  # req -> layer -> [abs pos per pass]
+    _readout_index: dict[str, list[_ReadEntry]] = {}  # key -> readout entries
+    _readouts: dict[str, dict[tuple[int, int], list[tuple[np.ndarray, torch.Tensor]]]] = {}
+    """internal_req_id -> {(readout seq, layer): [(abs positions, float32 values) per pass]}"""
+    _early_exit_ok: bool = False
+    _early_exit_reason: str = "hooks not installed"
 
     def install_hooks(self) -> None:
         """Register a forward hook on every decoder layer. Idempotent.
@@ -1163,6 +1516,19 @@ class HiddenStatesExtension:
         self._vectorized = (
             os.environ.get("VLLM_LENS_VECTORIZED", "1").strip().lower() in _TRUTHY
         )
+        self._fast_capture = (
+            os.environ.get("VLLM_LENS_FAST_CAPTURE", "1").strip().lower() in _TRUTHY
+        )
+        self._cap_blocks = []
+        self._read_blocks = []
+        self._captured_positions = {}
+        self._readout_index = {}
+        self._readouts = {}
+        self._early_exit_ok, self._early_exit_reason = self._early_exit_supported()
+        if self._early_exit_ok:
+            self._wrap_model_forward()
+        else:
+            logger.info("vllm-lens: early exit unavailable (%s)", self._early_exit_reason)
 
         # Only rank 0 captures — residual streams are replicated across
         # TP ranks after all-reduce, so the data is identical.
@@ -1223,7 +1589,60 @@ class HiddenStatesExtension:
             "prompt_only": bool(self._prompt_only),
             "num_layers": len(_get_layers(self.model_runner.model)),
             "hooks_installed": bool(self._hooks_installed),
+            "fast_capture": bool(self._fast_capture),
+            "readout": True,
+            "early_exit": bool(self._early_exit_ok),
+            "early_exit_reason": self._early_exit_reason,
         }
+
+    # ------------------------------------------------------------------
+    # vllm-metamodel: early exit
+    # ------------------------------------------------------------------
+
+    def _early_exit_supported(self) -> tuple[bool, str]:
+        """Early exit needs: PP == 1 (the placeholder replaces the whole model
+        output), no prefix caching (skipped layers leave stale KV blocks that a
+        later request could reuse), no aux-hidden-state (EAGLE-3) outputs, a
+        generative (not pooling) model, and an overridable
+        ``model_runner._model_forward``.  ``VLLM_LENS_EARLY_EXIT=0`` disables it."""
+        if os.environ.get("VLLM_LENS_EARLY_EXIT", "1").strip().lower() not in _TRUTHY:
+            return False, "disabled by VLLM_LENS_EARLY_EXIT"
+        runner = self.model_runner
+        if not callable(getattr(runner, "_model_forward", None)):
+            return False, "model runner has no _model_forward to wrap"
+        try:
+            cfg = getattr(self, "vllm_config", None) or runner.vllm_config
+        except Exception:  # pragma: no cover - defensive
+            return False, "no vllm_config"
+        if getattr(cfg.parallel_config, "pipeline_parallel_size", 1) != 1:
+            return False, "pipeline parallelism > 1"
+        if getattr(cfg.cache_config, "enable_prefix_caching", False):
+            return False, "enable_prefix_caching=True (skipped layers would leave reusable garbage KV blocks)"
+        if getattr(runner, "use_aux_hidden_state_outputs", False):
+            return False, "aux hidden-state outputs (EAGLE-3) enabled"
+        if getattr(runner, "is_pooling_model", False):
+            return False, "pooling model"
+        return True, "ok"
+
+    def _wrap_model_forward(self) -> None:
+        """Wrap ``model_runner._model_forward`` so an ``_EarlyExit`` raised by a
+        layer hook becomes a normal return of the zero placeholder (the runner
+        then computes logits from it and samples a meaningless token)."""
+        runner = self.model_runner
+        if getattr(runner, "_lens_early_exit_wrapped", False):
+            return
+        orig = runner._model_forward
+        ext = self  # look the stats dict up at call time: steering_stats(reset=True) replaces it
+
+        def _model_forward(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return orig(*args, **kwargs)
+            except _EarlyExit as e:
+                ext._stats["early_exits"] += 1
+                return e.placeholder
+
+        runner._model_forward = _model_forward
+        runner._lens_early_exit_wrapped = True
 
     def _cuda_graphs_active(self) -> bool:
         """True when decode batches may run as CUDA-graph replays (hooks silent)."""
@@ -1381,6 +1800,14 @@ class HiddenStatesExtension:
             self._steering_index.pop(key, None)
         self._steering_gen += 1
 
+    def set_fast_capture(self, enabled: bool) -> bool:
+        """vllm-metamodel: toggle the gather + pinned-copy capture path (default on,
+        ``VLLM_LENS_FAST_CAPTURE``); off = 1.1.0's per-request ``.cpu()`` slices."""
+        self._flush_host_blocks()
+        self._fast_capture = bool(enabled)
+        self._req_plan_cache.clear()
+        return self._fast_capture
+
     def set_vectorized(self, enabled: bool) -> bool:
         """vllm-lens-metamodel: toggle the vectorised apply (default on, ``VLLM_LENS_VECTORIZED``)."""
         self._vectorized = bool(enabled)
@@ -1396,6 +1823,207 @@ class HiddenStatesExtension:
             self._stats = _new_stats()
         return out
 
+    # ------------------------------------------------------------------
+    # vllm-metamodel: readout vectors (called via collective_rpc)
+    # ------------------------------------------------------------------
+
+    def _check_layer(self, idx: int, num_layers: int, what: str) -> None:
+        if idx != EMBED_LAYER_INDEX and (idx < 0 or idx >= num_layers):
+            raise ValueError(
+                f"layer_index {idx} out of range [0, {num_layers}) (or EMBED_LAYER_INDEX={EMBED_LAYER_INDEX})"
+            )
+        if idx != EMBED_LAYER_INDEX and self._multi_stream:
+            raise ValueError(_MULTI_STREAM_MSG.format(what=f"{what} at layer {idx}"))
+
+    def _store_reads(self, payload: dict[str, list[ReadoutVector]]) -> int:
+        """Stack every direction of ``payload`` into ONE float32 device block and
+        register per-key ``_ReadEntry`` views into it."""
+        device = next(self.model_runner.model.parameters()).device
+        num_layers = len(_get_layers(self.model_runner.model))
+        rows: list[torch.Tensor] = []
+        pending: list[tuple[str, int, dict[int, int], tuple[str, Any], bool, float, frozenset[int]]] = []
+        for key, rvs in payload.items():
+            for seq, rv in enumerate(rvs):
+                if rv.activations.dim() != 2 or rv.activations.shape[0] != len(rv.layer_indices):
+                    raise ValueError(f"readout activations must be (n_layers, hidden) matching layer_indices, got {tuple(rv.activations.shape)}")
+                layer_rows: dict[int, int] = {}
+                for li, layer in enumerate(rv.layer_indices):
+                    self._check_layer(int(layer), num_layers, "readout")
+                    layer_rows[int(layer)] = len(rows)
+                    rows.append(rv.activations[li].detach().float().reshape(-1))
+                pending.append((key, seq, layer_rows, normalize_positions(rv.positions), rv.metric == "cos", float(rv.bias), frozenset(layer_rows)))
+        if not rows:
+            return 0
+        block = torch.stack(rows).to(device=device, dtype=torch.float32).contiguous()
+        for key, seq, layer_rows, spec, use_cos, bias, layers in pending:
+            entry = _ReadEntry(key, seq, block, layer_rows, spec, use_cos, bias, layers)
+            if seq == 0:
+                self._readout_index[key] = [entry]
+            else:
+                self._readout_index[key].append(entry)
+        self._steering_gen += 1  # invalidates cached request plans
+        return len(payload)
+
+    def set_readout_data(self, key: str, pickled_data: bytes) -> int:
+        """Register ``list[ReadoutVector]`` for one key (external request id or ``_readout_id``)."""
+        return self._store_reads({key: pickle.loads(pickled_data)})
+
+    def set_readout_data_many(self, pickled_data: bytes) -> int:
+        """``set_readout_data`` for many keys in one RPC (pickled ``dict[str, list[ReadoutVector]]``)."""
+        return self._store_reads(pickle.loads(pickled_data))
+
+    def set_readout_block(self, pickled_data: bytes) -> int:
+        """One single-layer direction per key from ONE tensor::
+
+            {"keys": [str], "vecs": Tensor(n, hidden), "layers": [int],
+             "positions": [spec], "metric": [str], "bias": [float]}
+
+        Key ``i`` behaves like ``ReadoutVector(activations=vecs[i].view(1, hidden),
+        layer_indices=[layers[i]], positions=positions[i], metric=metric[i], bias=bias[i])``.
+        """
+        d = pickle.loads(pickled_data)
+        keys: list[str] = list(d["keys"])
+        vecs: torch.Tensor = d["vecs"]
+        if vecs.dim() != 2 or vecs.shape[0] != len(keys):
+            raise ValueError(f"vecs must be (n_keys, hidden), got {tuple(vecs.shape)}")
+        device = next(self.model_runner.model.parameters()).device
+        num_layers = len(_get_layers(self.model_runner.model))
+        layers = [int(x) for x in d["layers"]]
+        for idx in layers:
+            self._check_layer(idx, num_layers, "readout")
+        specs = [normalize_positions(p) for p in d.get("positions", ["all"] * len(keys))]
+        metrics = [str(m) for m in d.get("metric", ["cos"] * len(keys))]
+        if any(m not in ("cos", "dot") for m in metrics):
+            raise ValueError(f"metric must be 'cos'|'dot', got {metrics[:5]}")
+        biases = [float(b) for b in d.get("bias", [0.0] * len(keys))]
+        block = vecs.to(device=device, dtype=torch.float32).contiguous()
+        for i, key in enumerate(keys):
+            self._readout_index[key] = [
+                _ReadEntry(key, 0, block, {layers[i]: i}, specs[i], metrics[i] == "cos", biases[i], frozenset([layers[i]]))
+            ]
+        self._steering_gen += 1
+        return len(keys)
+
+    def clear_readout_data(self, key: str) -> None:
+        self._readout_index.pop(key, None)
+        self._steering_gen += 1
+
+    def clear_readout_data_many(self, keys: list[str]) -> None:
+        for key in keys:
+            self._readout_index.pop(key, None)
+        self._steering_gen += 1
+
+    # ------------------------------------------------------------------
+    # vllm-metamodel: host blocks -> per-request results
+    # ------------------------------------------------------------------
+
+    def _flush_host_blocks(self) -> None:
+        """Wait for pending device->host copies and split them per request."""
+        for blk in self._cap_blocks:
+            if blk.event is not None:
+                blk.event.synchronize()
+            off = 0
+            for req_id, n, pos in blk.segments:
+                self._captured_states.setdefault(req_id, {}).setdefault(blk.layer, []).append(blk.host[off : off + n])
+                self._captured_positions.setdefault(req_id, {}).setdefault(blk.layer, []).append(pos)
+                off += n
+        self._cap_blocks.clear()
+        for blk in self._read_blocks:
+            if blk.event is not None:
+                blk.event.synchronize()
+            off = 0
+            for req_id, n, pos, seq in blk.segments:
+                self._readouts.setdefault(req_id, {}).setdefault((seq, blk.layer), []).append((pos, blk.host[off : off + n]))
+                off += n
+        self._read_blocks.clear()
+
+    def _pop_activations(self, req_id: str) -> dict[str, Any]:
+        layer_dict = self._captured_states.pop(req_id)
+        pos_dict = self._captured_positions.pop(req_id, None)
+        sorted_indices = sorted(layer_dict.keys())
+        per_layer = [torch.cat(layer_dict[idx], dim=0) for idx in sorted_indices]
+        acts: dict[str, Any] = {"residual_stream": torch.stack(per_layer, dim=0)}
+        if pos_dict and sorted_indices[0] in pos_dict:
+            acts["positions"] = [int(p) for p in np.concatenate(pos_dict[sorted_indices[0]])]
+        return acts
+
+    def _pop_readouts(self, req_id: str) -> list[dict[str, Any]]:
+        per = self._readouts.pop(req_id)
+        out: list[dict[str, Any]] = []
+        for seq in sorted({s for s, _ in per}):
+            layers = sorted(l for s, l in per if s == seq)
+            vals = torch.stack([torch.cat([v for _, v in per[(seq, l)]]) for l in layers])
+            positions = [int(p) for p in np.concatenate([p for p, _ in per[(seq, layers[0])]])]
+            out.append({"values": vals, "positions": positions, "layers": layers})
+        return out
+
+    @staticmethod
+    def _by_external(internal_ids: list[str], external_ids: list[str]) -> dict[str, list[str]]:
+        """external id -> internal ids with the ``"{external}-"`` prefix (vLLM appends
+        ``-{8 hex}``); one dict pass instead of a scan per external id."""
+        wanted = set(external_ids)
+        out: dict[str, list[str]] = {}
+        for rid in internal_ids:
+            ext = rid.rsplit("-", 1)[0]
+            if ext in wanted:
+                out.setdefault(ext, []).append(rid)
+            else:  # unusual suffixes: exact prefix semantics as a fallback
+                for e in wanted:
+                    if rid.startswith(f"{e}-"):
+                        out.setdefault(e, []).append(rid)
+                        break
+        return out
+
+    def get_captured_states_many(self, external_req_ids: list[str]) -> bytes:
+        """vllm-metamodel: ``get_captured_states`` for every request of a
+        ``generate()`` call in ONE RPC.  Returns a pickled ``{external_id:
+        {"residual_stream": Tensor(n_layers, n_pos, hidden), "positions": [int]}}``
+        (uncompressed: activations do not compress; ``positions`` present on the
+        fast path).  Removes the requests' data."""
+        t0 = time.perf_counter()
+        self._flush_host_blocks()
+        by_ext = self._by_external(list(self._captured_states), external_req_ids)
+        out: dict[str, Any] = {}
+        for ext, rids in by_ext.items():
+            out[ext] = self._pop_activations(rids[0])
+            for extra in rids[1:]:
+                self._captured_states.pop(extra, None)
+                self._captured_positions.pop(extra, None)
+        blob = pickle.dumps(out, protocol=pickle.HIGHEST_PROTOCOL)
+        self._stats["retrieval_s"] += time.perf_counter() - t0
+        return blob
+
+    def get_readouts(self, external_req_id: str) -> bytes | None:
+        """Readout results of one request (async path): pickled list, see ``_pop_readouts``."""
+        self._flush_host_blocks()
+        prefix = f"{external_req_id}-"
+        for rid in list(self._readouts):
+            if rid.startswith(prefix):
+                return pickle.dumps(self._pop_readouts(rid), protocol=pickle.HIGHEST_PROTOCOL)
+        return None
+
+    def get_readouts_many(self, external_req_ids: list[str]) -> bytes:
+        """Readout results for many requests in ONE RPC: pickled ``{external_id: [
+        {"values": Tensor(n_layers, n_pos) float32, "positions": [int], "layers": [int]}
+        per ReadoutVector]}``."""
+        t0 = time.perf_counter()
+        self._flush_host_blocks()
+        by_ext = self._by_external(list(self._readouts), external_req_ids)
+        out = {ext: self._pop_readouts(rids[0]) for ext, rids in by_ext.items()}
+        for rids in by_ext.values():
+            for extra in rids[1:]:
+                self._readouts.pop(extra, None)
+        blob = pickle.dumps(out, protocol=pickle.HIGHEST_PROTOCOL)
+        self._stats["retrieval_s"] += time.perf_counter() - t0
+        return blob
+
+    def clear_readouts(self, external_req_id: str) -> None:
+        self._flush_host_blocks()
+        prefix = f"{external_req_id}-"
+        for rid in list(self._readouts):
+            if rid.startswith(prefix):
+                del self._readouts[rid]
+
     def clear_captured_states(self, external_req_id: str) -> None:
         """Remove captured activations without returning them.
 
@@ -1405,10 +2033,12 @@ class HiddenStatesExtension:
         is a no-op because ``get_captured_states`` already ``.pop()``-ed
         the entry.
         """
+        self._flush_host_blocks()
         prefix = f"{external_req_id}-"
         for req_id in list(self._captured_states):
             if req_id.startswith(prefix):
                 del self._captured_states[req_id]
+                self._captured_positions.pop(req_id, None)
                 logger.debug("Cleared leaked activations for %s", req_id)
 
     def get_captured_states(self, external_req_id: str) -> bytes | None:
@@ -1433,23 +2063,12 @@ class HiddenStatesExtension:
         Layers are stacked in ascending order along dim 0.
         Removes the request's data after retrieval.
         """
+        self._flush_host_blocks()
         prefix = f"{external_req_id}-"
         for req_id in list(self._captured_states):
             if req_id.startswith(prefix):
-                layer_dict = self._captured_states.pop(req_id)
-                sorted_indices = sorted(layer_dict.keys())
-                per_layer: list[Float[torch.Tensor, "total_pos hidden_dim"]] = [  # type: ignore[reportUndefinedVariable]
-                    torch.cat(layer_dict[idx], dim=0) for idx in sorted_indices
-                ]
-                stacked: Float[torch.Tensor, "n_layers total_pos hidden_dim"] = (  # type: ignore[reportUndefinedVariable]
-                    torch.stack(per_layer, dim=0)
-                )
                 return _ZSTD_COMPRESSOR.compress(
-                    pickle.dumps(
-                        {
-                            "activations": {"residual_stream": stacked},
-                        }
-                    )
+                    pickle.dumps({"activations": self._pop_activations(req_id)})
                 )
         return None
 

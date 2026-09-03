@@ -105,6 +105,7 @@ def make_ext(
     prompt_only: bool = False, vectorized: bool = True
 ) -> W.HiddenStatesExtension:
     ext = W.HiddenStatesExtension()
+    ext._captured_states = {}
     ext._steering_data = {}
     ext._steering_index = {}
     ext._steering_gen = 0
@@ -118,6 +119,13 @@ def make_ext(
     ext._should_capture = True
     ext._prompt_only = prompt_only
     ext._vectorized = vectorized
+    ext._fast_capture = True
+    ext._cap_blocks = []
+    ext._read_blocks = []
+    ext._captured_positions = {}
+    ext._readout_index = {}
+    ext._readouts = {}
+    ext._early_exit_ok = False
     ext.model_runner = SimpleNamespace(model=FakeModel())
     return ext
 
@@ -881,6 +889,7 @@ def test_pre_hook_with_kwargs_applies_embed_on_keyword_calling_layer():
     assert ext._stats["errors"] == 0 and ext._stats["embed_errors"] == 0
     assert ext._step_plan is not None  # plan built once here, reused by layer hooks
     # embedding-stream capture (explicit layer -1) for the second request, post-injection
+    ext._flush_host_blocks()  # fast path: one host block per layer-step, split at retrieval
     cap = ext._captured_states["x-bbbb2222"][W.EMBED_LAYER_INDEX]
     assert len(cap) == 1 and torch.equal(cap[0], orig[6:10])
     assert "nla-aaaa1111" not in ext._captured_states

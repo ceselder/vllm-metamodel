@@ -6,7 +6,13 @@ from vllm_lens._helpers._serialize import (
     serialize_activations,
     serialize_tensor,
 )
-from vllm_lens._helpers.types import EMBED_LAYER_INDEX, SteeringVector
+from vllm_lens._helpers.types import (
+    CAPTURE_POSITIONS_KEY,
+    EARLY_EXIT_KEY,
+    EMBED_LAYER_INDEX,
+    ReadoutVector,
+    SteeringVector,
+)
 
 try:
     __version__ = version("vllm-lens")
@@ -18,7 +24,10 @@ __all__ = [
     "deserialize_tensor",
     "serialize_activations",
     "serialize_tensor",
+    "CAPTURE_POSITIONS_KEY",
+    "EARLY_EXIT_KEY",
     "EMBED_LAYER_INDEX",
+    "ReadoutVector",
     "SteeringVector",
     "__version__",
 ]

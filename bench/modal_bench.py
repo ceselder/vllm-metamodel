@@ -58,6 +58,7 @@ image_stock = (
     _base()
     .pip_install("vllm-lens==1.1.0")
     .add_local_file(HERE / "bench_steering.py", "/bench/bench_steering.py")
+    .add_local_file(HERE / "bench_readout.py", "/bench/bench_readout.py")
 )
 
 image_fork = (
@@ -85,6 +86,7 @@ image_fork = (
     .add_local_file(HERE / "bench_steering.py", "/bench/bench_steering.py")
     .add_local_file(HERE / "diag_engine.py", "/bench/diag_engine.py")
     .add_local_file(HERE / "test_injection_modes.py", "/bench/test_injection_modes.py")
+    .add_local_file(HERE / "bench_readout.py", "/bench/bench_readout.py")
 )
 
 vol = modal.Volume.from_name("maemm-data")
@@ -442,3 +444,107 @@ def diag_main(
         print(f"== {c}: rc={r['rc']}")
         print("\n".join(r["diag"][-6:]))
     print(f"[local] wrote {out}")
+
+
+# ---------------------------------------------------------------------------
+# Hidden-state readout benchmark (bench/bench_readout.py):
+#   modal run bench/modal_bench.py::readout
+# ---------------------------------------------------------------------------
+
+
+def _readout_runs(model: str, stages: list[tuple[str, list[str]]], extra: str, offline: bool) -> dict:
+    """stages: [(tag, argv)] run sequentially in this container; JSON per stage."""
+    env = _env(offline)
+    out: dict = {}
+    for tag, argv in stages:
+        path = f"/tmp/readout_{tag}.json"
+        cmd = [sys.executable, "/bench/bench_readout.py", "--model", model, "--out", path, *argv, *extra.split()]
+        print(f"[modal] >>> {' '.join(cmd)}", flush=True)
+        t0 = time.time()
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        tail = proc.stdout[-14000:] + "\n--- stderr ---\n" + proc.stderr[-6000:]
+        print(tail, flush=True)
+        rec = {"returncode": proc.returncode, "elapsed_s": time.time() - t0, "log_tail": tail}
+        if os.path.exists(path):
+            with open(path) as f:
+                rec["result"] = json.load(f)
+        out[tag] = rec
+        print(f"[modal] <<< {tag} rc={proc.returncode} in {rec['elapsed_s']:.0f}s", flush=True)
+    return out
+
+
+@app.function(image=image_fork, gpu=GPU, volumes={"/data": vol}, secrets=[hf_secret], timeout=3 * 3600)
+def run_readout_fork(model: str, engines: list[str], extra: str, hf: bool) -> dict:
+    offline = _in_volume(model)
+    ref = f"/tmp/readout_ref_{model.replace('/', '__')}.pt"
+    stages: list[tuple[str, list[str]]] = []
+    if hf:
+        stages.append(("hf", ["--stage", "hf", "--ref", ref]))
+    for eng in engines:
+        stages.append((f"fork_{eng}", ["--stage", "vllm", "--engine", eng, "--ref", ref]))
+    return _readout_runs(model, stages, extra, offline)
+
+
+@app.function(image=image_stock, gpu=GPU, volumes={"/data": vol}, secrets=[hf_secret], timeout=3 * 3600)
+def run_readout_stock(model: str, extra: str) -> dict:
+    offline = _in_volume(model)
+    return _readout_runs(model, [("stock_eager", ["--stage", "vllm", "--engine", "eager"])], extra, offline)
+
+
+@app.local_entrypoint()
+def readout(
+    model: str = "Qwen/Qwen3.6-27B",
+    layer: int = 42,
+    small_model: str = "Qwen/Qwen3-1.7B",
+    small_layer: int = 18,
+    engines: str = "eager,graphs",
+    sizes: str = "64,512,1024",
+    gen_sizes: str = "64,512",
+    gen_tokens: int = 40,
+    n_texts: int = 1024,
+    repeats: int = 2,
+    attention_backend: str = "TRITON_ATTN",
+    skip_stock: bool = False,
+    skip_fork: bool = False,
+    skip_small: bool = False,
+    skip_big: bool = False,
+    skip_hf: bool = False,
+    extra_args: str = "",
+    out_dir: str = str(HERE / "results"),
+):
+    """Hidden-state readout benchmark on one B200 per container (stock + fork containers in parallel).
+
+        modal run bench/modal_bench.py::readout
+    """
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(out_dir) / f"readout_{ts}"
+    dest.mkdir(parents=True, exist_ok=True)
+    common = f"--sizes {sizes} --gen-sizes {gen_sizes} --gen-tokens {gen_tokens} --n-texts {n_texts} --repeats {repeats}"
+    if attention_backend:
+        common += f" --attention-backend {attention_backend}"
+    if extra_args:
+        common += " " + extra_args
+    eng_list = [e for e in engines.split(",") if e]
+    jobs = []
+    if not skip_big:
+        big = common + f" --layer {layer} --language-model-only"
+        if not skip_fork:
+            jobs.append((model, "fork", run_readout_fork.spawn(model, eng_list, big, not skip_hf)))
+        if not skip_stock:
+            jobs.append((model, "stock", run_readout_stock.spawn(model, big)))
+    if small_model and not skip_small:
+        small = common + f" --layer {small_layer}"
+        if not skip_fork:
+            jobs.append((small_model, "fork", run_readout_fork.spawn(small_model, eng_list, small, not skip_hf)))
+        if not skip_stock:
+            jobs.append((small_model, "stock", run_readout_stock.spawn(small_model, small)))
+    print(f"[local] {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
+    for mtag, variant, fut in jobs:
+        res = fut.get()
+        for tag, rec in res.items():
+            name = f"{mtag.replace('/', '__')}__{tag}"
+            (dest / f"{name}.json").write_text(json.dumps(rec, indent=1))
+            print(f"[local] saved {name}.json rc={rec['returncode']} ({rec['elapsed_s']:.0f}s)", flush=True)
+            if rec["returncode"] != 0:
+                print(rec["log_tail"][-5000:], flush=True)
+    print(f"[local] results in {dest}")

@@ -90,7 +90,10 @@ def serialize_activations(tensor_dict: dict[str, Any]) -> dict[str, Any]:
 
         {"residual_stream": {"data": "<b64>", "dtype": "...", "shape": [...]}}
     """
-    return {name: serialize_tensor(t) for name, t in tensor_dict.items()}
+    return {
+        name: serialize_tensor(t) if isinstance(t, torch.Tensor) else t
+        for name, t in tensor_dict.items()
+    }
 
 
 def decode_activations(response_json: dict[str, Any]) -> dict[str, Any]:
@@ -109,4 +112,7 @@ def decode_activations(response_json: dict[str, Any]) -> dict[str, Any]:
     raw = response_json.get("activations")
     if raw is None:
         return {}
-    return {name: deserialize_tensor(encoded) for name, encoded in raw.items()}
+    return {
+        name: deserialize_tensor(encoded) if isinstance(encoded, dict) and "data" in encoded else encoded
+        for name, encoded in raw.items()
+    }

@@ -106,6 +106,7 @@ of injection-free vLLM throughput with decode CUDA graphs).
 | applying the vectors | one Python iteration + one kernel per row | one `index_add_` for all rows of a layer (norm-match batched) |
 | shipping vectors to the worker | one RPC per request | one `[n, d]` block RPC per `generate()` call |
 | CUDA graphs | impossible (`enforce_eager` forced) | opt-in: `VLLM_LENS_CUDA_GRAPHS=1` → decode graphs, prompt-position steering |
+| injection modes | add a vector to a decoder layer's output | add **or replace** (`mode="replace"`), at a layer output or at the embedding stream (`EMBED_LAYER_INDEX`) — the NLA-style injection, and the only well-defined one on multi-stream architectures |
 
 ### What changed (small, upstreamable diff)
 Only two library files change against upstream `v1.1.0`; every upstream function stays

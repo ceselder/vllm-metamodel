@@ -1,16 +1,38 @@
 # Changelog
 
-This is **vllm-lens-metamodel**, a maintained fork of
+This is **vllm-metamodel**, a maintained fork of
 [UKGovernmentBEIS/vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens)
 (MIT, UK AI Security Institute; original author Alan Cooney).  The fork
 branches from upstream **v1.1.0** and keeps the distribution name
 `vllm-lens`, so it installs as a drop-in replacement:
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-lens-metamodel
+pip install git+https://github.com/ceselder/vllm-metamodel
 ```
 
-## v1.1.0.post1 (3 September 2026) — vllm-lens-metamodel
+## v1.1.0.post2 (unreleased) — embedding replacement
+
+New injection mode for NLA-style meta-models and for architectures whose decoder
+layers do not emit a single residual tensor (hyper-connection / multi-stream
+models such as DeepSeek-V4). Additive `mode="add"` behaviour is unchanged.
+
+- `SteeringVector.mode`: `"add"` (default) or `"replace"`. Replace overwrites the
+  target row with `scale * v` (with `norm_match=True`: `scale * ‖h_orig‖ · v/‖v‖`).
+  Requires 3-D (position-specific) activations; broadcast replacement is rejected
+  by the validator.
+- `EMBED_LAYER_INDEX` (= -1) as a `layer_indices` value: targets the hidden states
+  *entering* decoder layer 0 (the embedding output) instead of a layer output.
+  Applied in the existing layer-0 pre-hook with one vectorised `index_copy_`
+  (replace) / `index_add_` (add), using the same step plan and host-side offsets
+  as the indexed steering hook, so chunked prefill lands the write in the chunk
+  that contains the marker. `mode="replace"` also works on ordinary layer
+  indices (sequential apply path).
+- Prefill-only by construction (markers are prompt positions), so decode-only
+  CUDA graphs remain legal; the pre-hook is skipped during graph capture.
+- New stats counters: `rows_replaced`, `embed_apply_steps`. 6 new CPU tests
+  (28 total).
+
+## v1.1.0.post1 (3 September 2026) — vllm-metamodel
 
 Target workload: **RL-style rollouts with one steering vector per prompt**
 (activation-oracle / "meta-model" injection: a different vector for every

@@ -54,6 +54,49 @@ The gap is even bigger on smaller models, where the hook is actually the majorit
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
+## Embedding replacement (NLA / metamodels on hyper-connection architectures)
+
+Layer-output steering is undefined on architectures whose decoder layers emit
+multi-stream outputs (hyper-connections, e.g. **DeepSeek-V4**: every layer
+boundary carries a 4-stream residual stack — there is no single tensor to add
+a vector to). NLA-style metamodels also *specify* their injection at the
+embedding: *replace the marker token's embedding with α·v/‖v‖*.
+
+This fork supports both, via `mode="replace"` and the `EMBED_LAYER_INDEX`
+sentinel:
+
+```python
+from vllm_lens import SteeringVector, EMBED_LAYER_INDEX
+
+# NLA injection: overwrite the marker token's embedding with alpha * v/||v||
+v = activation / activation.norm()
+sv = SteeringVector(
+    activations=v.reshape(1, 1, -1),      # (n_layers=1, n_positions=1, hidden)
+    layer_indices=[EMBED_LAYER_INDEX],    # the embedding stream, not a layer output
+    position_indices=[marker_pos],        # absolute prompt position of the marker
+    mode="replace",                       # overwrite, don't add
+    scale=alpha,                          # e.g. p75 of the layer's activation norms
+)
+```
+
+Semantics:
+- `mode="replace"` overwrites the hidden row with `scale * v`
+  (`norm_match=True` instead writes `scale * ‖h_orig‖ · v/‖v‖`). Requires 3-D
+  (position-specific) activations — broadcast replacement is rejected.
+- `EMBED_LAYER_INDEX` targets the hidden states *entering* decoder layer 0
+  (the embedding output). It is applied by the first layer's **pre-hook**, so
+  it never touches the (possibly multi-stream) layer outputs and works on any
+  architecture. `mode="replace"` also works on regular layer indices for
+  standard architectures.
+- Injection happens during prefill only (markers are prompt positions), so
+  **decode-only CUDA graphs stay legal** — same performance story as the
+  indexed steering hook. Chunked prefill is handled: the replacement lands in
+  whichever chunk contains the marker's absolute position.
+
+This is the injection mode used to RL-train the DeepSeek-V4-Flash NLA
+(embedding replacement at TP8 on the native fp8 engine, measured within ~5%
+of injection-free vLLM throughput with decode CUDA graphs).
+
 ## Overview of changes
 | | stock 1.1.0 | vllm-metamodel |
 |---|---|---|

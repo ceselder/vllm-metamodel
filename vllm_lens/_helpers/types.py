@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import torch
 from pydantic import (
@@ -14,6 +14,14 @@ from pydantic import (
 )
 
 from vllm_lens._helpers._serialize import deserialize_tensor, serialize_tensor
+
+EMBED_LAYER_INDEX = -1
+"""Sentinel ``layer_indices`` value: target the EMBEDDING stream (the hidden
+states entering decoder layer 0) instead of a decoder layer's output.  See
+``SteeringVector.mode`` — embedding replacement is the injection for
+NLA-style metamodels and for hyper-connection architectures (DeepSeek-V4)
+where decoder-layer outputs are multi-stream tuples.  Applied during prefill
+only, keeping decode-only CUDA graphs legal."""
 
 
 class SteeringVector(BaseModel):
@@ -58,6 +66,17 @@ class SteeringVector(BaseModel):
     """Absolute token positions for 3D activations.  ``None`` means broadcast
     (2D) or sequential ``0..n_positions-1`` (3D)."""
 
+    mode: Literal["add", "replace"] = "add"
+    """``"add"`` (default) adds ``scale * v`` to the hidden state.
+    ``"replace"`` OVERWRITES the hidden row with ``scale * v`` (or, with
+    ``norm_match=True``, ``scale * ‖h_orig‖ · v/‖v‖``).  Replacement is the
+    injection used by NLA-style metamodels ("replace the marker token's
+    embedding with α·v/‖v‖") and is the only well-defined injection on
+    architectures whose decoder-layer outputs are not a single residual
+    tensor (e.g. hyper-connection / multi-stream models like DeepSeek-V4) —
+    target the embedding stream via ``EMBED_LAYER_INDEX`` there.  Requires
+    3D (position-specific) activations."""
+
     @field_validator("activations", mode="before")
     @classmethod
     def _deserialize_activations(cls, v: Any) -> torch.Tensor:
@@ -86,6 +105,11 @@ class SteeringVector(BaseModel):
             raise ValueError(
                 f"activations dim 0 ({self.activations.shape[0]}) must match "
                 f"len(layer_indices) ({len(self.layer_indices)})"
+            )
+        if self.mode == "replace" and self.activations.dim() != 3:
+            raise ValueError(
+                "mode='replace' requires 3D (position-specific) activations — "
+                "broadcast replacement would overwrite every token"
             )
         return self
 

@@ -580,3 +580,116 @@ def test_prompt_only_rejects_broadcast_vectors():
         ext.set_steering_data("k", pickle.dumps([sv2d(1)]))
     ext.set_steering_data("k", pickle.dumps([sv3d(1, [3])]))  # positional is fine
     assert "k" in ext._steering_index
+
+
+# ---------------------------------------------------------------------------
+# embedding replacement (EMBED_LAYER_INDEX + mode="replace")
+# ---------------------------------------------------------------------------
+
+
+def test_replace_mode_requires_positional_activations():
+    with pytest.raises(ValueError, match="replace.*3D"):
+        SteeringVector(
+            activations=torch.randn(1, D), layer_indices=[0], mode="replace"
+        )
+
+
+def test_step_plan_schedules_embed_layer_rows():
+    ext = make_ext()
+    store(ext, "nla", [sv3d(W.EMBED_LAYER_INDEX, [5], mode="replace", scale=3.0)])
+    runner = FakeRunner(
+        [
+            ("nla-aaaa1111", None, 8, 0, 8),  # prefill covering the marker
+            ("other-bbbb2222", None, 8, 8, 1),  # decode row, no configs
+        ]
+    )
+    plan = build_plan(ext, runner)
+    assert plan is not None
+    todo = plan.steer.get(W.EMBED_LAYER_INDEX)
+    assert todo is not None and [i for i, _ in todo] == [0]
+
+
+def test_apply_embed_replaces_marker_row_and_leaves_others():
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[5],
+        mode="replace",
+        scale=2.5,
+    )
+    store(ext, "nla", [sv])
+    runner = FakeRunner([("nla-aaaa1111", None, 8, 0, 8)])
+    plan = build_plan(ext, runner)
+    todo = plan.steer[W.EMBED_LAYER_INDEX]
+    target = torch.randn(8, D)
+    orig = target.clone()
+    W._apply_embed(todo, target, plan, ext._stats)
+    assert torch.allclose(target[5], v * 2.5)
+    keep = [r for r in range(8) if r != 5]
+    assert torch.equal(target[keep], orig[keep])
+    assert ext._stats["rows_replaced"] == 1
+
+
+def test_apply_embed_norm_match_scales_to_original_row_norm():
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[2],
+        mode="replace",
+        norm_match=True,
+    )
+    store(ext, "k", [sv])
+    runner = FakeRunner([("k-aaaa1111", None, 4, 0, 4)])
+    plan = build_plan(ext, runner)
+    target = torch.randn(4, D)
+    orig_norm = target[2].norm()
+    W._apply_embed(plan.steer[W.EMBED_LAYER_INDEX], target, plan, ext._stats)
+    assert torch.allclose(target[2].norm(), orig_norm, rtol=1e-3)
+    assert torch.allclose(
+        torch.nn.functional.cosine_similarity(target[2], v, dim=0),
+        torch.tensor(1.0),
+        atol=1e-5,
+    )
+
+
+def test_apply_embed_chunked_prefill_offsets():
+    """Marker in the SECOND prefill chunk: only that chunk's pass writes it."""
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[10],
+        mode="replace",
+    )
+    store(ext, "k", [sv])
+    # chunk 1: rows 0-7 (abs 0..7) — marker abs 10 NOT in range
+    r1 = FakeRunner([("k-aaaa1111", None, 16, 0, 8)])
+    p1 = build_plan(ext, r1)
+    t1 = torch.randn(8, D)
+    o1 = t1.clone()
+    if p1.steer.get(W.EMBED_LAYER_INDEX):
+        W._apply_embed(p1.steer[W.EMBED_LAYER_INDEX], t1, p1, ext._stats)
+    assert torch.equal(t1, o1)
+    # chunk 2: rows abs 8..15 — marker abs 10 = local row 2
+    ext._req_plan_cache = {}
+    r2 = FakeRunner([("k-aaaa1111", None, 16, 8, 8)])
+    p2 = build_plan(ext, r2)
+    t2 = torch.randn(8, D)
+    W._apply_embed(p2.steer[W.EMBED_LAYER_INDEX], t2, p2, ext._stats)
+    assert torch.allclose(t2[2], v)
+
+
+def test_vectorized_layer_apply_defers_replace_to_sequential():
+    ext = make_ext()
+    sv = sv3d(1, [0], mode="replace")
+    store(ext, "k", [sv])
+    runner = FakeRunner([("k-aaaa1111", None, 4, 0, 4)])
+    plan = build_plan(ext, runner)
+    target = torch.randn(4, D)
+    ok = W._apply_layer_vectorized(plan.steer[1], 1, target, plan)
+    assert ok is False  # sequential path must handle replace semantics

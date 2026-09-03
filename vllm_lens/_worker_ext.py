@@ -108,6 +108,8 @@ _VEC_MAX_ENTRIES_PER_ROW = 4
 _NO_POS = 1 << 62
 _TRUTHY = ("1", "true", "yes", "on")
 
+from vllm_lens._helpers.types import EMBED_LAYER_INDEX  # noqa: E402  (sentinel)
+
 
 @dataclass(slots=True)
 class _SteerEntry:
@@ -475,7 +477,10 @@ def _apply_steering(
                 v = vec[pi]
                 if cfg.norm_match:
                     v = norm_match(target[rel], v)
-                target[rel] = target[rel] + v * cfg.scale
+                if cfg.mode == "replace":
+                    target[rel] = v * cfg.scale
+                else:
+                    target[rel] = target[rel] + v * cfg.scale
 
 
 def _apply_layer_vectorized(
@@ -509,6 +514,10 @@ def _apply_layer_vectorized(
             layer_index_map = cfg.layer_index_map
             if layer_idx not in layer_index_map:
                 continue
+            if cfg.mode != "add":
+                # replace semantics differ (no accumulate); the sequential
+                # path handles them exactly.
+                return False
             vec = cfg.activations[layer_index_map[layer_idx]]
             if vec.dim() == 1:
                 if n_tokens != 1:
@@ -561,6 +570,97 @@ def _apply_layer_vectorized(
         )
     target.index_add_(0, idx, v)
     return True
+
+
+def _find_hidden_states_arg(
+    args: tuple, total_tokens: int
+) -> torch.Tensor | None:
+    """Locate the hidden-states tensor among a decoder layer's positional
+    inputs: the first 2-D floating tensor whose dim 0 equals the pass's
+    total token count.  Signatures vary across architectures (positions,
+    hidden_states, residual, ...), so match by shape, not position."""
+    for a in args:
+        if (
+            isinstance(a, torch.Tensor)
+            and a.dim() == 2
+            and a.is_floating_point()
+            and a.shape[0] == total_tokens
+        ):
+            return a
+    return None
+
+
+def _apply_embed(
+    todo: list[tuple[int, list[SteeringVector]]],
+    target: torch.Tensor,
+    plan: _StepPlan,
+    stats: dict[str, int],
+) -> None:
+    """Apply EMBED_LAYER_INDEX configs to the embedding stream *in place*.
+
+    Vectorised: one ``index_copy_`` for all replace rows and one
+    ``index_add_`` for all add rows.  Rows are prompt positions resolved
+    against this pass's chunk offsets, so chunked prefill is handled and
+    decode rows are never touched (their absolute positions lie past every
+    registered marker position).
+    """
+    qsl, abs_start = plan.qsl, plan.abs_start
+    rep_rows: list[int] = []
+    rep_vecs: list[torch.Tensor] = []
+    add_rows: list[int] = []
+    add_vecs: list[torch.Tensor] = []
+    for i, configs in todo:
+        start, end, a0 = qsl[i], qsl[i + 1], abs_start[i]
+        n_tokens = end - start
+        for cfg in configs:
+            lim = cfg.layer_index_map
+            if EMBED_LAYER_INDEX not in lim:
+                continue
+            vec = cfg.activations[lim[EMBED_LAYER_INDEX]]
+            if vec.dim() == 1:  # broadcast add over this chunk
+                v = vec.to(target.dtype) * cfg.scale
+                target[start:end] += v
+                continue
+            pos_indices = (
+                cfg.position_indices
+                if cfg.position_indices is not None
+                else range(vec.shape[0])
+            )
+            for pi, abs_pos in enumerate(pos_indices):
+                if pi >= vec.shape[0]:
+                    break
+                if not (a0 <= abs_pos < a0 + n_tokens):
+                    continue
+                rel = abs_pos - a0 + start
+                v = vec[pi]
+                if cfg.norm_match:
+                    v = norm_match(target[rel], v)
+                v = (v.to(target.dtype)) * cfg.scale
+                if cfg.mode == "replace":
+                    rep_rows.append(rel)
+                    rep_vecs.append(v)
+                else:
+                    add_rows.append(rel)
+                    add_vecs.append(v)
+    dev = target.device
+    if rep_rows:
+        if len(set(rep_rows)) != len(rep_rows):
+            for r, v in zip(rep_rows, rep_vecs):  # duplicates: last wins, in order
+                target[r] = v
+        else:
+            target.index_copy_(
+                0, torch.tensor(rep_rows, dtype=torch.long, device=dev),
+                torch.stack(rep_vecs),
+            )
+        stats["rows_replaced"] += len(rep_rows)
+    if add_rows:
+        target.index_add_(
+            0, torch.tensor(add_rows, dtype=torch.long, device=dev),
+            torch.stack(add_vecs),
+        )
+        stats["rows_steered"] += len(add_rows)
+    if rep_rows or add_rows:
+        stats["embed_apply_steps"] += 1
 
 
 def _hook_inner(
@@ -697,6 +797,38 @@ def _make_pre_hook(extension: HiddenStatesExtension) -> Callable:
             if num_reqs and _step_is_idle(extension, runner, num_reqs):
                 extension._step_idle = True
                 extension._stats["steps_fast_idle"] += 1
+                return
+            # vllm-lens-metamodel: EMBED_LAYER_INDEX configs modify the
+            # hidden states ENTERING layer 0, so they must apply here — the
+            # layer forward hooks only ever see layer OUTPUTS.
+            extension._refresh_aggregates()
+            if (
+                num_reqs
+                and extension._agg_embed
+                and not (
+                    torch.cuda.is_available()
+                    and torch.cuda.is_current_stream_capturing()
+                )
+            ):
+                plan = extension._step_plan = _build_step_plan(
+                    extension, runner, num_reqs
+                )
+                if plan is not None:
+                    todo = plan.steer.get(EMBED_LAYER_INDEX)
+                    if todo:
+                        target = _find_hidden_states_arg(
+                            _input if isinstance(_input, tuple) else (_input,),
+                            plan.qsl[num_reqs],
+                        )
+                        if target is None:
+                            logger.warning(
+                                "vllm-lens: EMBED_LAYER_INDEX configs present "
+                                "but no [total_tokens, hidden] input tensor "
+                                "found on layer 0; skipping embed injection "
+                                "this pass."
+                            )
+                        else:
+                            _apply_embed(todo, target, plan, extension._stats)
         except Exception:
             extension._stats["errors"] += 1
             logger.warning("vllm-lens pre-hook error, running full path", exc_info=True)
@@ -713,6 +845,8 @@ def _new_stats() -> dict[str, int]:
         "steer_layer_steps": 0,
         "vectorized_layer_steps": 0,
         "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
         "rows_skipped_generated": 0,
         "errors": 0,
     }
@@ -762,6 +896,7 @@ class HiddenStatesExtension:
     _agg_gen: int = -1
     _agg_broadcast: bool = False
     _agg_max_pos: int = -1
+    _agg_embed: bool = False
     _stats: dict[str, int] = _new_stats()
     _vectorized: bool = True
     _prompt_only: bool = (
@@ -852,9 +987,10 @@ class HiddenStatesExtension:
         """Per-``_steering_gen`` summary of all keys, for the idle fast path."""
         if self._agg_gen == self._steering_gen:
             return
-        entries = self._steering_index.values()
+        entries = list(self._steering_index.values())
         self._agg_broadcast = any(e.broadcast for e in entries)
         self._agg_max_pos = max((e.max_pos for e in entries), default=-1)
+        self._agg_embed = any(EMBED_LAYER_INDEX in e.layers for e in entries)
         self._agg_gen = self._steering_gen
 
     # ------------------------------------------------------------------

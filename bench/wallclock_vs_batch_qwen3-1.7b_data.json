@@ -1,7 +1,7 @@
 {
  "model": "Qwen/Qwen3-1.7B",
  "series": {
-  "stock vllm-lens 1.1.0": {
+  "vllm-lens 1.1.0": {
    "batch": [
     8,
     32,
@@ -33,7 +33,7 @@
     2.2503722010000047
    ]
   },
-  "vllm-metamodel + CUDA graphs": {
+  "vllm-metamodel": {
    "batch": [
     8,
     32,
@@ -49,7 +49,7 @@
     1.6339593300000104
    ]
   },
-  "plain vLLM, no steering (torch.compile + graphs)": {
+  "vLLM, no steering": {
    "batch": [
     8,
     32,

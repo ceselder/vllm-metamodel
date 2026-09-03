@@ -1,5 +1,4 @@
-"""Wall-clock time of one LLM.generate() call vs batch size, one line per configuration.
-Reads bench/results_summary.json (tables[model].series[cfg][batch].wall_s). No speedup axis: just seconds.
+"""Wall-clock time of one LLM.generate() call vs batch size (minimal). Reads bench/results_summary.json.
     python bench/plot_wallclock.py [--out-dir bench]"""
 import argparse, json
 from pathlib import Path
@@ -7,38 +6,40 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = Path(__file__).parent
-SERIES = [  # key, legend label, color (validated categorical palette), marker
-    ("stock_eager", "stock vllm-lens 1.1.0", "#2a78d6", "o"),
+SERIES = [  # key, legend label, color, marker  (CUDA-graph mode is the default vllm-metamodel)
+    ("stock_eager", "vllm-lens 1.1.0", "#2a78d6", "o"),
     ("fork_vectorized", "vllm-metamodel (eager)", "#eb6834", "s"),
-    ("fork_graphs", "vllm-metamodel + CUDA graphs", "#1baf7a", "D"),
-    ("ceiling_plain", "plain vLLM, no steering (torch.compile + graphs)", "#87867F", "^"),
+    ("fork_graphs", "vllm-metamodel", "#1baf7a", "D"),
+    ("ceiling_plain", "vLLM, no steering", "#87867F", "^"),
 ]
-CLAIM = {"Qwen/Qwen3.6-27B": "Per-request steering on Qwen3.6-27B (1× B200): vllm-metamodel generates as fast as plain vLLM; stock vllm-lens is 38× slower at batch 2,048",
-         "Qwen/Qwen3-1.7B": "Per-request steering on Qwen3-1.7B (1× B200): vllm-metamodel matches plain vLLM; stock vllm-lens is 59× slower at batch 1,024"}
+TITLE = {"Qwen/Qwen3.6-27B": "Generation performance (Qwen 3.6 27B)", "Qwen/Qwen3-1.7B": "Generation performance (Qwen 3 1.7B)"}
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--out-dir", default=str(HERE)); a = ap.parse_args()
     out = Path(a.out_dir); out.mkdir(parents=True, exist_ok=True)
     tables = json.load(open(HERE / "results_summary.json"))["tables"]
     plt.rcParams.update({"figure.facecolor": "white", "axes.facecolor": "white", "axes.spines.top": False, "axes.spines.right": False,
-                         "axes.grid": True, "grid.color": "#e8e5dc", "grid.linewidth": 0.7, "axes.axisbelow": True, "font.size": 10.5, "legend.frameon": False})
+                         "axes.grid": True, "grid.color": "#e8e5dc", "grid.linewidth": 0.8, "axes.axisbelow": True, "font.size": 15,
+                         "axes.titlesize": 18, "axes.labelsize": 15, "legend.fontsize": 14, "legend.frameon": False})
     for model, tab in tables.items():
         stem = "wallclock_vs_batch" + ("" if "27B" in model else "_qwen3-1.7b")
-        fig, ax = plt.subplots(figsize=(9, 5.6)); data = {"model": model, "series": {}}
+        fig, ax = plt.subplots(figsize=(9, 6)); data = {"model": model, "series": {}}
         for key, label, col, mk in SERIES:
             s = tab["series"].get(key)
             if not s: continue
             bs = sorted(int(b) for b in s); ws = [s[str(b)]["wall_s"] for b in bs]
             data["series"][label] = {"batch": bs, "wall_s": ws}
-            ax.plot(bs, ws, marker=mk, ms=7, lw=2.2, color=col, label=label, markeredgecolor="white", markeredgewidth=1.2)
-            dy = {"stock_eager": 0, "fork_vectorized": 9, "fork_graphs": -1, "ceiling_plain": -11}[key]   # stagger the three near-identical end labels
-            ax.annotate(f"{ws[-1]:.1f} s", (bs[-1], ws[-1]), textcoords="offset points", xytext=(8, dy), fontsize=9, color=col, va="center")
-        ax.set_xscale("log", base=2); ax.set_yscale("log"); ax.set_xticks([8, 32, 128, 512, 1024, 2048][: len(bs)]); ax.set_xticklabels([str(b) for b in [8, 32, 128, 512, 1024, 2048][: len(bs)]])
-        ax.set_xlabel("batch size (requests per generate() call, one steering vector each)"); ax.set_ylabel("wall-clock seconds per generate() call  (log)")
-        ax.set_title(CLAIM.get(model, model), fontsize=10.5, loc="left", pad=12)
-        ax.text(0, 1.005, "96-token prompt, 40 new tokens, bf16; lower is better", transform=ax.transAxes, fontsize=9, color="#52514e", va="bottom")
-        ax.legend(loc="upper left", fontsize=9.5); fig.tight_layout()
-        fig.savefig(out / f"{stem}.png", dpi=160, bbox_inches="tight"); fig.savefig(out / f"{stem}.pdf", bbox_inches="tight")
+            ax.plot(bs, ws, marker=mk, ms=8, lw=2.6, color=col, label=label, markeredgecolor="white", markeredgewidth=1.2)
+        ticks = [8, 32, 128, 512, 1024, 2048][: len(bs)]
+        ax.set_xscale("log", base=2); ax.set_yscale("log"); ax.set_xticks(ticks); ax.set_xticklabels([str(b) for b in ticks])
+        ax.set_xlabel("batch size"); ax.set_ylabel("seconds per generate() call")
+        ax.set_title(TITLE.get(model, model), loc="left", pad=14, fontweight="bold")
+        leg = ax.legend(loc="upper left")
+        for t in leg.get_texts():
+            if t.get_text().startswith("vllm-metamodel"):
+                t.set_fontweight("bold")
+        fig.tight_layout()
+        fig.savefig(out / f"{stem}.png", dpi=170, bbox_inches="tight"); fig.savefig(out / f"{stem}.pdf", bbox_inches="tight")
         json.dump(data, open(out / f"{stem}_data.json", "w"), indent=1); plt.close(fig); print("wrote", out / f"{stem}.png")
 
 if __name__ == "__main__":

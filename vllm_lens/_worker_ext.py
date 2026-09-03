@@ -431,6 +431,20 @@ def norm_match(
     return (steering * (r_norm / (v_norm + eps))).to(residual.dtype)
 
 
+def _wants_stream_ref(cfg: SteeringVector) -> bool:
+    """True when ``cfg`` norm-matches against the full residual stream."""
+    return bool(cfg.norm_match) and getattr(cfg, "norm_match_ref", "output") == "residual_stream"
+
+
+def _stream_ref(output: torch.Tensor | tuple[torch.Tensor, ...], target: torch.Tensor) -> torch.Tensor:
+    """The residual stream a layer's output represents: ``output[0] + output[1]``
+    for vLLM's ``(hidden_states, residual)`` tuple layers, else the output itself.
+    ``target`` is the (cloned, un-steered) first output tensor."""
+    if isinstance(output, tuple) and len(output) > 1 and output[1] is not None:
+        return output[0] + output[1]
+    return target
+
+
 def _apply_steering(
     configs: list[SteeringVector],
     layer_idx: int,
@@ -438,12 +452,16 @@ def _apply_steering(
     start: int,
     end: int,
     abs_start: int,
+    norm_ref: torch.Tensor | None = None,
 ) -> None:
     """Apply all matching steering vectors to a token slice *in-place*.
 
     ``target`` is the (already-cloned) output tensor.  ``start``/``end``
     are batch-relative indices, ``abs_start`` is the absolute sequence
-    position of the first token in ``target[start:end]``.
+    position of the first token in ``target[start:end]``.  ``norm_ref`` is
+    the full residual stream (same shape as ``target``); vectors with
+    ``norm_match_ref="residual_stream"`` match its norm instead of
+    ``target``'s.  ``None`` means "same as target" (upstream behaviour).
     """
     n_tokens = end - start
     for cfg in configs:
@@ -451,12 +469,13 @@ def _apply_steering(
             continue
         act_idx = cfg.layer_index_map[layer_idx]
         vec = cfg.activations[act_idx].to(target.dtype)  # (hidden,) or (n_pos, hidden)
+        ref = norm_ref if (norm_ref is not None and _wants_stream_ref(cfg)) else target
 
         if vec.dim() == 1:
             # 2D: broadcast to all positions
             v = vec.unsqueeze(0)
             if cfg.norm_match:
-                v = norm_match(target[start:end], v)
+                v = norm_match(ref[start:end], v)
             target[start:end] = target[start:end] + v * cfg.scale
         else:
             # 3D: position-specific
@@ -474,7 +493,7 @@ def _apply_steering(
                 rel = abs_pos - abs_start + start
                 v = vec[pi]
                 if cfg.norm_match:
-                    v = norm_match(target[rel], v)
+                    v = norm_match(ref[rel], v)
                 target[rel] = target[rel] + v * cfg.scale
 
 
@@ -483,6 +502,7 @@ def _apply_layer_vectorized(
     layer_idx: int,
     target: torch.Tensor,
     plan: _StepPlan,
+    norm_ref: torch.Tensor | None = None,
 ) -> bool:
     """vllm-lens-metamodel: apply every (row, vector) pair of this layer/pass at once.
 
@@ -495,12 +515,15 @@ def _apply_layer_vectorized(
     the result is bit-identical to the sequential path (one multiply and one
     add per element, same dtype); with ``norm_match=True`` the per-row norms
     come from a batched reduction and may differ by float32 rounding.
+    ``norm_ref`` (full residual stream, same shape as ``target``) is used for
+    the rows whose vector has ``norm_match_ref="residual_stream"``.
     """
     qsl, abs_start = plan.qsl, plan.abs_start
     rows: list[int] = []
     vecs: list[torch.Tensor] = []
     scales: list[float] = []
     nms: list[bool] = []
+    refs: list[bool] = []   # per row: match the residual-stream norm (True) or target's (False)
     limit = _VEC_MAX_ENTRIES_PER_ROW * len(todo) + 64
     for i, configs in todo:
         start, end, a0 = qsl[i], qsl[i + 1], abs_start[i]
@@ -531,9 +554,11 @@ def _apply_layer_vectorized(
                         continue
                     scales.append(cfg.scale)
                     nms.append(cfg.norm_match)
+                    refs.append(_wants_stream_ref(cfg))
                 continue
             scales.append(cfg.scale)
             nms.append(cfg.norm_match)
+            refs.append(_wants_stream_ref(cfg))
         if len(rows) > limit:
             return False
     if not rows:
@@ -546,6 +571,12 @@ def _apply_layer_vectorized(
     v = torch.stack(vecs).to(target.dtype)
     if any(nms):
         r_norm = target.index_select(0, idx).float().norm(dim=-1, keepdim=True)
+        if norm_ref is not None and any(refs):
+            s_norm = norm_ref.index_select(0, idx).float().norm(dim=-1, keepdim=True)
+            if all(refs):
+                r_norm = s_norm
+            else:
+                r_norm = torch.where(torch.tensor(refs, device=device).unsqueeze(1), s_norm, r_norm)
         v_norm = v.float().norm(dim=-1, keepdim=True)
         matched = (v * (r_norm / (v_norm + 1e-6))).to(target.dtype)
         if all(nms):
@@ -602,11 +633,18 @@ def _hook_inner(
         else:
             modified_output = output.clone()
             target = modified_output
+        # full residual stream, materialised only if some vector norm-matches
+        # against it (norm_match_ref="residual_stream"); one add per layer/pass
+        norm_ref = (
+            _stream_ref(output, target)
+            if any(_wants_stream_ref(c) for _, cs in todo for c in cs)
+            else None
+        )
 
         extension._stats["steer_layer_steps"] += 1
         extension._stats["rows_steered"] += len(todo)
         if extension._vectorized and _apply_layer_vectorized(
-            todo, layer_idx, target, plan
+            todo, layer_idx, target, plan, norm_ref
         ):
             extension._stats["vectorized_layer_steps"] += 1
         else:
@@ -618,6 +656,7 @@ def _hook_inner(
                     query_start_loc[i],
                     query_start_loc[i + 1],
                     plan.abs_start[i],
+                    norm_ref,
                 )
 
     # --- Phase 3: capture activations (rank 0 only) -----------------
@@ -929,7 +968,8 @@ class HiddenStatesExtension:
         ``pickled_data`` is a pickled dict::
 
             {"keys": [str], "vecs": Tensor(n, hidden), "layers": [int],
-             "positions": [int], "scales": [float], "norm_match": [bool]}
+             "positions": [int], "scales": [float], "norm_match": [bool],
+             "norm_match_ref": [str]}   # optional; default "output"
 
         Key ``i`` behaves exactly like ``set_steering_data(key_i, [SteeringVector(
         activations=vecs[i].view(1, 1, hidden), layer_indices=[layers[i]],
@@ -952,6 +992,7 @@ class HiddenStatesExtension:
         positions = [int(x) for x in d["positions"]]
         scales = [float(x) for x in d["scales"]]
         nms = [bool(x) for x in d["norm_match"]]
+        refs = [str(x) for x in d.get("norm_match_ref", ["output"] * len(keys))]
         block = vecs.to(device=device, dtype=dtype).contiguous()
         for i, key in enumerate(keys):
             sv = SteeringVector.model_construct(
@@ -959,6 +1000,7 @@ class HiddenStatesExtension:
                 layer_indices=[layers[i]],
                 scale=scales[i],
                 norm_match=nms[i],
+                norm_match_ref=refs[i],
                 position_indices=[positions[i]],
             )
             self._store(key, [sv])

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import torch
 from pydantic import (
@@ -53,6 +53,24 @@ class SteeringVector(BaseModel):
     norm_match: bool = False
     """If True, rescale the modified hidden state to preserve the original
     per-token L2 norm."""
+
+    norm_match_ref: Literal["output", "residual_stream"] = "output"
+    """Which tensor's per-token L2 norm ``norm_match`` matches (only used when
+    ``norm_match`` is True).
+
+    * ``"output"`` (default, upstream behaviour): the hooked layer's first
+      output tensor.  vLLM's Llama/Qwen-style decoder layers return
+      ``(hidden_states, residual)`` and materialise the true residual stream
+      as ``hidden_states + residual`` in the *next* layer's fused
+      add-RMSNorm, so on those models this is the layer's **delta**, whose
+      norm can be far smaller than the stream's.
+    * ``"residual_stream"``: ``output[0] + output[1]`` when the layer returns
+      such a tuple (the actual residual stream entering the next layer),
+      falling back to ``output`` for layers that return a plain tensor.  Use
+      this to reproduce a HuggingFace-side norm-matched injection
+      (``h + ||h|| * v/||v||`` on the full stream, e.g. Karvonen et al.'s
+      activation-oracle injection) exactly in vLLM.
+    """
 
     position_indices: list[int] | None = None
     """Absolute token positions for 3D activations.  ``None`` means broadcast

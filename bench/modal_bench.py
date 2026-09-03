@@ -83,6 +83,7 @@ image_fork = (
         'assert hasattr(W.HiddenStatesExtension, "set_steering_data_many"); print(vllm_lens.__version__)\'',
     )
     .add_local_file(HERE / "bench_steering.py", "/bench/bench_steering.py")
+    .add_local_file(HERE / "diag_engine.py", "/bench/diag_engine.py")
 )
 
 vol = modal.Volume.from_name("maemm-data")
@@ -171,6 +172,10 @@ def main(
     skip_plain: bool = False,
     skip_stock: bool = False,
     skip_big: bool = False,
+    fork_engines: str = "",
+    max_capture_size: int = 0,
+    max_num_seqs: int = 0,
+    extra_args: str = "",
     out_dir: str = str(HERE / "results"),
 ):
     from compare import summarize
@@ -186,7 +191,17 @@ def main(
         common += f" --attention-backend {attention_backend}"
     big_extra = common + f" --sizes {sizes} --language-model-only"
     small_extra = common + f" --sizes {small_sizes}"
-    fork_engines = ["eager", "graphs"] + ([] if skip_plain else ["plain"])
+    if max_capture_size:
+        common += f" --max-capture-size {max_capture_size}"
+    if max_num_seqs:
+        common += f" --max-num-seqs {max_num_seqs}"
+    if extra_args:
+        common += " " + extra_args
+    fork_engines = (
+        [e for e in fork_engines.split(",") if e]
+        if fork_engines
+        else ["eager", "graphs"] + ([] if skip_plain else ["plain"])
+    )
 
     jobs = []  # (model_tag, variant, future)
     if not skip_big:
@@ -249,3 +264,62 @@ def main(
     print("\n".join(summary["assertions_text"]))
     print("ALL PASS" if summary["all_pass"] else "SOME CHECKS FAILED")
     print(f"[local] results in {dest}")
+
+
+# ---------------------------------------------------------------------------
+# Engine-init bisect (bench/diag_engine.py):  modal run bench/modal_bench.py::diag_main --configs a,b,c
+# ---------------------------------------------------------------------------
+
+
+@app.function(
+    image=image_fork, gpu=GPU, volumes={"/data": vol}, secrets=[hf_secret], timeout=3600
+)
+def run_diag(model: str, configs: list[str], max_num_seqs: int, offline: bool) -> dict:
+    env = os.environ.copy()
+    env["TOKENIZERS_PARALLELISM"] = "false"
+    if offline:
+        env.update(
+            HF_HOME="/data/hf_cache", HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1"
+        )
+    out = {}
+    for c in configs:
+        cmd = [
+            sys.executable,
+            "/bench/diag_engine.py",
+            "--model",
+            model,
+            "--config",
+            c,
+            "--max-num-seqs",
+            str(max_num_seqs),
+        ]
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        text = proc.stdout + "\n--- stderr ---\n" + proc.stderr
+        keep = [ln for ln in text.splitlines() if "[diag]" in ln or "Error" in ln]
+        out[c] = {
+            "rc": proc.returncode,
+            "diag": keep[-40:],
+            "stderr_tail": proc.stderr[-12000:],
+        }
+        print(
+            f"[modal] {c}: rc={proc.returncode}\n" + "\n".join(keep[-12:]), flush=True
+        )
+    return out
+
+
+@app.local_entrypoint()
+def diag_main(
+    model: str = "Qwen/Qwen3.6-27B",
+    configs: str = "lora_maxcap,nolora_maxcap,nolora_maxcap_nopacked",
+    max_num_seqs: int = 1024,
+    offline: bool = True,
+    out: str = "/tmp/vlp_diag.json",
+):
+    res = run_diag.remote(
+        model, [c for c in configs.split(",") if c], max_num_seqs, offline
+    )
+    Path(out).write_text(json.dumps(res, indent=1))
+    for c, r in res.items():
+        print(f"== {c}: rc={r['rc']}")
+        print("\n".join(r["diag"][-6:]))
+    print(f"[local] wrote {out}")

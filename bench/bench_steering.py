@@ -92,6 +92,12 @@ def parse_args() -> argparse.Namespace:
         help="layer for steer2d (-1 = n_layers // 2)",
     )
     p.add_argument("--max-num-seqs", type=int, default=0, help="0 = max(sizes)")
+    p.add_argument(
+        "--max-capture-size",
+        type=int,
+        default=0,
+        help="largest CUDA-graph capture size (0 = max_num_seqs); larger batches run without a graph",
+    )
     p.add_argument("--gpu-mem", type=float, default=0.85)
     p.add_argument(
         "--attention-backend",
@@ -105,6 +111,22 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--repeats", type=int, default=1)
     p.add_argument("--no-warmup", action="store_true")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument(
+        "--enable-lora",
+        action="store_true",
+        help="enable LoRA slots (rank 64, 2 slots) as an RL rollout engine would",
+    )
+    p.add_argument(
+        "--no-packed-decode",
+        action="store_true",
+        help="VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE=0 (GDN models)",
+    )
+    p.add_argument(
+        "--capture-mode",
+        choices=["list", "max"],
+        default="list",
+        help="CUDA-graph sizes: explicit list (GRAPH_SIZES + batch sizes) or vLLM defaults up to max_cudagraph_capture_size",
+    )
     return p.parse_args()
 
 
@@ -134,6 +156,8 @@ def main() -> None:
         os.environ["VLLM_LENS_DISABLE"] = "1"
     elif a.engine == "graphs":
         os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
+    if a.no_packed_decode:
+        os.environ["VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE"] = "0"
 
     import torch
     import vllm
@@ -175,15 +199,25 @@ def main() -> None:
         kw["attention_backend"] = a.attention_backend
     if a.language_model_only:
         kw["language_model_only"] = True
-    capture_sizes = sorted({s for s in GRAPH_SIZES + sizes if s <= max_num_seqs})
+    if a.enable_lora:
+        kw.update(enable_lora=True, max_loras=2, max_lora_rank=64)
+    max_capture = a.max_capture_size or max_num_seqs
+    capture_sizes = sorted(
+        {s for s in GRAPH_SIZES + sizes if s <= min(max_num_seqs, max_capture)}
+    )
+    cc_kw = (
+        {"max_cudagraph_capture_size": min(max_num_seqs, max_capture)}
+        if a.capture_mode == "max"
+        else {"cudagraph_capture_sizes": capture_sizes}
+    )
     if a.engine == "eager":
         kw["enforce_eager"] = True
     elif a.engine == "graphs":
         # mode / cudagraph_mode deliberately NOT given: the plugin must fill in
         # mode=NONE + FULL_DECODE_ONLY itself (VLLM_LENS_CUDA_GRAPHS=1).
-        kw["compilation_config"] = {"cudagraph_capture_sizes": capture_sizes}
+        kw["compilation_config"] = dict(cc_kw)
     else:  # plain: vLLM defaults (torch.compile + CUDA graphs), capture sizes matched to the batches
-        kw["compilation_config"] = {"cudagraph_capture_sizes": capture_sizes}
+        kw["compilation_config"] = dict(cc_kw)
 
     t0 = time.perf_counter()
     llm = LLM(**kw)
@@ -225,6 +259,10 @@ def main() -> None:
         "mid_layer": mid_layer,
         "sizes": sizes,
         "sizes_2d": sizes_2d,
+        "max_capture_size": max_capture,
+        "capture_mode": a.capture_mode,
+        "enable_lora": a.enable_lora,
+        "packed_decode": not a.no_packed_decode,
         "throughput": [],
         "probes": {},
         "stats": {},
@@ -367,6 +405,7 @@ def main() -> None:
 
     def probe_3d(tag: str) -> None:
         out_s, h_steer = capture([a.inject_layer], [probe_vec], logprobs=20)
+        out_c, _ = capture([a.inject_layer], None, logprobs=20)
         delta = h_steer[0, a.marker] - h_clean[0, a.marker]
         other = h_steer[0] - h_clean[0]
         other[a.marker] = 0
@@ -394,6 +433,7 @@ def main() -> None:
             "h_steer_marker": h_steer[0, a.marker].tolist(),
             "h_steer_normmatch_marker": h_nm[0, a.marker].tolist(),
             "next_token_top20": topk(out_s),
+            "next_token_top20_clean": topk(out_c),
             "next_token_argmax": int(out_s.outputs[0].token_ids[0]),
             "greedy8": [int(t) for t in greedy.outputs[0].token_ids],
             "ok": cos > 0.99 and 0.95 < ratio < 1.05,

@@ -192,11 +192,32 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                     ref["next_token_argmax"] == p["next_token_argmax"],
                     f"{ref['next_token_argmax']} vs {p['next_token_argmax']}",
                 )
-                add(
-                    f"{k} vs stock: steered next-token top-20 logprobs (max|d|<{TOL['logprob_abs_max']})",
-                    mx < TOL["logprob_abs_max"] and len(common) >= 15,
-                    f"max|d|={mx:.4f} over {len(common)} shared tokens",
+                a_cl, b_cl = (
+                    ref.get("next_token_top20_clean"),
+                    p.get("next_token_top20_clean"),
                 )
+                if a_cl and b_cl:
+                    # Two engine processes can pick different Triton autotune configs, so even the
+                    # CLEAN prompt's logits differ slightly between them.  Steering is fine if the
+                    # steered cross-engine difference is no larger than that noise floor.
+                    common_c = set(a_cl) & set(b_cl)
+                    noise = max(
+                        (abs(a_cl[t] - b_cl[t]) for t in common_c), default=math.inf
+                    )
+                    tol = max(TOL["logprob_abs_max"], 1.5 * noise + 0.01)
+                    add(
+                        f"{k} vs stock: steered next-token top-20 logprobs within the engine-to-engine "
+                        f"noise floor (max|d| <= max({TOL['logprob_abs_max']}, 1.5*clean noise+0.01))",
+                        mx <= tol and len(common) >= 15,
+                        f"steered max|d|={mx:.4f} over {len(common)} tokens; clean-prompt max|d|={noise:.4f} "
+                        f"over {len(common_c)} tokens (tol {tol:.4f})",
+                    )
+                else:
+                    add(
+                        f"{k} vs stock: steered next-token top-20 logprobs (max|d|<{TOL['logprob_abs_max']})",
+                        mx < TOL["logprob_abs_max"] and len(common) >= 15,
+                        f"max|d|={mx:.4f} over {len(common)} shared tokens",
+                    )
                 same8 = ref["greedy8"] == p["greedy8"]
                 add(
                     f"{k} vs stock: greedy 8-token steered continuation equal (informational)",

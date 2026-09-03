@@ -9,9 +9,9 @@ page cache between engines.
 
 Usage (from the repo root, ``MODAL_PROFILE`` selecting your workspace):
 
-    modal run bench/modal_bench.py                       # Qwen3.6-27B from the maemm-data volume
-    modal run bench/modal_bench.py --small-model Qwen/Qwen3-1.7B   # + a second, downloaded model
-    modal run bench/modal_bench.py --skip-plain          # skip the torch.compile'd vLLM ceiling
+    modal run bench/modal_bench.py::main                 # Qwen3.6-27B from the maemm-data volume
+    modal run bench/modal_bench.py::main --small-model Qwen/Qwen3-1.7B   # + a second, downloaded model
+    modal run bench/modal_bench.py::main --skip-plain          # skip the torch.compile'd vLLM ceiling
 
 Results land in ``bench/results/<timestamp>/`` as JSON (one file per model x variant x engine)
 plus ``summary.json`` (speedup table + correctness assertions) via ``bench/compare.py``.

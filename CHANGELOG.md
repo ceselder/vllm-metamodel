@@ -93,6 +93,12 @@ that as the **default** and adds an explicit opt-in:
   — raise `max_num_batched_tokens` above your longest prompt.
 - `VLLM_LENS_DISABLE=1` makes the plugin a no-op (same switch as upstream
   1.2.0), handy for plain-vLLM baselines.
+- Note for hybrid GatedDeltaNet models (Qwen3.5/3.6) on vLLM 0.19: use
+  `max_cudagraph_capture_size` (vLLM's default size ladder) instead of a sparse
+  explicit `cudagraph_capture_sizes` list, and keep `max_num_seqs <= 1024`;
+  otherwise vLLM's packed GDN decode kernel fails to launch during capture
+  (`Triton Error [CUDA]: invalid argument`) -- a vLLM issue, reproducible with
+  the plugin disabled (`bench/diag_engine.py`).
 
 ### Measured
 

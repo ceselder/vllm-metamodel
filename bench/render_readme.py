@@ -106,6 +106,13 @@ def main(results_dir: str) -> None:
     )
     parts.append("")
     parts.append(table(tb))
+    parts.append("")
+    parts.append(
+        "Eager rows ran with `max_num_seqs=2048` (B = 2,048 in one scheduler wave); the CUDA-graph rows with "
+        "`max_num_seqs=1024` and vLLM's default capture ladder (`max_cudagraph_capture_size=1024`), so B = 2,048 "
+        "is two waves there -- see the vLLM caveat below. Decode at these sizes is compute-bound and scales linearly "
+        "(2,048 takes 2x the 1,024 time in every configuration)."
+    )
     for m in models:
         if m == big:
             continue

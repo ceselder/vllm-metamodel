@@ -99,6 +99,8 @@ once). If chunked prefill could leave a 1-token final chunk (dispatched as a dec
 the fork warns at hook installation — set `max_num_batched_tokens` above your longest
 prompt × concurrency. Without the variable, behaviour is exactly 1.1.0's (eager forced).
 
+**vLLM caveat (hybrid GatedDeltaNet models such as Qwen3.5/3.6, vLLM 0.19):** pass `compilation_config={"max_cudagraph_capture_size": N}` (vLLM's default size ladder) rather than a sparse explicit `cudagraph_capture_sizes` list. In our runs the explicit list made vLLM's packed GDN decode kernel fail to launch during graph capture (`Triton Error [CUDA]: invalid argument`) with or without vllm-lens; the default ladder works (`bench/diag_engine.py` bisects this). Keep `max_num_seqs <= 1024` for that model: the packed decode kernel's launch grid is `batch x value_heads` (48) and the CUDA grid-dimension limit is 65,535.
+
 Environment variables: `VLLM_LENS_CUDA_GRAPHS` (opt-in graphs), `VLLM_LENS_VECTORIZED=0`
 (sequential apply), `VLLM_LENS_BLOCK_RPC=0` (per-key RPC), `VLLM_LENS_DISABLE=1` (plugin off).
 
@@ -111,7 +113,7 @@ delta vs vector: cos and magnitude ratio; steered hidden state and next-token lo
 stock). `bench/modal_bench.py` runs it on one B200 on [Modal](https://modal.com):
 
 ```bash
-MODAL_PROFILE=<your workspace> modal run bench/modal_bench.py --small-model Qwen/Qwen3-1.7B
+MODAL_PROFILE=<your workspace> modal run bench/modal_bench.py::main --small-model Qwen/Qwen3-1.7B
 python bench/compare.py bench/results/<timestamp>     # speedup table + correctness assertions
 python bench/plot_bench.py bench/results/<timestamp>  # PNG + PDF + data JSON
 ```

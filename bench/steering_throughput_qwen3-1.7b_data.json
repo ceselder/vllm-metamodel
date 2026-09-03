@@ -77,7 +77,7 @@
    ]
   },
   "fork_indexed": {
-   "label": "vllm-lens-port: indexed hook, eager",
+   "label": "vllm-lens-metamodel: indexed hook, eager",
    "batch": [
     8,
     32,
@@ -101,7 +101,7 @@
    ]
   },
   "fork_vectorized": {
-   "label": "vllm-lens-port: indexed + vectorised apply, eager",
+   "label": "vllm-lens-metamodel: indexed + vectorised apply, eager",
    "batch": [
     8,
     32,
@@ -125,7 +125,7 @@
    ]
   },
   "fork_graphs": {
-   "label": "vllm-lens-port: indexed + vectorised + CUDA graphs",
+   "label": "vllm-lens-metamodel: indexed + vectorised + CUDA graphs",
    "batch": [
     8,
     32,

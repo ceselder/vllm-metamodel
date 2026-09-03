@@ -90,6 +90,28 @@ capture / state methods) and only the body of `_hook_inner` is replaced. `git di
 - Offline `LLM.generate`: one `set_steering_block` RPC for the call's single-position vectors (+ one `set_steering_data_many` for anything else) instead of one RPC per request; clears in a `finally`.
 - `VLLM_LENS_DISABLE=1` no-op switch (as in upstream 1.2.0); `_check_graph_mode_request` fails fast on 2-D vectors under CUDA graphs.
 
+### Norm-matching reference (`norm_match_ref`)
+
+vLLM's Llama/Qwen-style decoder layers return `(hidden_states, residual)` and only the
+*next* layer's fused add-RMSNorm materialises the true residual stream as their sum. The
+steering hook writes into `hidden_states` (correct: the addition lands in the stream), but
+with `norm_match=True` upstream scales the vector to the norm of `hidden_states` **alone**,
+i.e. the layer's delta, which at early layers is a small fraction of the stream. If your
+training-side injection is the HuggingFace-style `h + ||h|| * v/||v||` on the full stream
+(e.g. activation-oracle / NLA training), the vLLM rollout then injects far more weakly than
+the trainer's forward and on-policy RL silently breaks.
+
+```python
+SteeringVector(activations=..., layer_indices=[1], position_indices=[p],
+               norm_match=True, norm_match_ref="residual_stream")
+```
+
+`norm_match_ref="residual_stream"` matches `||output[0] + output[1]||` (falling back to the
+plain output for layers that return a tensor); the default `"output"` is upstream's
+behaviour. The sum is materialised once per steered layer/pass and only when some vector in
+that pass asks for it; both the vectorised and the row-by-row path honour it, and the
+single-position block RPC carries it (older clients default to `"output"`).
+
 ### CUDA graphs
 
 ```python

@@ -10,6 +10,17 @@ branches from upstream **v1.1.0** and keeps the distribution name
 pip install git+https://github.com/ceselder/vllm-lens-metamodel
 ```
 
+## Unreleased
+
+- `SteeringVector.norm_match_ref: Literal["output", "residual_stream"] = "output"`.
+  With `"residual_stream"`, `norm_match` scales the vector to the norm of the TRUE
+  residual stream (`output[0] + output[1]` on vLLM's `(hidden_states, residual)`
+  layers) instead of the layer's partial output. Needed to reproduce a
+  HuggingFace-side full-stream norm-matched injection exactly (upstream matched
+  the delta's norm, injecting far too weakly at early layers). Threaded through
+  `_apply_steering`, `_apply_layer_vectorized` (per-row selection) and the
+  single-position block RPC; default behaviour unchanged.
+
 ## v1.1.0.post1 (3 September 2026) — vllm-lens-metamodel
 
 Target workload: **RL-style rollouts with one steering vector per prompt**

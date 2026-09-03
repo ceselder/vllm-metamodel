@@ -486,6 +486,132 @@ def test_apply_steering_unchanged_semantics():
 
 
 # ---------------------------------------------------------------------------
+# norm_match_ref: which norm a norm-matched vector is scaled to
+# ---------------------------------------------------------------------------
+
+
+def test_norm_match_ref_residual_stream_matches_full_stream_norm():
+    """vLLM's Llama/Qwen layers return ``(hidden_states, residual)``; the true stream
+    is their sum.  ``norm_match_ref="residual_stream"`` scales the vector to THAT norm;
+    the default ``"output"`` keeps upstream's behaviour (the delta's norm).  Sequential
+    and vectorised paths must agree, and rows other than the markers stay untouched."""
+    torch.manual_seed(4)
+    n_reqs, P = 4, 6
+    delta = torch.randn(P * n_reqs, D) * 0.1  # output[0]: the layer's contribution
+    residual = torch.randn(P * n_reqs, D) * 10.0  # output[1]
+    stream = delta + residual
+    marks = [P * i + 2 for i in range(n_reqs)]
+    qsl = [P * i for i in range(n_reqs + 1)]
+    abs_start = [0] * n_reqs
+    for ref_mode in ("output", "residual_stream"):
+        cfgs = [
+            [sv3d(1, [2], norm_match=True, norm_match_ref=ref_mode)] for _ in range(n_reqs)
+        ]
+        todo = list(zip(range(n_reqs), cfgs))
+        plan = W._StepPlan(qsl, abs_start, {1: todo})
+        seq = delta.clone()
+        for i, c in todo:
+            W._apply_steering(c, 1, seq, qsl[i], qsl[i + 1], abs_start[i], norm_ref=stream)
+        vec = delta.clone()
+        assert W._apply_layer_vectorized(todo, 1, vec, plan, norm_ref=stream)
+        assert torch.allclose(seq, vec, rtol=1e-5, atol=1e-5)
+        added = (vec - delta)[marks]
+        want = (stream if ref_mode == "residual_stream" else delta)[marks].norm(dim=-1)
+        assert torch.allclose(added.norm(dim=-1), want, rtol=1e-4, atol=1e-4), ref_mode
+        keep = [r for r in range(P * n_reqs) if r not in marks]
+        assert torch.equal(vec[keep], delta[keep])
+    # mixed references inside one vectorised pass: per-row selection
+    cfgs = [
+        [sv3d(1, [2], norm_match=True, norm_match_ref="residual_stream" if i % 2 else "output")]
+        for i in range(n_reqs)
+    ]
+    todo = list(zip(range(n_reqs), cfgs))
+    plan = W._StepPlan(qsl, abs_start, {1: todo})
+    vec = delta.clone()
+    assert W._apply_layer_vectorized(todo, 1, vec, plan, norm_ref=stream)
+    for i, m in enumerate(marks):
+        want = (stream if i % 2 else delta)[m].norm()
+        assert torch.allclose((vec - delta)[m].norm(), want, rtol=1e-4, atol=1e-4)
+    # no norm_ref supplied (plain-tensor layer): both modes use the output's norm
+    vec = delta.clone()
+    assert W._apply_layer_vectorized(todo, 1, vec, plan)
+    assert torch.allclose(
+        (vec - delta)[marks].norm(dim=-1), delta[marks].norm(dim=-1), rtol=1e-4, atol=1e-4
+    )
+
+
+def test_stream_ref_helper_and_hook_materialise_the_sum():
+    """``_stream_ref`` sums tuple outputs; the hook only builds it when a vector asks."""
+    t = torch.randn(3, D)
+    r = torch.randn(3, D)
+    assert torch.equal(W._stream_ref((t, r), t), t + r)
+    assert torch.equal(W._stream_ref((t, None), t), t)
+    assert torch.equal(W._stream_ref(t, t), t)
+    # end-to-end through the hook on a fake pass: marker gets ||delta+residual||
+    ext = make_ext()
+    ext.set_steering_data(
+        "_steer_0",
+        pickle.dumps(
+            [sv3d(1, [2], norm_match=True, norm_match_ref="residual_stream", scale=1.0)]
+        ),
+    )
+    runner = FakeRunner([("0-aaaaaaaa", {"_steering_id": "_steer_0"}, 6, 0, 6)])
+    ext.model_runner = runner
+    plan = build_plan(ext, runner)
+    ext._step_plan = plan
+    ext._step_idle = False
+    import vllm.forward_context as fc
+
+    delta = torch.randn(6, D) * 0.1
+    residual = torch.randn(6, D) * 10.0
+    if hasattr(fc, "_ctx"):  # stubbed vLLM: the plan's ctx_id must match
+        plan.ctx_id = id(fc._ctx)
+        out = W._hook_inner(ext, 1, (delta, residual))
+    else:  # pragma: no cover - real vLLM installed
+        pytest.skip("hook-level check needs the stubbed forward context")
+    assert out is not None
+    added = out[0][2] - delta[2]
+    assert torch.allclose(added.norm(), (delta + residual)[2].norm(), rtol=1e-4, atol=1e-4)
+    assert torch.equal(out[0][[0, 1, 3, 4, 5]], delta[[0, 1, 3, 4, 5]])
+    assert out[1] is residual  # the residual half of the tuple is passed through
+
+
+def test_set_steering_block_carries_norm_match_ref():
+    ext = make_ext()
+    n = 3
+    ext.set_steering_block(
+        pickle.dumps(
+            {
+                "keys": [f"_steer_{i}" for i in range(n)],
+                "vecs": torch.randn(n, D),
+                "layers": [1] * n,
+                "positions": [2] * n,
+                "scales": [1.0] * n,
+                "norm_match": [True] * n,
+                "norm_match_ref": ["residual_stream", "output", "residual_stream"],
+            }
+        )
+    )
+    got = [ext._steering_index[f"_steer_{i}"].configs[0].norm_match_ref for i in range(n)]
+    assert got == ["residual_stream", "output", "residual_stream"]
+    # blocks from older clients (no key) default to upstream behaviour
+    ext2 = make_ext()
+    ext2.set_steering_block(
+        pickle.dumps(
+            {
+                "keys": ["_steer_0"],
+                "vecs": torch.randn(1, D),
+                "layers": [1],
+                "positions": [2],
+                "scales": [1.0],
+                "norm_match": [True],
+            }
+        )
+    )
+    assert ext2._steering_index["_steer_0"].configs[0].norm_match_ref == "output"
+
+
+# ---------------------------------------------------------------------------
 # block RPC == per-key set_steering_data
 # ---------------------------------------------------------------------------
 

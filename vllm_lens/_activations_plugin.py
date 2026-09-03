@@ -251,6 +251,7 @@ def _pack_steering(
     positions: list[int] = []
     scales: list[float] = []
     nms: list[bool] = []
+    refs: list[str] = []
     rest: dict[str, list[SteeringVector]] = {}
     for key, vectors in payloads.items():
         sv = vectors[0] if len(vectors) == 1 else None
@@ -270,6 +271,7 @@ def _pack_steering(
             )
             scales.append(float(sv.scale))
             nms.append(bool(sv.norm_match))
+            refs.append(str(sv.norm_match_ref))
         else:
             rest[key] = vectors
     if not keys:
@@ -281,6 +283,7 @@ def _pack_steering(
         "positions": positions,
         "scales": scales,
         "norm_match": nms,
+        "norm_match_ref": refs,
     }
     return block, rest
 

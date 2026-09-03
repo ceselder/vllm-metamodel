@@ -31,7 +31,8 @@ def main():
             bs = sorted(int(b) for b in s); ws = [s[str(b)]["wall_s"] for b in bs]
             data["series"][label] = {"batch": bs, "wall_s": ws}
             ax.plot(bs, ws, marker=mk, ms=7, lw=2.2, color=col, label=label, markeredgecolor="white", markeredgewidth=1.2)
-            ax.annotate(f"{ws[-1]:.1f} s", (bs[-1], ws[-1]), textcoords="offset points", xytext=(7, -3), fontsize=9, color="#52514e")
+            dy = {"stock_eager": 0, "fork_vectorized": 9, "fork_graphs": -1, "ceiling_plain": -11}[key]   # stagger the three near-identical end labels
+            ax.annotate(f"{ws[-1]:.1f} s", (bs[-1], ws[-1]), textcoords="offset points", xytext=(8, dy), fontsize=9, color=col, va="center")
         ax.set_xscale("log", base=2); ax.set_yscale("log"); ax.set_xticks([8, 32, 128, 512, 1024, 2048][: len(bs)]); ax.set_xticklabels([str(b) for b in [8, 32, 128, 512, 1024, 2048][: len(bs)]])
         ax.set_xlabel("batch size (requests per generate() call, one steering vector each)"); ax.set_ylabel("wall-clock seconds per generate() call  (log)")
         ax.set_title(CLAIM.get(model, model), fontsize=10.5, loc="left", pad=12)

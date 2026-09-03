@@ -7,7 +7,22 @@ pip install git+https://github.com/ceselder/vllm-lens-port
 ```
 
 <!-- RESULTS:BEGIN -->
-_Benchmark numbers are filled in from `bench/results/` — see below._
+**Measured on 1× B200, Qwen/Qwen3-1.7B bf16, 96-token prompts, 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 1,024 the fork is **59.3× faster** than stock 1.1.0 with CUDA graphs (35.2× from the indexed hook alone, 43.0× with the vectorised apply, eager), within 4% of the same engine running no steering at all; steering output is numerically identical to stock (55/55 correctness checks pass: injected delta cos = 1.000, magnitude ratio = 1.000, same hidden states and next-token logprobs).
+
+![per-request steering throughput vs batch size](bench/steering_throughput.png)
+
+Wall time of one `LLM.generate()` call (Qwen/Qwen3-1.7B, speedup vs stock in bold):
+
+| configuration | B = 8 | B = 32 | B = 128 | B = 512 | B = 1,024 |
+|---|---:|---:|---:|---:|---:|
+| stock vllm-lens 1.1.0 (eager forced) | 0.6 s | 1.3 s | 5.0 s | 31.5 s | 96.8 s |
+| fork: indexed hook (eager) | 0.7 s (**0.9×**) | 0.7 s (**1.9×**) | 0.9 s (**5.7×**) | 1.4 s (**22.4×**) | 2.7 s (**35.2×**) |
+| fork: indexed + vectorised apply (eager) | 0.7 s (**0.8×**) | 0.7 s (**1.9×**) | 0.9 s (**5.5×**) | 1.4 s (**22.5×**) | 2.3 s (**43.0×**) |
+| fork: indexed + vectorised + CUDA graphs | 0.2 s (**2.9×**) | 0.3 s (**5.2×**) | 0.4 s (**12.0×**) | 0.8 s (**37.5×**) | 1.6 s (**59.3×**) |
+| no steering, same engine config (ceiling) | 0.2 s (**2.8×**) | 0.2 s (**5.5×**) | 0.4 s (**12.3×**) | 1.1 s (**29.9×**) | 1.6 s (**61.5×**) |
+| no steering, vLLM default compile + graphs (ceiling) | 0.1 s (**4.8×**) | 0.2 s (**7.4×**) | 0.3 s (**16.8×**) | 0.8 s (**38.9×**) | 1.7 s (**56.3×**) |
+
+Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
 ## Why this fork: N× faster per-request steering

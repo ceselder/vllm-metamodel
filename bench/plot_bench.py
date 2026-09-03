@@ -3,16 +3,19 @@
     python bench/plot_bench.py bench/results/<timestamp> [--out-dir DIR] [--stem steering_throughput]
 
 Writes ``<stem>.png`` + ``<stem>.pdf`` per model (one figure, two panels) and
-``<stem>_data.json`` with the exact numbers plotted.  Colors are the validated
-categorical slots from the dataviz reference palette (blue / aqua / orange);
-the two no-steering ceilings are drawn as muted reference lines with direct
-labels because they are bounds, not competing series.
+``<stem>_data.json`` with the exact numbers plotted.  Series colors are the
+validated categorical slots of the dataviz reference palette in the order
+blue / yellow / aqua / orange (adjacent pairs pass the CVD and normal-vision
+gates); the two no-steering ceilings are drawn as muted reference lines with
+direct labels because they are bounds, not competing series.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -24,7 +27,7 @@ from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter  # noqa: 
 from compare import load_dir, summarize  # noqa: E402
 
 SERIES_STYLE = {
-    # name: (label, color, marker) -- validated categorical order (dataviz reference palette)
+    # name: (label, color, marker)
     "stock_eager": (
         "stock vllm-lens 1.1.0 (per-layer key scan, eager forced)",
         "#2a78d6",
@@ -33,7 +36,7 @@ SERIES_STYLE = {
     "fork_indexed": ("vllm-lens-port: indexed hook, eager", "#eda100", "s"),
     "fork_vectorized": (
         "vllm-lens-port: indexed + vectorised apply, eager",
-        "#eda100",
+        "#1baf7a",
         "^",
     ),
     "fork_graphs": (
@@ -44,7 +47,7 @@ SERIES_STYLE = {
 }
 CEILING_STYLE = {
     "ceiling_plain": ("vLLM default (torch.compile + graphs), no steering", "#898781"),
-    "ceiling_graphs": ("same engine config, no hooks", "#c3c2b7"),
+    "ceiling_graphs": ("same engine config, no hooks", "#b5b3aa"),
 }
 INK, INK_SOFT, GRID = "#0b0b0b", "#52514e", "#e1e0d9"
 
@@ -62,16 +65,19 @@ def _fmt_int(x, _pos):
     return f"{int(x):,}" if x >= 1 else f"{x:g}"
 
 
-def plot_model(
-    model: str, table: dict, out_dir: Path, stem: str, title_prefix: str
-) -> dict:
+def _series_xy(series: dict, name: str, key: str) -> tuple[list[int], list[float]]:
+    bs = sorted(series[name])
+    return bs, [series[name][b][key] for b in bs]
+
+
+def plot_model(model: str, table: dict, out_dir: Path, stem: str) -> dict:
     series = table["series"]
     speed = table["speedup_vs_stock"]
     meta = table["meta"]
     gpu = (meta.get("gpu") or "GPU").replace("NVIDIA ", "")
     P, T = meta.get("prompt_tokens"), meta.get("max_tokens")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 5.0), facecolor="white")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 5.4), facecolor="white")
     data = {
         "model": model,
         "gpu": gpu,
@@ -82,32 +88,41 @@ def plot_model(
     }
 
     # --- panel 1: tokens/s vs batch ------------------------------------
+    ceiling_ends = []
     for name, (label, color) in CEILING_STYLE.items():
         if name not in series:
             continue
-        bs = sorted(series[name])
-        ys = [series[name][b]["tok_per_s"] for b in bs]
+        bs, ys = _series_xy(series, name, "tok_per_s")
         ax1.plot(bs, ys, color=color, lw=1.6, zorder=1)
+        ceiling_ends.append((ys[-1], bs[-1], label))
+        data["series"][name] = {
+            "label": label,
+            "batch": bs,
+            "tok_per_s": ys,
+            "wall_s": _series_xy(series, name, "wall_s")[1],
+        }
+    # direct labels at the right end, pushed apart when the two ceilings end close together
+    ceiling_ends.sort()
+    offsets = [0.0] * len(ceiling_ends)
+    if (
+        len(ceiling_ends) == 2
+        and abs(math.log(ceiling_ends[1][0] / ceiling_ends[0][0])) < 0.3
+    ):
+        offsets = [-11.0, 11.0]
+    for (y, b, label), dy in zip(ceiling_ends, offsets):
         ax1.annotate(
-            label,
-            (bs[-1], ys[-1]),
-            xytext=(6, 0),
+            "\n".join(textwrap.wrap(label, 30)),
+            (b, y),
+            xytext=(6, dy),
             textcoords="offset points",
             fontsize=7.5,
             color=INK_SOFT,
             va="center",
         )
-        data["series"][name] = {
-            "label": label,
-            "batch": bs,
-            "tok_per_s": ys,
-            "wall_s": [series[name][b]["wall_s"] for b in bs],
-        }
     for name, (label, color, marker) in SERIES_STYLE.items():
         if name not in series:
             continue
-        bs = sorted(series[name])
-        ys = [series[name][b]["tok_per_s"] for b in bs]
+        bs, ys = _series_xy(series, name, "tok_per_s")
         ax1.plot(
             bs,
             ys,
@@ -124,7 +139,7 @@ def plot_model(
             "label": label,
             "batch": bs,
             "tok_per_s": ys,
-            "wall_s": [series[name][b]["wall_s"] for b in bs],
+            "wall_s": _series_xy(series, name, "wall_s")[1],
         }
     ax1.set_xscale("log", base=2)
     ax1.set_yscale("log")
@@ -146,10 +161,9 @@ def plot_model(
         color=INK,
         loc="left",
     )
-    ax1.legend(frameon=False, fontsize=8.2, loc="upper left")
     _style_axes(ax1)
     ax1.margins(x=0.08)
-    ax1.set_xlim(right=ax1.get_xlim()[1] * 2.6)  # room for the ceiling labels
+    ax1.set_xlim(right=ax1.get_xlim()[1] * 2.8)  # room for the ceiling labels
 
     # --- panel 2: speedup vs stock -------------------------------------
     ax2.axhline(1.0, color="#c3c2b7", lw=1.2, zorder=1)
@@ -178,7 +192,6 @@ def plot_model(
             ms=6,
             mec="white",
             mew=1.2,
-            label=label,
             zorder=3,
         )
         if name == "fork_graphs":  # direct labels on the headline series only
@@ -203,33 +216,47 @@ def plot_model(
     ax2.set_title(
         "Speedup over stock vllm-lens 1.1.0", fontsize=10.5, color=INK, loc="left"
     )
-    ax2.legend(frameon=False, fontsize=8.2, loc="upper left")
     _style_axes(ax2)
     ax2.margins(x=0.08)
 
-    best = max((max(v.values()) for v in speed.values() if v), default=0)
-    lo = min(
-        (min(v.values()) for k, v in speed.items() if v and k == "fork_graphs"),
-        default=0,
+    # --- title (the claim), subtitle (the experiment), one shared legend ------
+    fork_names = [
+        k for k in ("fork_indexed", "fork_vectorized", "fork_graphs") if speed.get(k)
+    ]
+    best = max((max(speed[k].values()) for k in fork_names), default=0)
+    lo = min(speed["fork_graphs"].values()) if speed.get("fork_graphs") else 0
+    title = (
+        f"{model} on 1× {gpu}: one steering vector per request (RL-rollout style) runs {lo:.0f}–{best:.0f}× "
+        f"faster than stock vllm-lens 1.1.0 with the indexed hook, vectorised injection and CUDA graphs"
     )
     fig.suptitle(
-        f"{title_prefix}{model} on 1× {gpu}: one steering vector per request (RL-rollout style) runs "
-        f"{lo:.0f}–{best:.0f}× faster than stock vllm-lens 1.1.0 with the indexed hook, vectorised injection and CUDA graphs",
-        fontsize=11.5,
+        "\n".join(textwrap.wrap(title, 118)),
+        fontsize=11,
         color=INK,
         x=0.01,
         ha="left",
-        y=1.0,
+        y=0.995,
+        va="top",
     )
     fig.text(
         0.01,
-        0.94,
+        0.905,
         f"{P}-token prompt, {T} new tokens per request, bf16, one steering vector per request "
         f"(layer 1, one prompt position, distinct random unit vector per request). Ceilings = the same vLLM without any steering.",
         fontsize=8.5,
         color=INK_SOFT,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    handles, labels = ax1.get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=2,
+        frameon=False,
+        fontsize=8.5,
+        bbox_to_anchor=(0.5, 0.0),
+    )
+    fig.tight_layout(rect=(0, 0.09, 1, 0.885))
     out_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_dir / f"{stem}.png", dpi=170, facecolor="white")
     fig.savefig(out_dir / f"{stem}.pdf", facecolor="white")
@@ -249,7 +276,7 @@ def main():
     summary = summarize(load_dir(d))
     for i, (model, table) in enumerate(summary["tables"].items()):
         stem = a.stem if i == 0 else f"{a.stem}_{model.split('/')[-1].lower()}"
-        plot_model(model, table, out_dir, stem, "")
+        plot_model(model, table, out_dir, stem)
         print("wrote", out_dir / f"{stem}.png")
 
 

@@ -294,7 +294,7 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
 def load_dir(d: Path) -> dict:
     all_results: dict = {}
     for f in sorted(d.glob("*__*__*.json")):
-        mtag, variant, engine = f.stem.split("__")
+        mtag, variant, engine = f.stem.rsplit("__", 2)  # model tag itself contains "__"
         all_results.setdefault(mtag.replace("__", "/"), {}).setdefault(variant, {})[
             engine
         ] = json.loads(f.read_text())

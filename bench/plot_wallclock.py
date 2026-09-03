@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 
 HERE = Path(__file__).parent
 SERIES = [  # key, legend label, color, marker  (CUDA-graph mode is the default vllm-metamodel)
-    ("stock_eager", "vllm-lens 1.1.0", "#2a78d6", "o"),
+    ("stock_eager", "vllm-lens", "#2a78d6", "o"),
     ("fork_vectorized", "vllm-metamodel (eager)", "#eb6834", "s"),
-    ("fork_graphs", "vllm-metamodel", "#1baf7a", "D"),
+    ("fork_graphs", "vllm-metamodel (cuda graphs)", "#1baf7a", "D"),
     ("ceiling_plain", "vLLM, no steering", "#87867F", "^"),
 ]
 TITLE = {"Qwen/Qwen3.6-27B": "Generation performance (Qwen 3.6 27B)", "Qwen/Qwen3-1.7B": "Generation performance (Qwen 3 1.7B)"}

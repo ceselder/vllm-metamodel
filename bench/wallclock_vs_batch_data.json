@@ -1,7 +1,7 @@
 {
  "model": "Qwen/Qwen3.6-27B",
  "series": {
-  "vllm-lens 1.1.0": {
+  "vllm-lens": {
    "batch": [
     8,
     32,
@@ -37,7 +37,7 @@
     21.13875700599999
    ]
   },
-  "vllm-metamodel": {
+  "vllm-metamodel (cuda graphs)": {
    "batch": [
     8,
     32,

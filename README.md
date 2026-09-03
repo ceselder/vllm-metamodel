@@ -1,17 +1,17 @@
 # vllm-metamodel
 
 <p align="center">
-  <img width="300" alt="vllm-metamodel logo" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
+  <img width="260" alt="vllm-metamodel logo" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
+  <img width="560" alt="steering throughput vs batch size" src="https://github.com/user-attachments/assets/9b39dd5c-c870-4b56-86e7-a91bd0ed186e" />
 </p>
 
-**This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) for usage with meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs, it's 3-60× faster than vllm-lens, (depending on batch-size).** 
+**A drop-in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) for meta-model workloads (Activation Oracles, MAEMMs, LoRAcles, NLAs) but 3-59x faster**
 
-Meta-models recquire steering or soft-tokens. Because vllm doesn't support this, we generally use a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a vllm plugin that allows for steering residual stream.
-However, vllm-lens does not go brr. It is ~40x-50x slower than standard vllm.
+Meta-models need you to inject an activation (or soft token) into the model at some position. Because vllm doesn't support this, we generally use a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a vllm plugin that allows for steering residual stream.
 
-vllm-lens is slow because it iterates over every hidden state every single time a token is generated (to check if/intervene on an activation). However, for meta-models, we actually generally only inject once, during prefill. This means you can just inject once during prefill, and sample as normal. Notably, this also makes cuda-graphs not broken!
+However, vllm-lens does not go brr. It is ~40x-50x slower than standard vllm because it does a python for loop over every hidden state to match them via string matching over every single token in the whole batch. and then it does two gpu syncs and then clones every layer's output. It does this every single token, every single time a steering vector is applied. ~~I~~ Fable rewrote the hook to be vectorized and just use a hashmap instead of using a python loop which clones states etc... **Anyway, this makes generation like 40x faster and should just be merged into vllm-lens but whatever**
 
-**Sadly, this also means you cannot use this fork as a faster vllm-lens if your goal is to actually use steering vectors for models. It only really works for steering that only needs to be applied during prefill**
+This change also allows you to use cuda-graphs after prefill, since meda-models generally only inject once at one token index during prefill, we can get near vllm-level performance with them applied for meta-models! yippee!
 
 ```bash
 pip install git+https://github.com/ceselder/vllm-metamodel

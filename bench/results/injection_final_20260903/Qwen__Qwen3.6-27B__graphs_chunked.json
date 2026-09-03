@@ -1,0 +1,281 @@
+{
+ "returncode": 0,
+ "elapsed_s": 43.67161417007446,
+ "log_tail": "13e9', speculative_config=None, tokenizer='/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=112, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [64], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_DECODE_ONLY: (2, 0)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 16, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}\n(EngineCore pid=798) INFO 09-03 19:40:05 [worker_base.py:269] Injected <class 'vllm_lens._worker_ext.HiddenStatesExtension'> into <class 'vllm.v1.worker.gpu_worker.Worker'> for extended collective_rpc calls ['_cuda_graphs_active', '_debug_captured_states_count', '_prepare_vectors', '_refresh_aggregates', '_store', 'clear_captured_states', 'clear_steering_data', 'clear_steering_data_many', 'get_captured_states', 'install_hooks', 'set_steering_block', 'set_steering_data', 'set_steering_data_many', 'set_vectorized', 'steering_stats']\n(EngineCore pid=798) [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.\n(EngineCore pid=798) [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.\n(EngineCore pid=798) INFO 09-03 19:40:05 [registry.py:126] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.\n(EngineCore pid=798) INFO 09-03 19:40:05 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.11.255:40373 backend=nccl\n(EngineCore pid=798) INFO 09-03 19:40:05 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=798) INFO 09-03 19:40:06 [gpu_model_runner.py:4735] Starting to load model /__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9...\n(EngineCore pid=798) INFO 09-03 19:40:06 [cuda.py:390] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention\n(EngineCore pid=798) INFO 09-03 19:40:06 [mm_encoder_attention.py:230] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.\n(EngineCore pid=798) INFO 09-03 19:40:07 [gdn_linear_attn.py:147] Using Triton/FLA GDN prefill kernel\n(EngineCore pid=798) INFO 09-03 19:40:07 [cuda.py:274] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=798) INFO 09-03 19:40:12 [default_loader.py:384] Loading weights took 4.97 seconds\n(EngineCore pid=798) INFO 09-03 19:40:13 [gpu_model_runner.py:4820] Model loading took 50.22 GiB memory and 5.463155 seconds\n(EngineCore pid=798) INFO 09-03 19:40:19 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=16\n(EngineCore pid=798) INFO 09-03 19:40:19 [gpu_model_runner.py:5876] Profiling CUDA graph memory: FULL=5 (largest=16)\n(EngineCore pid=798) INFO 09-03 19:40:21 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.05 GiB total\n(EngineCore pid=798) INFO 09-03 19:40:22 [gpu_worker.py:436] Available KV cache memory: 101.06 GiB\n(EngineCore pid=798) INFO 09-03 19:40:22 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.8500 to 0.8503 to maintain the same effective KV cache size.\n(EngineCore pid=798) INFO 09-03 19:40:22 [kv_cache_utils.py:1319] GPU KV cache size: 59,136 tokens\n(EngineCore pid=798) INFO 09-03 19:40:22 [kv_cache_utils.py:1324] Maximum concurrency for 112 tokens per request: 528.00x\n(EngineCore pid=798) INFO 09-03 19:40:24 [gpu_model_runner.py:6046] Graph capturing finished in 2 secs, took 0.06 GiB\n(EngineCore pid=798) INFO 09-03 19:40:24 [gpu_worker.py:597] CUDA graph pool memory: 0.06 GiB (actual), 0.05 GiB (estimated), difference: 0.0 GiB (3.4%).\n(EngineCore pid=798) INFO 09-03 19:40:24 [core.py:283] init engine (profile, create kv cache, warmup model) took 10.94 seconds\n(EngineCore pid=798) INFO 09-03 19:40:24 [vllm.py:790] Asynchronous scheduling is enabled.\n(EngineCore pid=798) WARNING 09-03 19:40:24 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=798) INFO 09-03 19:40:24 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant\n[inj 19:40:24] engine up 29s vllm=0.19.0 vllm-lens=1.1.0.post2 {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'n_capture_sizes': 5, 'max_num_batched_tokens': 64, 'max_num_seqs': 16, 'num_layers': 64}\n[inj 19:40:24] D=5120 |embed[M]|=0.969 |h_L[M]|=13.189\n[inj 19:40:24]   [PASS] probe: embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)  rel=0.00e+00\n[inj 19:40:24]   [PASS] probe: clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)  rel=2.29e-04 |h|_vllm=13.189 |h|_hf=13.191\n[inj 19:40:24]   [PASS] probe: capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:40:27]   [PASS] chunked_m10_karvonen_add: B=16 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9999,1.0001] over 16 requests\n[inj 19:40:27]   [PASS] chunked_m10_karvonen_add: B=16 coeff=1.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:40:27]   [PASS] chunked_m10_karvonen_add: B=16 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 16, \"vectorized_layer_steps\": 16, \"rows_steered\": 16, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:40:28]   [PASS] chunked_m10_embed_replace: B=16 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=5.26e-03 min cos=0.999998 over 16 requests\n[inj 19:40:28]   [PASS] chunked_m10_embed_replace: B=16 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:40:28]   [PASS] chunked_m10_embed_replace: B=16 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22655.938e+00\n[inj 19:40:28]   [PASS] chunked_m10_embed_replace: B=16 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 16, \"embed_apply_steps\": 16, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:40:28]   [PASS] chunked: marker 10 (FIRST 64-token chunk of a 96-token prompt): prefill really was chunked (planned passes \u2265 12 for 16\u00d796 tokens), injection landed exactly once  planned passes: add=24 embed=24; rows_steered=16 rows_replaced=16\n[inj 19:40:30]   [PASS] chunked_m70_karvonen_add: B=16 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9998,1.0001] over 16 requests\n[inj 19:40:30]   [PASS] chunked_m70_karvonen_add: B=16 coeff=1.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:40:30]   [PASS] chunked_m70_karvonen_add: B=16 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 16, \"vectorized_layer_steps\": 16, \"rows_steered\": 16, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:40:31]   [PASS] chunked_m70_embed_replace: B=16 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=5.26e-03 min cos=0.999998 over 16 requests\n[inj 19:40:31]   [PASS] chunked_m70_embed_replace: B=16 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:40:31]   [PASS] chunked_m70_embed_replace: B=16 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22653.938e+00\n[inj 19:40:31]   [PASS] chunked_m70_embed_replace: B=16 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 16, \"embed_apply_steps\": 16, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:40:31]   [PASS] chunked: marker 70 (NON-first 64-token chunk of a 96-token prompt): prefill really was chunked (planned passes \u2265 12 for 16\u00d796 tokens), injection landed exactly once  planned passes: add=24 embed=24; rows_steered=16 rows_replaced=16\n[inj 19:40:31] chunked engine done: 19/19 checks pass\n(EngineCore pid=798) INFO 09-03 19:40:31 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=798) INFO 09-03 19:40:31 [core.py:1233] Shutdown complete\n\n--- stderr ---\n[transformers] `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.\n(EngineCore pid=798) [transformers] `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:   0% Completed | 0/15 [00:00<?, ?it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:   7% Completed | 1/15 [00:00<00:04,  3.05it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  13% Completed | 2/15 [00:00<00:04,  2.83it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  20% Completed | 3/15 [00:01<00:04,  2.82it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  27% Completed | 4/15 [00:01<00:03,  2.83it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  33% Completed | 5/15 [00:01<00:03,  2.86it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  40% Completed | 6/15 [00:02<00:03,  2.82it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  47% Completed | 7/15 [00:02<00:02,  2.89it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  53% Completed | 8/15 [00:02<00:02,  2.98it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  60% Completed | 9/15 [00:03<00:02,  2.87it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  67% Completed | 10/15 [00:03<00:01,  2.80it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  73% Completed | 11/15 [00:03<00:01,  2.87it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  80% Completed | 12/15 [00:04<00:01,  2.84it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  87% Completed | 13/15 [00:04<00:00,  2.95it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards:  93% Completed | 14/15 [00:04<00:00,  2.92it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:04<00:00,  3.71it/s]\n(EngineCore pid=798) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:04<00:00,  3.03it/s]\n(EngineCore pid=798) \n(EngineCore pid=798) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (16) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=798)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=798) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (32) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=798)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=798) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (16) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=798)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=798) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (32) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=798)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=798) 2026-09-03 19:40:22,448 - INFO - autotuner.py:262 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=798) 2026-09-03 19:40:22,474 - INFO - autotuner.py:268 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=798) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/5 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):  20%|\u2588\u2588        | 1/5 [00:00<00:00,  6.22it/s]\nCapturing CUDA graphs (decode, FULL):  40%|\u2588\u2588\u2588\u2588      | 2/5 [00:00<00:00,  6.54it/s]\nCapturing CUDA graphs (decode, FULL):  80%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588  | 4/5 [00:00<00:00, 11.26it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 5/5 [00:00<00:00,  6.97it/s]\n(EngineCore pid=798) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (32) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=798)   return fn(*contiguous_args, **contiguous_kwargs)\n[rank0]:[W903 19:40:31.200281385 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())\n",
+ "result": {
+  "model": "Qwen/Qwen3.6-27B",
+  "engine": "graphs",
+  "chunked": true,
+  "gpu": "NVIDIA B200",
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128",
+   "vllm_lens": "1.1.0.post2"
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "n_capture_sizes": 5,
+   "max_num_batched_tokens": 64,
+   "max_num_seqs": 16,
+   "num_layers": 64
+  },
+  "engine_up_s": 29.183302576000017,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "layer": 1,
+  "hf_ref": true,
+  "cases": {
+   "chunked_m10_karvonen_add": [
+    {
+     "batch": 16,
+     "coeff": 1.0,
+     "n_checked": 16,
+     "min_cos_delta_vs_v": 0.9999891519546509,
+     "max_abs_ratio_minus_1": 0.00013971328735351562,
+     "ratios": [
+      0.9999611973762512,
+      0.9999321103096008,
+      1.0001211166381836,
+      1.0000088214874268,
+      1.0000604391098022,
+      0.9999396800994873,
+      1.0001397132873535,
+      0.9999902844429016
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 24,
+      "steps_idle": 0,
+      "steer_layer_steps": 16,
+      "vectorized_layer_steps": 16,
+      "rows_steered": 16,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "chunked_m10_embed_replace": [
+    {
+     "n_checked": 16,
+     "scale": 0.9689575433731079,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.005263157894736842,
+     "min_cos_marker_row": 0.999997615814209,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 5.9375,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 3.4375,
+     "batch": 16,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 24,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 16,
+      "embed_apply_steps": 16,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "chunked_m70_karvonen_add": [
+    {
+     "batch": 16,
+     "coeff": 1.0,
+     "n_checked": 16,
+     "min_cos_delta_vs_v": 0.9999919533729553,
+     "max_abs_ratio_minus_1": 0.0002346038818359375,
+     "ratios": [
+      0.9998762011528015,
+      0.9999405741691589,
+      0.9999294877052307,
+      1.0000733137130737,
+      0.9999985098838806,
+      1.0000636577606201,
+      0.9997653961181641,
+      0.9999500513076782
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 24,
+      "steps_idle": 0,
+      "steer_layer_steps": 16,
+      "vectorized_layer_steps": 16,
+      "rows_steered": 16,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "chunked_m70_embed_replace": [
+    {
+     "n_checked": 16,
+     "scale": 0.9689575433731079,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.005263157894736842,
+     "min_cos_marker_row": 0.999997615814209,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 3.9375,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.6875,
+     "batch": 16,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 24,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 16,
+      "embed_apply_steps": 16,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ]
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)",
+    "ok": true,
+    "detail": "rel=0.00e+00"
+   },
+   {
+    "case": "probe",
+    "check": "clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)",
+    "ok": true,
+    "detail": "rel=2.29e-04 |h|_vllm=13.189 |h|_hf=13.191"
+   },
+   {
+    "case": "probe",
+    "check": "capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "chunked_m10_karvonen_add",
+    "check": "B=16 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9999,1.0001] over 16 requests"
+   },
+   {
+    "case": "chunked_m10_karvonen_add",
+    "check": "B=16 coeff=1.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "chunked_m10_karvonen_add",
+    "check": "B=16 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 16, \"vectorized_layer_steps\": 16, \"rows_steered\": 16, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "chunked_m10_embed_replace",
+    "check": "B=16 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=5.26e-03 min cos=0.999998 over 16 requests"
+   },
+   {
+    "case": "chunked_m10_embed_replace",
+    "check": "B=16 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "chunked_m10_embed_replace",
+    "check": "B=16 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22655.938e+00"
+   },
+   {
+    "case": "chunked_m10_embed_replace",
+    "check": "B=16 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 16, \"embed_apply_steps\": 16, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "chunked",
+    "check": "marker 10 (FIRST 64-token chunk of a 96-token prompt): prefill really was chunked (planned passes \u2265 12 for 16\u00d796 tokens), injection landed exactly once",
+    "ok": true,
+    "detail": "planned passes: add=24 embed=24; rows_steered=16 rows_replaced=16"
+   },
+   {
+    "case": "chunked_m70_karvonen_add",
+    "check": "B=16 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0001] over 16 requests"
+   },
+   {
+    "case": "chunked_m70_karvonen_add",
+    "check": "B=16 coeff=1.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "chunked_m70_karvonen_add",
+    "check": "B=16 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 16, \"vectorized_layer_steps\": 16, \"rows_steered\": 16, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "chunked_m70_embed_replace",
+    "check": "B=16 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=5.26e-03 min cos=0.999998 over 16 requests"
+   },
+   {
+    "case": "chunked_m70_embed_replace",
+    "check": "B=16 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "chunked_m70_embed_replace",
+    "check": "B=16 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22653.938e+00"
+   },
+   {
+    "case": "chunked_m70_embed_replace",
+    "check": "B=16 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 24, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 16, \"embed_apply_steps\": 16, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "chunked",
+    "check": "marker 70 (NON-first 64-token chunk of a 96-token prompt): prefill really was chunked (planned passes \u2265 12 for 16\u00d796 tokens), injection landed exactly once",
+    "ok": true,
+    "detail": "planned passes: add=24 embed=24; rows_steered=16 rows_replaced=16"
+   }
+  ],
+  "hidden_dim": 5120,
+  "embed_marker_norm": 0.9689575433731079,
+  "h_full_marker_norm_layer_L": 13.188994407653809,
+  "markers": [
+   10,
+   70
+  ],
+  "all_pass": true,
+  "source": "injection_20260903_193244/Qwen__Qwen3.6-27B__graphs_chunked.json"
+ }
+}

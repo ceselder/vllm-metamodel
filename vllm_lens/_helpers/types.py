@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import torch
 from pydantic import (
@@ -14,6 +14,14 @@ from pydantic import (
 )
 
 from vllm_lens._helpers._serialize import deserialize_tensor, serialize_tensor
+
+EMBED_LAYER_INDEX = -1
+"""Sentinel ``layer_indices`` value: target the EMBEDDING stream (the hidden
+states entering decoder layer 0) instead of a decoder layer's output.  See
+``SteeringVector.mode`` — embedding replacement is the injection for
+NLA-style metamodels and for hyper-connection architectures (DeepSeek-V4)
+where decoder-layer outputs are multi-stream tuples.  Applied during prefill
+only, keeping decode-only CUDA graphs legal."""
 
 
 class SteeringVector(BaseModel):
@@ -51,12 +59,32 @@ class SteeringVector(BaseModel):
     """Scalar multiplier applied to the steering vector before addition."""
 
     norm_match: bool = False
-    """If True, rescale the modified hidden state to preserve the original
-    per-token L2 norm."""
+    """If True, scale the steering vector so the added magnitude equals the
+    residual stream's per-token L2 norm (times ``scale``):
+    ``h' = h + scale · ‖h‖ · v/‖v‖`` -- the Activation Oracles injection.
+    Does NOT renormalize ``h'`` back to ``‖h‖``.  ``‖h‖`` is the norm of the
+    FULL residual stream at that position (on fused-residual architectures
+    the layer's ``hidden_states + residual``, not the ``hidden_states`` half
+    alone -- upstream #7, ported in vllm-metamodel 1.1.0.post2; 1.1.0 used
+    the half and under-injected by ~8x on Qwen-style models).  With
+    ``mode="replace"``: ``h' = scale · ‖h‖ · v/‖v‖``."""
 
     position_indices: list[int] | None = None
     """Absolute token positions for 3D activations.  ``None`` means broadcast
     (2D) or sequential ``0..n_positions-1`` (3D)."""
+
+    mode: Literal["add", "replace"] = "add"
+    """``"add"`` (default) adds ``scale * v`` to the hidden state.
+    ``"replace"`` OVERWRITES the hidden row with ``scale * v`` (or, with
+    ``norm_match=True``, ``scale * ‖h_orig‖ · v/‖v‖``).  Replacement is the
+    injection used by NLA-style metamodels ("replace the marker token's
+    embedding with α·v/‖v‖") and is the only well-defined injection on
+    architectures whose decoder-layer outputs are not a single residual
+    tensor (e.g. hyper-connection / multi-stream models like DeepSeek-V4) —
+    target the embedding stream via ``EMBED_LAYER_INDEX`` there.  On a
+    regular layer of a fused-residual model the FULL stream is replaced
+    (both the ``hidden_states`` and the ``residual`` half are rewritten).
+    Requires 3D (position-specific) activations."""
 
     @field_validator("activations", mode="before")
     @classmethod
@@ -86,6 +114,11 @@ class SteeringVector(BaseModel):
             raise ValueError(
                 f"activations dim 0 ({self.activations.shape[0]}) must match "
                 f"len(layer_indices) ({len(self.layer_indices)})"
+            )
+        if self.mode == "replace" and self.activations.dim() != 3:
+            raise ValueError(
+                "mode='replace' requires 3D (position-specific) activations — "
+                "broadcast replacement would overwrite every token"
             )
         return self
 

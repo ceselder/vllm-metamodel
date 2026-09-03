@@ -15,7 +15,12 @@ key), plans each forward pass once from host-side buffers (no device
 syncs), skips passes / layers with nothing to do, applies a layer's
 vectors with one ``index_add_``, and can run with CUDA graphs for decode
 (``VLLM_LENS_CUDA_GRAPHS=1``, prompt-position steering only).  The
-steering arithmetic (``norm_match``, ``_apply_steering``) is unchanged.
+steering arithmetic is upstream's, with one deliberate change ported from
+upstream 1.2.0 (#7): on fused-residual layers ``norm_match`` scales to the
+norm of the FULL residual stream ``hidden_states + residual`` (see
+``_apply_steering``).  ``mode="replace"`` and ``EMBED_LAYER_INDEX`` (the
+embedding stream entering layer 0, applied in the layer-0 pre-hook) are
+fork additions.
 """
 
 from __future__ import annotations
@@ -108,6 +113,8 @@ _VEC_MAX_ENTRIES_PER_ROW = 4
 _NO_POS = 1 << 62
 _TRUTHY = ("1", "true", "yes", "on")
 
+from vllm_lens._helpers.types import EMBED_LAYER_INDEX  # noqa: E402  (sentinel)
+
 
 @dataclass(slots=True)
 class _SteerEntry:
@@ -124,14 +131,20 @@ class _SteerEntry:
     """Highest absolute position any 3-D config can touch (-1 if none)."""
     seq: int
     """Insertion order, so multi-key matches keep the 1.1.0 (dict-order) ordering."""
+    replace_layers: frozenset[int] = frozenset()
+    """Layers at which some config uses ``mode="replace"`` (needs the residual
+    half cloned on fused-residual layers)."""
 
 
 def _index_configs(configs: list[SteeringVector], seq: int) -> _SteerEntry:
     layers: set[int] = set()
+    replace_layers: set[int] = set()
     broadcast = False
     min_pos, max_pos = _NO_POS, -1
     for cfg in configs:
         layers.update(cfg.layer_indices)
+        if cfg.mode == "replace":
+            replace_layers.update(cfg.layer_indices)
         if cfg.activations.dim() == 2:
             broadcast = True
             continue
@@ -144,7 +157,15 @@ def _index_configs(configs: list[SteeringVector], seq: int) -> _SteerEntry:
         )
         if pos:
             min_pos, max_pos = min(min_pos, min(pos)), max(max_pos, max(pos))
-    return _SteerEntry(configs, frozenset(layers), broadcast, min_pos, max_pos, seq)
+    return _SteerEntry(
+        configs,
+        frozenset(layers),
+        broadcast,
+        min_pos,
+        max_pos,
+        seq,
+        frozenset(replace_layers),
+    )
 
 
 def _prefix_keys(internal_req_id: str) -> Iterator[str]:
@@ -207,6 +228,7 @@ class _ReqPlan:
     """Layer set when ``output_residual_stream`` is a list, else None (= all layers)."""
     num_prompt: int
     """Prompt length; rows at/after it are generated positions."""
+    replace_layers: frozenset[int] = frozenset()
 
 
 @dataclass(slots=True)
@@ -224,6 +246,8 @@ class _StepPlan:
     cap_all: list[int] = field(default_factory=list)
     cap_by_layer: dict[int, list[int]] = field(default_factory=dict)
     ctx_id: int = 0
+    replace_layers: set[int] = field(default_factory=set)
+    """Layers where some scheduled row uses ``mode="replace"`` this pass."""
 
     def capture_rows(self, layer_idx: int) -> list[int]:
         rows = self.cap_by_layer.get(layer_idx)
@@ -276,11 +300,13 @@ def _resolve_request(
     entries = _resolve_entries(extension, req_id, extra)
     configs: list[SteeringVector] = []
     layers: set[int] = set()
+    replace_layers: set[int] = set()
     broadcast = False
     min_pos, max_pos = _NO_POS, -1
     for e in entries:
         configs.extend(e.configs)
         layers.update(e.layers)
+        replace_layers.update(e.replace_layers)
         broadcast |= e.broadcast
         min_pos, max_pos = min(min_pos, e.min_pos), max(max_pos, e.max_pos)
     cap = extra.get("output_residual_stream") if extra else None
@@ -299,6 +325,7 @@ def _resolve_request(
         cap_any=cap is not None,
         cap_set=frozenset(cap) if isinstance(cap, list) else None,
         num_prompt=int(num_prompt),
+        replace_layers=frozenset(replace_layers),
     )
 
 
@@ -340,6 +367,7 @@ def _build_step_plan(
     stats = extension._stats
 
     steer: dict[int, list[tuple[int, list[SteeringVector]]]] = {}
+    replace_layers: set[int] = set()
     cap_all: list[int] = []
     cap_by_layer: dict[int, list[int]] = {}
     for i in range(num_reqs):
@@ -364,6 +392,8 @@ def _build_step_plan(
         ):
             for layer_idx in plan.layers:
                 steer.setdefault(layer_idx, []).append((i, plan.configs))
+            if plan.replace_layers:
+                replace_layers.update(plan.replace_layers)
         if plan.cap_any and should_capture:
             if plan.cap_set is None:
                 cap_all.append(i)
@@ -380,7 +410,9 @@ def _build_step_plan(
     stats["steps_planned"] += 1
     if not steer and not cap_all and not cap_by_layer:
         stats["steps_idle"] += 1
-    return _StepPlan(qsl, abs_start, steer, cap_all, cap_by_layer, id(ctx))
+    return _StepPlan(
+        qsl, abs_start, steer, cap_all, cap_by_layer, id(ctx), replace_layers
+    )
 
 
 def _step_is_idle(extension: HiddenStatesExtension, runner: Any, num_reqs: int) -> bool:
@@ -438,12 +470,31 @@ def _apply_steering(
     start: int,
     end: int,
     abs_start: int,
+    residual: torch.Tensor | None,
 ) -> None:
     """Apply all matching steering vectors to a token slice *in-place*.
 
     ``target`` is the (already-cloned) output tensor.  ``start``/``end``
     are batch-relative indices, ``abs_start`` is the absolute sequence
     position of the first token in ``target[start:end]``.
+
+    ``residual`` is the second half of a fused-residual layer output (Qwen,
+    Llama, Gemma, ...: the layer returns ``(hidden_states, residual)`` and
+    the TRUE residual stream is ``hidden_states + residual``), or ``None``
+    for layers that return the stream as one tensor (and for the embedding
+    stream).  Ported from upstream 1.2.0 (#7): ``norm_match`` scales to the
+    norm of the full stream ``target + residual`` -- 1.1.0 used ``target``
+    alone, i.e. the MLP-delta half, so the injected magnitude on
+    fused-residual models was ``scale · ‖hidden_states‖`` instead of
+    ``scale · ‖h‖`` (a ratio of ~0.12 on Qwen3.6-27B layer 1).  With the
+    port, ``SteeringVector(norm_match=True, scale=c)`` is exactly the
+    activation-oracle injection ``h' = h + c · ‖h‖ · v/‖v‖``.
+    ``mode="replace"`` on a fused layer overwrites BOTH halves (``target[rel]
+    = scale·v``, ``residual[rel] = 0``) so the full stream equals ``scale·v``
+    exactly; the caller must therefore pass a *cloned* residual whenever a
+    replace config is present (see ``_hook_inner``).  Required (no default)
+    so a forgotten reference fails at the call instead of silently scaling to
+    the MLP-delta-half norm.
     """
     n_tokens = end - start
     for cfg in configs:
@@ -456,7 +507,10 @@ def _apply_steering(
             # 2D: broadcast to all positions
             v = vec.unsqueeze(0)
             if cfg.norm_match:
-                v = norm_match(target[start:end], v)
+                ref = target[start:end]
+                if residual is not None:
+                    ref = ref + residual[start:end]
+                v = norm_match(ref, v)
             target[start:end] = target[start:end] + v * cfg.scale
         else:
             # 3D: position-specific
@@ -474,8 +528,16 @@ def _apply_steering(
                 rel = abs_pos - abs_start + start
                 v = vec[pi]
                 if cfg.norm_match:
-                    v = norm_match(target[rel], v)
-                target[rel] = target[rel] + v * cfg.scale
+                    ref = target[rel]
+                    if residual is not None:
+                        ref = ref + residual[rel]
+                    v = norm_match(ref, v)
+                if cfg.mode == "replace":
+                    target[rel] = v * cfg.scale
+                    if residual is not None:
+                        residual[rel] = 0
+                else:
+                    target[rel] = target[rel] + v * cfg.scale
 
 
 def _apply_layer_vectorized(
@@ -483,24 +545,29 @@ def _apply_layer_vectorized(
     layer_idx: int,
     target: torch.Tensor,
     plan: _StepPlan,
+    residual: torch.Tensor | None,
 ) -> bool:
     """vllm-lens-metamodel: apply every (row, vector) pair of this layer/pass at once.
 
     Gathers the vectors ``_apply_steering`` would add into one ``[n, hidden]``
     tensor and adds them with a single ``index_add_`` (norm-matching in the
-    same batched op).  Returns False without touching ``target`` when the
+    same batched op); ``mode="replace"`` rows go through one ``index_copy_``
+    (plus ``index_fill_(0)`` on the fused ``residual`` half, see
+    ``_apply_steering``).  Returns False without touching ``target`` when the
     batch is not vectorisable with identical semantics -- a row would receive
     several vectors, or a broadcast vector covers a multi-token chunk -- so
     the caller runs ``_apply_steering`` row by row.  With ``norm_match=False``
     the result is bit-identical to the sequential path (one multiply and one
     add per element, same dtype); with ``norm_match=True`` the per-row norms
-    come from a batched reduction and may differ by float32 rounding.
+    (of the FULL residual stream ``target + residual``) come from a batched
+    reduction and may differ by float32 rounding.
     """
     qsl, abs_start = plan.qsl, plan.abs_start
     rows: list[int] = []
     vecs: list[torch.Tensor] = []
     scales: list[float] = []
     nms: list[bool] = []
+    reps: list[bool] = []
     limit = _VEC_MAX_ENTRIES_PER_ROW * len(todo) + 64
     for i, configs in todo:
         start, end, a0 = qsl[i], qsl[i + 1], abs_start[i]
@@ -509,6 +576,7 @@ def _apply_layer_vectorized(
             layer_index_map = cfg.layer_index_map
             if layer_idx not in layer_index_map:
                 continue
+            is_replace = cfg.mode == "replace"
             vec = cfg.activations[layer_index_map[layer_idx]]
             if vec.dim() == 1:
                 if n_tokens != 1:
@@ -531,9 +599,11 @@ def _apply_layer_vectorized(
                         continue
                     scales.append(cfg.scale)
                     nms.append(cfg.norm_match)
+                    reps.append(is_replace)
                 continue
             scales.append(cfg.scale)
             nms.append(cfg.norm_match)
+            reps.append(is_replace)
         if len(rows) > limit:
             return False
     if not rows:
@@ -545,7 +615,10 @@ def _apply_layer_vectorized(
     idx = torch.tensor(rows, dtype=torch.long, device=device)
     v = torch.stack(vecs).to(target.dtype)
     if any(nms):
-        r_norm = target.index_select(0, idx).float().norm(dim=-1, keepdim=True)
+        ref = target.index_select(0, idx)
+        if residual is not None:  # fused-residual layer: norm of the FULL stream
+            ref = ref + residual.index_select(0, idx)
+        r_norm = ref.float().norm(dim=-1, keepdim=True)
         v_norm = v.float().norm(dim=-1, keepdim=True)
         matched = (v * (r_norm / (v_norm + 1e-6))).to(target.dtype)
         if all(nms):
@@ -559,8 +632,152 @@ def _apply_layer_vectorized(
         v = (v.float() * torch.tensor(scales, device=device).unsqueeze(1)).to(
             target.dtype
         )
-    target.index_add_(0, idx, v)
+    if not any(reps):
+        target.index_add_(0, idx, v)
+        return True
+    if all(reps):
+        rep_idx, rep_v = idx, v
+    else:
+        mask = torch.tensor(reps, device=device)
+        rep_idx, rep_v = idx[mask], v[mask]
+        target.index_add_(0, idx[~mask], v[~mask])
+    target.index_copy_(0, rep_idx, rep_v)
+    if residual is not None:
+        residual.index_fill_(0, rep_idx, 0)
     return True
+
+
+class EmbedInjectionError(RuntimeError):
+    """``EMBED_LAYER_INDEX`` steering could not be applied on this pass.
+
+    Raised (not warned) out of the layer-0 pre-hook: silently skipping the
+    injection is the worst possible failure mode for a training run.
+    """
+
+
+def _find_hidden_states_arg(
+    args: tuple, kwargs: dict[str, Any] | None, total_tokens: int
+) -> torch.Tensor:
+    """Locate the hidden states entering decoder layer 0 among the layer's
+    positional AND keyword inputs.
+
+    vLLM model code is inconsistent: ``Qwen2Model``/``LlamaModel`` call
+    ``layer(positions, hidden_states, residual)`` positionally while
+    ``Qwen3NextModel`` (Qwen3.5 / Qwen3.6) calls ``layer(positions=...,
+    hidden_states=..., residual=...)`` by keyword, so both must be searched.
+    A candidate is a 2-D floating tensor whose dim 0 covers this pass's
+    scheduled tokens (``>=``: vLLM may pad the token dim for sequence
+    parallelism).  At layer 0 ``residual`` is ``None`` on every fused-residual
+    architecture, so exactly one candidate is expected; if several match, a
+    keyword literally named ``hidden_states`` wins; anything else raises
+    :class:`EmbedInjectionError`.
+    """
+    cands: list[tuple[str, torch.Tensor]] = []
+    for i, a in enumerate(args):
+        if _is_hidden_candidate(a, total_tokens):
+            cands.append((f"args[{i}]", a))
+    for k, a in (kwargs or {}).items():
+        if _is_hidden_candidate(a, total_tokens):
+            cands.append((k, a))
+    if len(cands) == 1:
+        return cands[0][1]
+    named = [t for k, t in cands if k == "hidden_states"]
+    if len(cands) > 1 and len(named) == 1:
+        return named[0]
+    seen = [
+        f"{'kw:' if k in (kwargs or {}) else ''}{k}={tuple(a.shape)}/{a.dtype}"
+        if isinstance(a, torch.Tensor)
+        else f"{k}={type(a).__name__}"
+        for k, a in [*((f"args[{i}]", a) for i, a in enumerate(args)), *(kwargs or {}).items()]
+    ]
+    raise EmbedInjectionError(
+        f"vllm-lens: EMBED_LAYER_INDEX steering needs exactly one "
+        f"[>= {total_tokens} tokens, hidden] floating input on decoder layer 0, "
+        f"found {len(cands)} candidate(s) {[k for k, _ in cands]} among layer "
+        f"inputs {seen}"
+    )
+
+
+def _is_hidden_candidate(a: Any, total_tokens: int) -> bool:
+    return (
+        isinstance(a, torch.Tensor)
+        and a.dim() == 2
+        and a.is_floating_point()
+        and a.shape[0] >= total_tokens
+    )
+
+
+def _apply_embed(
+    todo: list[tuple[int, list[SteeringVector]]],
+    target: torch.Tensor,
+    plan: _StepPlan,
+    stats: dict[str, int],
+) -> None:
+    """Apply EMBED_LAYER_INDEX configs to the embedding stream *in place*.
+
+    Vectorised: one ``index_copy_`` for all replace rows and one
+    ``index_add_`` for all add rows.  Rows are prompt positions resolved
+    against this pass's chunk offsets, so chunked prefill is handled and
+    decode rows are never touched (their absolute positions lie past every
+    registered marker position).
+    """
+    qsl, abs_start = plan.qsl, plan.abs_start
+    rep_rows: list[int] = []
+    rep_vecs: list[torch.Tensor] = []
+    add_rows: list[int] = []
+    add_vecs: list[torch.Tensor] = []
+    for i, configs in todo:
+        start, end, a0 = qsl[i], qsl[i + 1], abs_start[i]
+        n_tokens = end - start
+        for cfg in configs:
+            lim = cfg.layer_index_map
+            if EMBED_LAYER_INDEX not in lim:
+                continue
+            vec = cfg.activations[lim[EMBED_LAYER_INDEX]]
+            if vec.dim() == 1:  # broadcast add over this chunk
+                v = vec.to(target.dtype) * cfg.scale
+                target[start:end] += v
+                continue
+            pos_indices = (
+                cfg.position_indices
+                if cfg.position_indices is not None
+                else range(vec.shape[0])
+            )
+            for pi, abs_pos in enumerate(pos_indices):
+                if pi >= vec.shape[0]:
+                    break
+                if not (a0 <= abs_pos < a0 + n_tokens):
+                    continue
+                rel = abs_pos - a0 + start
+                v = vec[pi]
+                if cfg.norm_match:
+                    v = norm_match(target[rel], v)
+                v = (v.to(target.dtype)) * cfg.scale
+                if cfg.mode == "replace":
+                    rep_rows.append(rel)
+                    rep_vecs.append(v)
+                else:
+                    add_rows.append(rel)
+                    add_vecs.append(v)
+    dev = target.device
+    if rep_rows:
+        if len(set(rep_rows)) != len(rep_rows):
+            for r, v in zip(rep_rows, rep_vecs):  # duplicates: last wins, in order
+                target[r] = v
+        else:
+            target.index_copy_(
+                0, torch.tensor(rep_rows, dtype=torch.long, device=dev),
+                torch.stack(rep_vecs),
+            )
+        stats["rows_replaced"] += len(rep_rows)
+    if add_rows:
+        target.index_add_(
+            0, torch.tensor(add_rows, dtype=torch.long, device=dev),
+            torch.stack(add_vecs),
+        )
+        stats["rows_steered"] += len(add_rows)
+    if rep_rows or add_rows:
+        stats["embed_apply_steps"] += 1
 
 
 def _hook_inner(
@@ -596,17 +813,27 @@ def _hook_inner(
     # --- Phase 2: apply steering ------------------------------------
     modified_output: torch.Tensor | tuple[torch.Tensor, ...] | None = None
     if todo:
+        residual: torch.Tensor | None = None
         if isinstance(output, tuple):
-            modified_output = (output[0].clone(), *output[1:])
-            target = modified_output[0]
+            target = output[0].clone()
+            rest = output[1:]
+            if rest and isinstance(rest[0], torch.Tensor):
+                # Fused-residual layer: the true stream is output[0] + output[1].
+                # norm_match reads it; mode="replace" also zeroes the residual
+                # half, so clone that half only when a replace row is scheduled.
+                residual = rest[0]
+                if layer_idx in plan.replace_layers:
+                    residual = residual.clone()
+                    rest = (residual, *rest[1:])
+            modified_output = (target, *rest)
         else:
-            modified_output = output.clone()
-            target = modified_output
+            target = output.clone()
+            modified_output = target
 
         extension._stats["steer_layer_steps"] += 1
         extension._stats["rows_steered"] += len(todo)
         if extension._vectorized and _apply_layer_vectorized(
-            todo, layer_idx, target, plan
+            todo, layer_idx, target, plan, residual
         ):
             extension._stats["vectorized_layer_steps"] += 1
         else:
@@ -618,6 +845,7 @@ def _hook_inner(
                     query_start_loc[i],
                     query_start_loc[i + 1],
                     plan.abs_start[i],
+                    residual,
                 )
 
     # --- Phase 3: capture activations (rank 0 only) -----------------
@@ -631,25 +859,37 @@ def _hook_inner(
                 hidden_states = capture_src[0]
         else:
             hidden_states = capture_src
-
-        req_ids = runner.input_batch.req_ids
-        for i in cap_rows:
-            req_id = req_ids[i]
-            start = query_start_loc[i]
-            end = query_start_loc[i + 1]
-            # Blocking .cpu() benchmarked faster than non_blocking + event sync
-            activation: Float[torch.Tensor, "seq_len hidden_dim"] = hidden_states[  # type: ignore[reportUndefinedVariable]
-                start:end
-            ].cpu()
-
-            if req_id not in extension._captured_states:
-                extension._captured_states[req_id] = {}
-            layer_states = extension._captured_states[req_id]
-            if layer_idx not in layer_states:
-                layer_states[layer_idx] = []
-            layer_states[layer_idx].append(activation)
+        _capture_rows(extension, runner, layer_idx, hidden_states, query_start_loc, cap_rows)
 
     return modified_output
+
+
+def _capture_rows(
+    extension: HiddenStatesExtension,
+    runner: Any,
+    layer_idx: int,
+    hidden_states: torch.Tensor,
+    query_start_loc: list[int],
+    cap_rows: list[int],
+) -> None:
+    """Copy each capturing row's slice of ``hidden_states`` to the CPU store
+    (``layer_idx`` may be ``EMBED_LAYER_INDEX`` for the embedding stream)."""
+    req_ids = runner.input_batch.req_ids
+    for i in cap_rows:
+        req_id = req_ids[i]
+        start = query_start_loc[i]
+        end = query_start_loc[i + 1]
+        # Blocking .cpu() benchmarked faster than non_blocking + event sync
+        activation: Float[torch.Tensor, "seq_len hidden_dim"] = hidden_states[  # type: ignore[reportUndefinedVariable]
+            start:end
+        ].cpu()
+
+        if req_id not in extension._captured_states:
+            extension._captured_states[req_id] = {}
+        layer_states = extension._captured_states[req_id]
+        if layer_idx not in layer_states:
+            layer_states[layer_idx] = []
+        layer_states[layer_idx].append(activation)
 
 
 def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
@@ -677,16 +917,25 @@ def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
     return hook
 
 
-def _make_pre_hook(extension: HiddenStatesExtension) -> Callable:
-    """vllm-lens-metamodel: pre-hook on this rank's first decoder layer.
+def _make_pre_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
+    """vllm-lens-metamodel: pre-hook on this rank's first decoder layer
+    (registered with ``with_kwargs=True``).
 
     A new forward pass begins: drop the previous pass's plan and decide
     whether this pass is *idle* (``_step_is_idle``), in which case every
     layer hook returns on a single flag check and the pass costs nothing
-    else.
+    else.  Otherwise build the pass's plan here (the layer hooks reuse it)
+    and, when this is GLOBAL layer 0, apply / capture ``EMBED_LAYER_INDEX``
+    configs on the hidden states ENTERING the layer -- the forward hooks only
+    ever see layer OUTPUTS.  Embedding-injection failures are counted AND
+    re-raised (``EmbedInjectionError``): a silently skipped injection would
+    corrupt a training run, so it must be loud.
     """
+    is_layer0 = layer_idx == 0
 
-    def pre_hook(_module: torch.nn.Module, _input: object) -> None:
+    def pre_hook(
+        _module: torch.nn.Module, args: tuple, kwargs: dict[str, Any]
+    ) -> None:
         extension._step_plan = None
         extension._step_idle = False
         try:
@@ -694,13 +943,44 @@ def _make_pre_hook(extension: HiddenStatesExtension) -> Callable:
                 return
             runner = extension.model_runner
             num_reqs = runner.input_batch.num_reqs
-            if num_reqs and _step_is_idle(extension, runner, num_reqs):
+            if not num_reqs:
+                return
+            if _step_is_idle(extension, runner, num_reqs):
                 extension._step_idle = True
                 extension._stats["steps_fast_idle"] += 1
+                return
+            if torch.cuda.is_available() and torch.cuda.is_current_stream_capturing():
+                return  # CUDA-graph capture (dummy inputs): never bake anything in
+            plan = extension._step_plan = _build_step_plan(extension, runner, num_reqs)
         except Exception:
             extension._stats["errors"] += 1
             logger.warning("vllm-lens pre-hook error, running full path", exc_info=True)
             extension._step_idle = False
+            extension._step_plan = None
+            return
+        if plan is None or not is_layer0:
+            return
+        todo = plan.steer.get(EMBED_LAYER_INDEX)
+        cap_rows = plan.cap_by_layer.get(EMBED_LAYER_INDEX)
+        if not todo and not cap_rows:
+            return
+        try:
+            target = _find_hidden_states_arg(args, kwargs, plan.qsl[num_reqs])
+            if todo:
+                _apply_embed(todo, target, plan, extension._stats)
+            if cap_rows:  # post-injection embedding stream, explicit layer -1 only
+                _capture_rows(
+                    extension, runner, EMBED_LAYER_INDEX, target, plan.qsl, cap_rows
+                )
+        except Exception:
+            extension._stats["errors"] += 1
+            extension._stats["embed_errors"] += 1
+            logger.error(
+                "vllm-lens: EMBED_LAYER_INDEX injection failed on layer 0 -- "
+                "raising rather than silently skipping",
+                exc_info=True,
+            )
+            raise
 
     return pre_hook
 
@@ -713,6 +993,9 @@ def _new_stats() -> dict[str, int]:
         "steer_layer_steps": 0,
         "vectorized_layer_steps": 0,
         "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
         "rows_skipped_generated": 0,
         "errors": 0,
     }
@@ -762,6 +1045,7 @@ class HiddenStatesExtension:
     _agg_gen: int = -1
     _agg_broadcast: bool = False
     _agg_max_pos: int = -1
+    _agg_embed: bool = False
     _stats: dict[str, int] = _new_stats()
     _vectorized: bool = True
     _prompt_only: bool = (
@@ -833,7 +1117,11 @@ class HiddenStatesExtension:
             if isinstance(layer, PPMissingLayer):
                 continue
             if first:
-                layer.register_forward_pre_hook(_make_pre_hook(self))
+                # with_kwargs: Qwen3.5/3.6 (Qwen3NextModel) pass hidden_states
+                # by keyword, Qwen2/Llama positionally -- see _find_hidden_states_arg
+                layer.register_forward_pre_hook(
+                    _make_pre_hook(self, layer_idx), with_kwargs=True
+                )
                 first = False
             layer.register_forward_hook(_make_hook(self, layer_idx))
 
@@ -852,9 +1140,10 @@ class HiddenStatesExtension:
         """Per-``_steering_gen`` summary of all keys, for the idle fast path."""
         if self._agg_gen == self._steering_gen:
             return
-        entries = self._steering_index.values()
+        entries = list(self._steering_index.values())
         self._agg_broadcast = any(e.broadcast for e in entries)
         self._agg_max_pos = max((e.max_pos for e in entries), default=-1)
+        self._agg_embed = any(EMBED_LAYER_INDEX in e.layers for e in entries)
         self._agg_gen = self._steering_gen
 
     # ------------------------------------------------------------------
@@ -871,9 +1160,10 @@ class HiddenStatesExtension:
 
         for sv in sv_list:
             for idx in sv.layer_indices:
-                if idx < 0 or idx >= num_layers:
+                if idx != EMBED_LAYER_INDEX and (idx < 0 or idx >= num_layers):
                     raise ValueError(
-                        f"layer_index {idx} out of range [0, {num_layers})"
+                        f"layer_index {idx} out of range [0, {num_layers}) "
+                        f"(or EMBED_LAYER_INDEX={EMBED_LAYER_INDEX})"
                     )
             if self._prompt_only and sv.activations.dim() == 2:
                 raise ValueError(
@@ -929,13 +1219,15 @@ class HiddenStatesExtension:
         ``pickled_data`` is a pickled dict::
 
             {"keys": [str], "vecs": Tensor(n, hidden), "layers": [int],
-             "positions": [int], "scales": [float], "norm_match": [bool]}
+             "positions": [int], "scales": [float], "norm_match": [bool],
+             "modes": [str]}          # optional, default "add"
 
         Key ``i`` behaves exactly like ``set_steering_data(key_i, [SteeringVector(
         activations=vecs[i].view(1, 1, hidden), layer_indices=[layers[i]],
-        scale=scales[i], norm_match=norm_match[i], position_indices=[positions[i]])])``
-        but the whole block is moved to the model device/dtype in one copy and
-        each entry's activations are a view into it.
+        scale=scales[i], norm_match=norm_match[i], position_indices=[positions[i]],
+        mode=modes[i])])`` but the whole block is moved to the model device/dtype
+        in one copy and each entry's activations are a view into it.  ``layers``
+        may contain ``EMBED_LAYER_INDEX``.
         """
         d = pickle.loads(pickled_data)
         keys: list[str] = list(d["keys"])
@@ -947,11 +1239,17 @@ class HiddenStatesExtension:
         num_layers = len(_get_layers(self.model_runner.model))
         layers = [int(x) for x in d["layers"]]
         for idx in layers:
-            if idx < 0 or idx >= num_layers:
-                raise ValueError(f"layer_index {idx} out of range [0, {num_layers})")
+            if idx != EMBED_LAYER_INDEX and (idx < 0 or idx >= num_layers):
+                raise ValueError(
+                    f"layer_index {idx} out of range [0, {num_layers}) "
+                    f"(or EMBED_LAYER_INDEX={EMBED_LAYER_INDEX})"
+                )
         positions = [int(x) for x in d["positions"]]
         scales = [float(x) for x in d["scales"]]
         nms = [bool(x) for x in d["norm_match"]]
+        modes = [str(x) for x in d.get("modes", ["add"] * len(keys))]
+        if len(modes) != len(keys) or any(m not in ("add", "replace") for m in modes):
+            raise ValueError(f"modes must be n_keys entries of 'add'|'replace', got {modes[:5]}")
         block = vecs.to(device=device, dtype=dtype).contiguous()
         for i, key in enumerate(keys):
             sv = SteeringVector.model_construct(
@@ -960,6 +1258,7 @@ class HiddenStatesExtension:
                 scale=scales[i],
                 norm_match=nms[i],
                 position_indices=[positions[i]],
+                mode=modes[i],
             )
             self._store(key, [sv])
         self._steering_gen += 1
@@ -986,7 +1285,8 @@ class HiddenStatesExtension:
     def steering_stats(self, reset: bool = False) -> dict[str, int]:
         """vllm-lens-metamodel: hook counters (passes skipped by the idle fast path,
         passes planned / planned-but-idle, layer-steps steered / vectorised,
-        rows steered, rows skipped as generated under CUDA graphs, errors)."""
+        rows steered / replaced, embedding-injection passes and failures, rows
+        skipped as generated under CUDA graphs, errors)."""
         out = dict(self._stats)
         if reset:
             self._stats = _new_stats()

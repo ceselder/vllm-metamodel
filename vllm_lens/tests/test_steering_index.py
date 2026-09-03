@@ -391,14 +391,22 @@ def test_capture_all_layers_merges_with_per_layer_rows():
 # ---------------------------------------------------------------------------
 
 
-def _apply_both(todo, layer_idx, target, qsl, abs_start):
+def _apply_both(todo, layer_idx, target, qsl, abs_start, residual=None):
+    """Run the sequential and the vectorised apply on copies; returns
+    (ok, seq_target, vec_target[, seq_residual, vec_residual])."""
     plan = W._StepPlan(qsl, abs_start, {layer_idx: todo})
     seq = target.clone()
+    res_seq = residual.clone() if residual is not None else None
     for i, configs in todo:
-        W._apply_steering(configs, layer_idx, seq, qsl[i], qsl[i + 1], abs_start[i])
+        W._apply_steering(
+            configs, layer_idx, seq, qsl[i], qsl[i + 1], abs_start[i], res_seq
+        )
     vec = target.clone()
-    ok = W._apply_layer_vectorized(todo, layer_idx, vec, plan)
-    return ok, seq, vec
+    res_vec = residual.clone() if residual is not None else None
+    ok = W._apply_layer_vectorized(todo, layer_idx, vec, plan, res_vec)
+    if residual is None:
+        return ok, seq, vec
+    return ok, seq, vec, res_seq, res_vec
 
 
 @pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
@@ -452,15 +460,19 @@ def test_vectorized_falls_back_when_semantics_would_differ():
     target = torch.randn(8, D)
     plan = W._StepPlan([0, 8], [0], {1: [(0, configs[0])]})
     assert (
-        W._apply_layer_vectorized([(0, configs[0])], 1, target.clone(), plan) is False
+        W._apply_layer_vectorized([(0, configs[0])], 1, target.clone(), plan, None)
+        is False
     )
     # broadcast over a multi-token chunk -> fallback
     plan = W._StepPlan([0, 8], [0], {1: [(0, [sv2d(1)])]})
-    assert W._apply_layer_vectorized([(0, [sv2d(1)])], 1, target.clone(), plan) is False
+    assert (
+        W._apply_layer_vectorized([(0, [sv2d(1)])], 1, target.clone(), plan, None)
+        is False
+    )
     # nothing in range (later chunk) -> handled (True) and target untouched
     t = target.clone()
     plan = W._StepPlan([0, 8], [50], {1: [(0, [sv3d(1, [2])])]})
-    assert W._apply_layer_vectorized([(0, [sv3d(1, [2])])], 1, t, plan) is True
+    assert W._apply_layer_vectorized([(0, [sv3d(1, [2])])], 1, t, plan, None) is True
     assert torch.equal(t, target)
 
 
@@ -470,7 +482,7 @@ def test_apply_steering_unchanged_semantics():
     cfg2 = SteeringVector(
         activations=torch.ones(1, D), layer_indices=[0], norm_match=True, scale=0.5
     )
-    W._apply_steering([cfg2], 0, target, 0, 2, abs_start=0)
+    W._apply_steering([cfg2], 0, target, 0, 2, abs_start=0, residual=None)
     # norm_match: v scaled to ||row|| then * 0.5 -> each element 2 + 0.5*(2*sqrt(D))/sqrt(D) = 3
     assert torch.allclose(target[0:2], torch.full((2, D), 3.0))
     assert torch.allclose(target[2:], torch.full((4, D), 2.0))
@@ -479,7 +491,7 @@ def test_apply_steering_unchanged_semantics():
     )
     tgt = torch.zeros(6, D)
     W._apply_steering(
-        [cfg3], 0, tgt, 1, 5, abs_start=6
+        [cfg3], 0, tgt, 1, 5, abs_start=6, residual=None
     )  # rows 1..4 hold positions 6..9
     assert tgt[2].sum() == 10 * D and tgt[4].sum() == 10 * D
     assert tgt[[0, 1, 3, 5]].abs().sum() == 0
@@ -555,8 +567,8 @@ def test_set_steering_block_equals_per_key_vectors():
     ta, tb = target.clone(), target.clone()
     for L in (0, 1, 2, 3):
         if L in pa.steer:
-            assert W._apply_layer_vectorized(pa.steer[L], L, ta, pa)
-            assert W._apply_layer_vectorized(pb.steer[L], L, tb, pb)
+            assert W._apply_layer_vectorized(pa.steer[L], L, ta, pa, None)
+            assert W._apply_layer_vectorized(pb.steer[L], L, tb, pb, None)
     assert torch.equal(ta, tb)
     assert not torch.equal(ta, target)
     with pytest.raises(ValueError):
@@ -580,3 +592,418 @@ def test_prompt_only_rejects_broadcast_vectors():
         ext.set_steering_data("k", pickle.dumps([sv2d(1)]))
     ext.set_steering_data("k", pickle.dumps([sv3d(1, [3])]))  # positional is fine
     assert "k" in ext._steering_index
+
+
+# ---------------------------------------------------------------------------
+# embedding replacement (EMBED_LAYER_INDEX + mode="replace")
+# ---------------------------------------------------------------------------
+
+
+def test_replace_mode_requires_positional_activations():
+    with pytest.raises(ValueError, match="replace.*3D"):
+        SteeringVector(
+            activations=torch.randn(1, D), layer_indices=[0], mode="replace"
+        )
+
+
+def test_step_plan_schedules_embed_layer_rows():
+    ext = make_ext()
+    store(ext, "nla", [sv3d(W.EMBED_LAYER_INDEX, [5], mode="replace", scale=3.0)])
+    runner = FakeRunner(
+        [
+            ("nla-aaaa1111", None, 8, 0, 8),  # prefill covering the marker
+            ("other-bbbb2222", None, 8, 8, 1),  # decode row, no configs
+        ]
+    )
+    plan = build_plan(ext, runner)
+    assert plan is not None
+    todo = plan.steer.get(W.EMBED_LAYER_INDEX)
+    assert todo is not None and [i for i, _ in todo] == [0]
+
+
+def test_apply_embed_replaces_marker_row_and_leaves_others():
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[5],
+        mode="replace",
+        scale=2.5,
+    )
+    store(ext, "nla", [sv])
+    runner = FakeRunner([("nla-aaaa1111", None, 8, 0, 8)])
+    plan = build_plan(ext, runner)
+    todo = plan.steer[W.EMBED_LAYER_INDEX]
+    target = torch.randn(8, D)
+    orig = target.clone()
+    W._apply_embed(todo, target, plan, ext._stats)
+    assert torch.allclose(target[5], v * 2.5)
+    keep = [r for r in range(8) if r != 5]
+    assert torch.equal(target[keep], orig[keep])
+    assert ext._stats["rows_replaced"] == 1
+
+
+def test_apply_embed_norm_match_scales_to_original_row_norm():
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[2],
+        mode="replace",
+        norm_match=True,
+    )
+    store(ext, "k", [sv])
+    runner = FakeRunner([("k-aaaa1111", None, 4, 0, 4)])
+    plan = build_plan(ext, runner)
+    target = torch.randn(4, D)
+    orig_norm = target[2].norm()
+    W._apply_embed(plan.steer[W.EMBED_LAYER_INDEX], target, plan, ext._stats)
+    assert torch.allclose(target[2].norm(), orig_norm, rtol=1e-3)
+    assert torch.allclose(
+        torch.nn.functional.cosine_similarity(target[2], v, dim=0),
+        torch.tensor(1.0),
+        atol=1e-5,
+    )
+
+
+def test_apply_embed_chunked_prefill_offsets():
+    """Marker in the SECOND prefill chunk: only that chunk's pass writes it."""
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[10],
+        mode="replace",
+    )
+    store(ext, "k", [sv])
+    # chunk 1: rows 0-7 (abs 0..7) — marker abs 10 NOT in range
+    r1 = FakeRunner([("k-aaaa1111", None, 16, 0, 8)])
+    p1 = build_plan(ext, r1)
+    t1 = torch.randn(8, D)
+    o1 = t1.clone()
+    if p1.steer.get(W.EMBED_LAYER_INDEX):
+        W._apply_embed(p1.steer[W.EMBED_LAYER_INDEX], t1, p1, ext._stats)
+    assert torch.equal(t1, o1)
+    # chunk 2: rows abs 8..15 — marker abs 10 = local row 2
+    ext._req_plan_cache = {}
+    r2 = FakeRunner([("k-aaaa1111", None, 16, 8, 8)])
+    p2 = build_plan(ext, r2)
+    t2 = torch.randn(8, D)
+    W._apply_embed(p2.steer[W.EMBED_LAYER_INDEX], t2, p2, ext._stats)
+    assert torch.allclose(t2[2], v)
+
+
+def test_vectorized_replace_matches_sequential_and_zeroes_fused_residual():
+    """mode="replace" is vectorised (index_copy_); on a fused-residual layer the
+    residual half is zeroed so the FULL stream equals scale*v exactly."""
+    torch.manual_seed(4)
+    n, P = 5, 6
+    configs = [[sv3d(1, [2], mode="replace", scale=1.5)] for _ in range(n)]
+    configs[3] = [sv3d(1, [2], mode="add", scale=0.5)]  # mixed add + replace batch
+    qsl = [P * i for i in range(n + 1)]
+    target = torch.randn(P * n, D)
+    residual = torch.randn(P * n, D)
+    todo = list(zip(range(n), configs))
+    ok, seq, vec, rs, rv = _apply_both(todo, 1, target, qsl, [0] * n, residual)
+    assert ok
+    assert torch.equal(seq, vec) and torch.equal(rs, rv)
+    for i in range(n):
+        r = qsl[i] + 2
+        v = configs[i][0].activations[0, 0]
+        if i == 3:
+            assert torch.allclose(vec[r], target[r] + 0.5 * v)
+            assert torch.equal(rv[r], residual[r])
+        else:
+            assert torch.allclose(vec[r], 1.5 * v)
+            assert torch.equal(rv[r], torch.zeros(D))
+            assert torch.allclose(vec[r] + rv[r], 1.5 * v)  # full stream replaced
+    keep = [r for r in range(P * n) if r % P != 2]
+    assert torch.equal(vec[keep], target[keep]) and torch.equal(rv[keep], residual[keep])
+    # non-fused layer (residual None): plain overwrite
+    ok2, seq2, vec2 = _apply_both(todo[:1], 1, target.clone(), qsl, [0] * n)
+    assert ok2 and torch.equal(seq2, vec2) and torch.allclose(vec2[2], 1.5 * configs[0][0].activations[0, 0])
+
+
+# ---------------------------------------------------------------------------
+# norm_match references the FULL residual stream on fused-residual layers
+# (upstream #7 port): h' = h + scale * ||h|| * v/||v|| with h = hidden + residual
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("vectorized", [False, True])
+def test_norm_match_scales_to_full_residual_stream_on_fused_layers(vectorized):
+    torch.manual_seed(5)
+    scale = 4.0
+    cfgs = [[sv3d(1, [1], norm_match=True, scale=scale)] for _ in range(3)]
+    qsl = [0, 4, 8, 12]
+    hidden = torch.randn(12, D) * 0.1  # small MLP-delta half (as in a real model)
+    residual = torch.randn(12, D) * 10  # large residual half
+    todo = list(zip(range(3), cfgs))
+    plan = W._StepPlan(qsl, [0] * 3, {1: todo})
+    t, r = hidden.clone(), residual.clone()
+    if vectorized:
+        assert W._apply_layer_vectorized(todo, 1, t, plan, r)
+    else:
+        for i, c in todo:
+            W._apply_steering(c, 1, t, qsl[i], qsl[i + 1], 0, r)
+    for i, c in todo:
+        row = qsl[i] + 1
+        full = hidden[row] + residual[row]
+        delta = (t[row] + r[row]) - full
+        v = c[0].activations[0, 0]
+        assert torch.nn.functional.cosine_similarity(delta, v, dim=0) > 0.9999
+        ratio = delta.norm() / (scale * full.norm())
+        assert abs(ratio - 1.0) < 1e-4, ratio  # 1.1.0 would give ~||hidden||/||full||
+    assert torch.equal(r, residual)  # add never touches the residual half
+    # 2-D broadcast + norm_match on a fused layer: same reference
+    t2, r2 = hidden.clone(), residual.clone()
+    W._apply_steering([sv2d(1, norm_match=True, scale=2.0)], 1, t2, 0, 4, 0, r2)
+    d2 = (t2[:4] + r2[:4]) - (hidden[:4] + residual[:4])
+    assert torch.allclose(d2.norm(dim=-1), 2.0 * (hidden[:4] + residual[:4]).norm(dim=-1), rtol=1e-4)
+
+
+def test_hook_inner_clones_residual_only_for_replace_layers():
+    """_hook_inner passes the fused residual half through: read-only for add
+    (same tensor object returned), cloned + zeroed for replace."""
+    ext = make_ext()
+    store(ext, "add", [sv3d(1, [2], norm_match=True, scale=1.0)])
+    store(ext, "rep", [sv3d(2, [2], mode="replace", scale=3.0)])
+    runner = FakeRunner(
+        [
+            ("0-aaaaaaaa", {"_steering_id": "add"}, 4, 0, 4),
+            ("1-bbbbbbbb", {"_steering_id": "rep"}, 4, 0, 4),
+        ]
+    )
+    ext.model_runner = runner
+    import vllm.forward_context as fc
+
+    meta = SimpleNamespace(query_start_loc=torch.tensor(runner.query_start_loc.np))
+    ctx = SimpleNamespace(attn_metadata={"layer0": meta})
+    fc._ctx = ctx
+    try:
+        plan = W._build_step_plan(ext, runner, 2)
+        assert plan.replace_layers == {2}
+        ext._step_plan = plan
+        hs, res = torch.randn(8, D), torch.randn(8, D)
+        out1 = W._hook_inner(ext, 1, (hs, res))
+        assert out1[1] is res  # add-only layer: residual passed through untouched
+        full1 = out1[0][2] + out1[1][2]
+        assert torch.allclose((full1 - (hs[2] + res[2])).norm(), (hs[2] + res[2]).norm(), rtol=1e-4)
+        out2 = W._hook_inner(ext, 2, (hs, res))
+        assert out2[1] is not res and torch.equal(res, res)  # cloned, original intact
+        v = ext._steering_data["rep"][0].activations[0, 0]
+        assert torch.allclose(out2[0][6], 3.0 * v) and torch.equal(out2[1][6], torch.zeros(D))
+        assert torch.equal(out2[0][:6], hs[:6]) and torch.equal(out2[1][:6], res[:6])
+    finally:
+        fc._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# layer-0 pre-hook: keyword-passing architectures, hard error on a miss
+# ---------------------------------------------------------------------------
+
+
+def test_find_hidden_states_arg_searches_kwargs_and_prefers_named():
+    h = torch.randn(10, D)
+    pos = torch.arange(10)
+    # positional (Qwen2 / Llama style)
+    assert W._find_hidden_states_arg((pos, h, None), {}, 10) is h
+    # keyword (Qwen3Next / Qwen3.5 / Qwen3.6 style)
+    assert W._find_hidden_states_arg((), {"positions": pos, "hidden_states": h, "residual": None}, 10) is h
+    # padded token dim (sequence parallel) still matches
+    hp = torch.randn(12, D)
+    assert W._find_hidden_states_arg((pos, hp, None), None, 10) is hp
+    # two candidates but one is literally named hidden_states -> that one
+    other = torch.randn(10, D)
+    assert W._find_hidden_states_arg((other,), {"hidden_states": h}, 10) is h
+    # ambiguity without a name -> hard error
+    with pytest.raises(W.EmbedInjectionError, match="found 2 candidate"):
+        W._find_hidden_states_arg((pos, h, other), {}, 10)
+    # nothing that covers the tokens -> hard error (not a warning)
+    with pytest.raises(W.EmbedInjectionError, match="found 0 candidate"):
+        W._find_hidden_states_arg((pos, torch.randn(4, D)), {"residual": None}, 10)
+    with pytest.raises(W.EmbedInjectionError):
+        W._find_hidden_states_arg((pos, h.to(torch.int64)), {}, 10)
+
+
+class _KwLayer(torch.nn.Module):
+    """Decoder layer stand-in whose model calls it by KEYWORD (Qwen3Next style)."""
+
+    def forward(self, positions=None, hidden_states=None, residual=None):
+        return hidden_states * 1.0, residual
+
+
+def _run_pre_hook(ext, runner, layer, call):
+    import vllm.forward_context as fc
+
+    meta = SimpleNamespace(query_start_loc=torch.tensor(runner.query_start_loc.np))
+    fc._ctx = SimpleNamespace(attn_metadata={"layer0": meta})
+    try:
+        return call()
+    finally:
+        fc._ctx = None
+
+
+def test_pre_hook_with_kwargs_applies_embed_on_keyword_calling_layer():
+    ext = make_ext()
+    v = torch.randn(D)
+    sv = SteeringVector(
+        activations=v.reshape(1, 1, D),
+        layer_indices=[W.EMBED_LAYER_INDEX],
+        position_indices=[3],
+        mode="replace",
+        scale=2.0,
+    )
+    store(ext, "nla", [sv])
+    runner = FakeRunner(
+        [
+            ("nla-aaaa1111", None, 6, 0, 6),
+            ("x-bbbb2222", {"output_residual_stream": [W.EMBED_LAYER_INDEX, 0]}, 4, 0, 4),
+        ]
+    )
+    ext.model_runner = runner
+    layer = _KwLayer()
+    layer.register_forward_pre_hook(W._make_pre_hook(ext, 0), with_kwargs=True)
+    h = torch.randn(10, D)
+    orig = h.clone()
+    out, _ = _run_pre_hook(
+        ext, runner, layer,
+        lambda: layer(positions=torch.arange(10), hidden_states=h, residual=None),
+    )
+    assert torch.allclose(h[3], 2.0 * v)  # injected in place, by keyword
+    assert torch.equal(out[3], 2.0 * v)  # ... so the layer saw the replaced row
+    keep = [r for r in range(10) if r != 3]
+    assert torch.equal(h[keep], orig[keep])
+    assert ext._stats["rows_replaced"] == 1 and ext._stats["embed_apply_steps"] == 1
+    assert ext._stats["errors"] == 0 and ext._stats["embed_errors"] == 0
+    assert ext._step_plan is not None  # plan built once here, reused by layer hooks
+    # embedding-stream capture (explicit layer -1) for the second request, post-injection
+    cap = ext._captured_states["x-bbbb2222"][W.EMBED_LAYER_INDEX]
+    assert len(cap) == 1 and torch.equal(cap[0], orig[6:10])
+    assert "nla-aaaa1111" not in ext._captured_states
+
+
+def test_pre_hook_raises_on_missing_hidden_states_instead_of_warning():
+    ext = make_ext()
+    store(ext, "nla", [sv3d(W.EMBED_LAYER_INDEX, [1], mode="replace")])
+    runner = FakeRunner([("nla-aaaa1111", None, 4, 0, 4)])
+    ext.model_runner = runner
+
+    class _BadLayer(torch.nn.Module):
+        def forward(self, positions, residual=None):  # no hidden_states at all
+            return positions
+
+    layer = _BadLayer()
+    layer.register_forward_pre_hook(W._make_pre_hook(ext, 0), with_kwargs=True)
+    with pytest.raises(W.EmbedInjectionError):
+        _run_pre_hook(ext, runner, layer, lambda: layer(torch.arange(4), residual=None))
+    assert ext._stats["embed_errors"] == 1 and ext._stats["errors"] == 1
+
+
+def test_pre_hook_on_non_first_global_layer_never_injects():
+    """PP rank > 0: its first local layer is not global layer 0, so the
+    embedding stream is not here -- build the plan, but do not touch inputs."""
+    ext = make_ext()
+    store(ext, "nla", [sv3d(W.EMBED_LAYER_INDEX, [1], mode="replace")])
+    runner = FakeRunner([("nla-aaaa1111", None, 4, 0, 4)])
+    ext.model_runner = runner
+    layer = _KwLayer()
+    layer.register_forward_pre_hook(W._make_pre_hook(ext, 8), with_kwargs=True)
+    h = torch.randn(4, D)
+    orig = h.clone()
+    _run_pre_hook(ext, runner, layer, lambda: layer(hidden_states=h, residual=torch.zeros(4, D)))
+    assert torch.equal(h, orig) and ext._stats["rows_replaced"] == 0
+    assert ext._step_plan is not None
+
+
+def test_capture_all_layers_does_not_include_embedding_stream():
+    """output_residual_stream=True keeps its (n_layers, T, D) shape: the
+    embedding stream is captured only when layer -1 is listed explicitly."""
+    ext = make_ext()
+    runner = FakeRunner([("0-aaaaaaaa", {"output_residual_stream": True}, 4, 0, 4)])
+    plan = build_plan(ext, runner)
+    assert plan.cap_all == [0]
+    assert plan.cap_by_layer.get(W.EMBED_LAYER_INDEX) is None
+
+
+# ---------------------------------------------------------------------------
+# EMBED_LAYER_INDEX through the RPC surface (validation + block packing)
+# ---------------------------------------------------------------------------
+
+
+def test_rpcs_accept_embed_layer_index_and_block_carries_mode():
+    ext = make_ext()
+    ext.set_steering_data(
+        "k", pickle.dumps([sv3d(W.EMBED_LAYER_INDEX, [3], mode="replace", scale=2.0)])
+    )
+    assert W.EMBED_LAYER_INDEX in ext._steering_index["k"].layers
+    assert ext._steering_index["k"].replace_layers == frozenset({W.EMBED_LAYER_INDEX})
+    with pytest.raises(ValueError, match="out of range"):
+        ext.set_steering_data("bad", pickle.dumps([sv3d(-2, [3])]))
+    vecs = torch.randn(3, D)
+    ext.set_steering_block(
+        pickle.dumps(
+            {
+                "keys": ["a", "b", "c"],
+                "vecs": vecs,
+                "layers": [W.EMBED_LAYER_INDEX, 1, W.EMBED_LAYER_INDEX],
+                "positions": [5, 5, 7],
+                "scales": [1.0, 2.0, 3.0],
+                "norm_match": [False, True, True],
+                "modes": ["replace", "add", "replace"],
+            }
+        )
+    )
+    a, b, c = (ext._steering_data[k][0] for k in "abc")
+    assert (a.mode, b.mode, c.mode) == ("replace", "add", "replace")
+    assert a.layer_indices == [W.EMBED_LAYER_INDEX] and b.layer_indices == [1]
+    assert ext._steering_index["a"].replace_layers == frozenset({W.EMBED_LAYER_INDEX})
+    assert ext._steering_index["b"].replace_layers == frozenset()
+    # a block without "modes" (older client) defaults to add
+    ext.set_steering_block(
+        pickle.dumps(
+            {"keys": ["d"], "vecs": vecs[:1], "layers": [0], "positions": [0],
+             "scales": [1.0], "norm_match": [False]}
+        )
+    )
+    assert ext._steering_data["d"][0].mode == "add"
+    with pytest.raises(ValueError, match="modes"):
+        ext.set_steering_block(
+            pickle.dumps(
+                {"keys": ["e"], "vecs": vecs[:1], "layers": [0], "positions": [0],
+                 "scales": [1.0], "norm_match": [False], "modes": ["nope"]}
+            )
+        )
+    # the whole thing schedules + applies through the embed path
+    ext._refresh_aggregates()
+    assert ext._agg_embed is True
+    runner = FakeRunner([("a-aaaa1111", None, 8, 0, 8), ("c-cccc3333", None, 8, 0, 8)])
+    plan = build_plan(ext, runner)
+    target = torch.randn(16, D)
+    orig = target.clone()
+    W._apply_embed(plan.steer[W.EMBED_LAYER_INDEX], target, plan, ext._stats)
+    assert torch.allclose(target[5], vecs[0])  # a: pos 5 -> row 5, scale 1, no norm_match
+    # c: second request (rows 8..15), pos 7 -> row 15, norm_match, scale 3
+    assert torch.allclose(target[15].norm(), 3.0 * orig[15].norm(), rtol=1e-4)
+    assert torch.nn.functional.cosine_similarity(target[15], vecs[2], dim=0) > 0.9999
+    keep = [r for r in range(16) if r not in (5, 15)]
+    assert torch.equal(target[keep], orig[keep])
+
+
+def test_pack_steering_carries_mode_and_embed_layer():
+    from vllm_lens._activations_plugin import _pack_steering
+
+    payload = {
+        "_steer_0": [sv3d(W.EMBED_LAYER_INDEX, [4], mode="replace", scale=2.0)],
+        "_steer_1": [sv3d(1, [4], norm_match=True, scale=1.0)],
+        "_steer_2": [sv3d(1, [4, 5])],  # two positions: not block-packable
+    }
+    block, rest = _pack_steering(payload)
+    assert block is not None and list(rest) == ["_steer_2"]
+    assert block["keys"] == ["_steer_0", "_steer_1"]
+    assert block["layers"] == [W.EMBED_LAYER_INDEX, 1]
+    assert block["modes"] == ["replace", "add"]
+    assert block["norm_match"] == [False, True] and block["scales"] == [2.0, 1.0]

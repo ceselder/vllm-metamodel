@@ -1,0 +1,340 @@
+{
+ "returncode": 0,
+ "elapsed_s": 79.52569723129272,
+ "log_tail": "INFO 09-03 19:39:13 [utils.py:233] non-default args: {'dtype': 'bfloat16', 'max_model_len': 184, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.85, 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'disable_log_stats': True, 'enforce_eager': True, 'attention_backend': 'TRITON_ATTN', 'model': 'Qwen/Qwen3-1.7B'}\nINFO 09-03 19:39:24 [model.py:549] Resolved architecture: Qwen3ForCausalLM\nINFO 09-03 19:39:24 [model.py:1678] Using max model len 184\nINFO 09-03 19:39:24 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=106496.\nINFO 09-03 19:39:24 [vllm.py:790] Asynchronous scheduling is enabled.\nWARNING 09-03 19:39:24 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none\nWARNING 09-03 19:39:24 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\nINFO 09-03 19:39:24 [vllm.py:1025] Cudagraph is disabled under eager mode\nINFO 09-03 19:39:24 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant\n(EngineCore pid=47) INFO 09-03 19:39:25 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen3-1.7B', speculative_config=None, tokenizer='Qwen/Qwen3-1.7B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=184, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3-1.7B, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [106496], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}\n(EngineCore pid=47) INFO 09-03 19:39:26 [worker_base.py:269] Injected <class 'vllm_lens._worker_ext.HiddenStatesExtension'> into <class 'vllm.v1.worker.gpu_worker.Worker'> for extended collective_rpc calls ['_cuda_graphs_active', '_debug_captured_states_count', '_prepare_vectors', '_refresh_aggregates', '_store', 'clear_captured_states', 'clear_steering_data', 'clear_steering_data_many', 'get_captured_states', 'install_hooks', 'set_steering_block', 'set_steering_data', 'set_steering_data_many', 'set_vectorized', 'steering_stats']\n(EngineCore pid=47) INFO 09-03 19:39:26 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.13.227:57353 backend=nccl\n(EngineCore pid=47) INFO 09-03 19:39:26 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=47) INFO 09-03 19:39:26 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen3-1.7B...\n(EngineCore pid=47) INFO 09-03 19:39:27 [cuda.py:274] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=47) INFO 09-03 19:39:38 [weight_utils.py:581] Time spent downloading weights for Qwen/Qwen3-1.7B: 10.352236 seconds\n(EngineCore pid=47) INFO 09-03 19:39:39 [default_loader.py:384] Loading weights took 0.46 seconds\n(EngineCore pid=47) INFO 09-03 19:39:39 [gpu_model_runner.py:4820] Model loading took 3.22 GiB memory and 11.836337 seconds\n(EngineCore pid=47) INFO 09-03 19:39:44 [gpu_worker.py:436] Available KV cache memory: 142.87 GiB\n(EngineCore pid=47) INFO 09-03 19:39:44 [kv_cache_utils.py:1319] GPU KV cache size: 1,337,552 tokens\n(EngineCore pid=47) INFO 09-03 19:39:44 [kv_cache_utils.py:1324] Maximum concurrency for 184 tokens per request: 6966.42x\n(EngineCore pid=47) INFO 09-03 19:39:45 [core.py:283] init engine (profile, create kv cache, warmup model) took 5.98 seconds\n(EngineCore pid=47) WARNING 09-03 19:39:46 [vllm.py:848] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none\n(EngineCore pid=47) WARNING 09-03 19:39:46 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=47) INFO 09-03 19:39:46 [vllm.py:1025] Cudagraph is disabled under eager mode\n[inj 19:39:46] engine up 33s vllm=0.19.0 vllm-lens=1.1.0.post2 {'enforce_eager': True, 'compilation_mode': 'NONE', 'cudagraph_mode': 'NONE', 'n_capture_sizes': 0, 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'num_layers': 28}\n[inj 19:39:47] D=2048 |embed[M]|=1.380 |h_L[M]|=23.163\n[inj 19:39:47]   [PASS] probe: capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:39:52]   nosteer        B=  512:   0.71s (40 tok)   1.19s (80 tok) -> decode step 12.03 ms, prefill+overhead 0.23s,    28996 tok/s, hook passes=41\n[inj 19:39:58]   nosteer        B= 1024:   1.11s (40 tok)   1.88s (80 tok) -> decode step 19.36 ms, prefill+overhead 0.34s,    36915 tok/s, hook passes=42\n[inj 19:40:02]   karvonen_add   B=  512:   0.71s (40 tok)   1.21s (80 tok) -> decode step 12.67 ms, prefill+overhead 0.20s,    29046 tok/s, hook passes=41\n[inj 19:40:08]   karvonen_add   B= 1024:   1.20s (40 tok)   1.94s (80 tok) -> decode step 18.45 ms, prefill+overhead 0.46s,    34152 tok/s, hook passes=42\n[inj 19:40:13]   embed_replace  B=  512:   0.73s (40 tok)   1.22s (80 tok) -> decode step 12.43 ms, prefill+overhead 0.23s,    28226 tok/s, hook passes=41\n[inj 19:40:19]   embed_replace  B= 1024:   1.18s (40 tok)   1.94s (80 tok) -> decode step 19.08 ms, prefill+overhead 0.41s,    34859 tok/s, hook passes=42\n[inj 19:40:19]   [PASS] throughput: B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)  12.43 ms vs 12.03 ms per step (+3.3%); wall 40 tok: 0.73s vs 0.71s (+2.7%, +0.019s per call = shipping 512 vectors + prefill hook)\n[inj 19:40:19]   [PASS] throughput: B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)  12.67 ms vs 12.03 ms per step (+5.3%); wall 40 tok: 0.71s vs 0.71s (-0.2%, +-0.001s per call = shipping 512 vectors + prefill hook)\n[inj 19:40:19]   [PASS] throughput: B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)  now 0.71s vs recorded 1.40s (-49.8%)\n[inj 19:40:19]   [PASS] throughput: B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)  19.08 ms vs 19.36 ms per step (-1.5%); wall 40 tok: 1.18s vs 1.11s (+5.9%, +0.065s per call = shipping 1024 vectors + prefill hook)\n[inj 19:40:19]   [PASS] throughput: B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)  18.45 ms vs 19.36 ms per step (-4.7%); wall 40 tok: 1.20s vs 1.11s (+8.1%, +0.090s per call = shipping 1024 vectors + prefill hook)\n[inj 19:40:19]   [PASS] throughput: B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)  now 1.20s vs recorded 2.25s (-46.7%)\n[inj 19:40:19] done: 7/7 checks pass\n(EngineCore pid=47) INFO 09-03 19:40:19 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=47) INFO 09-03 19:40:19 [core.py:1233] Shutdown complete\n\n--- stderr ---\n(EngineCore pid=47) \nLoading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]\n(EngineCore pid=47) \nLoading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  2.18it/s]\n(EngineCore pid=47) \nLoading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  4.35it/s]\n(EngineCore pid=47) \n(EngineCore pid=47) 2026-09-03 19:39:45,158 - INFO - autotuner.py:262 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=47) 2026-09-03 19:39:45,372 - INFO - autotuner.py:268 - flashinfer.jit: [Autotuner]: Autotuning process ends\n",
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "engine": "eager",
+  "chunked": false,
+  "gpu": "NVIDIA B200",
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128",
+   "vllm_lens": "1.1.0.post2"
+  },
+  "resolved_config": {
+   "enforce_eager": true,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "NONE",
+   "n_capture_sizes": 0,
+   "max_num_batched_tokens": 106496,
+   "max_num_seqs": 1024,
+   "num_layers": 28
+  },
+  "engine_up_s": 32.786079551,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "layer": 1,
+  "hf_ref": false,
+  "cases": {
+   "throughput": {
+    "rows": {
+     "nosteer": {
+      "512": {
+       "wall_s": 0.7063049399999954,
+       "wall_2T_s": 1.187597807000003,
+       "tok_per_s": 28995.97445828445,
+       "gen_tokens": 20480,
+       "decode_step_ms": 12.03232167500019,
+       "prefill_plus_overhead_s": 0.22501207299998782,
+       "hook_passes": 41,
+       "hook_passes_2T": 81,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 2,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.109574301000002,
+       "wall_2T_s": 1.8840024779999993,
+       "tok_per_s": 36915.05829135089,
+       "gen_tokens": 40960,
+       "decode_step_ms": 19.36070442499993,
+       "prefill_plus_overhead_s": 0.3351461240000049,
+       "hook_passes": 42,
+       "hook_passes_2T": 82,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 3,
+        "steps_idle": 3,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     },
+     "karvonen_add": {
+      "512": {
+       "wall_s": 0.7050836419999982,
+       "wall_2T_s": 1.2118186120000018,
+       "tok_per_s": 29046.199316023918,
+       "gen_tokens": 20480,
+       "decode_step_ms": 12.668374250000092,
+       "prefill_plus_overhead_s": 0.1983486719999945,
+       "hook_passes": 41,
+       "hook_passes_2T": 81,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 0,
+        "steer_layer_steps": 2,
+        "vectorized_layer_steps": 2,
+        "rows_steered": 512,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.1993380469999977,
+       "wall_2T_s": 1.9374364819999954,
+       "tok_per_s": 34152.172610930334,
+       "gen_tokens": 40960,
+       "decode_step_ms": 18.452460874999943,
+       "prefill_plus_overhead_s": 0.46123961199999997,
+       "hook_passes": 42,
+       "hook_passes_2T": 82,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 3,
+        "steps_idle": 0,
+        "steer_layer_steps": 3,
+        "vectorized_layer_steps": 3,
+        "rows_steered": 1024,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     },
+     "embed_replace": {
+      "512": {
+       "wall_s": 0.725563287,
+       "wall_2T_s": 1.2228849749999995,
+       "tok_per_s": 28226.345471087763,
+       "gen_tokens": 20480,
+       "decode_step_ms": 12.433042199999988,
+       "prefill_plus_overhead_s": 0.2282415990000004,
+       "hook_passes": 41,
+       "hook_passes_2T": 81,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 512,
+        "embed_apply_steps": 2,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.175032294999994,
+       "wall_2T_s": 1.9381848890000128,
+       "tok_per_s": 34858.61637530584,
+       "gen_tokens": 40960,
+       "decode_step_ms": 19.07881485000047,
+       "prefill_plus_overhead_s": 0.4118797009999753,
+       "hook_passes": 42,
+       "hook_passes_2T": 81,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 3,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 1024,
+        "embed_apply_steps": 3,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     }
+    },
+    "T": 40,
+    "repeats": 2,
+    "baseline_series": {
+     "fork_graphs": {
+      "8": {
+       "wall_s": 0.20694863500000338,
+       "tok_per_s": 1546.2774132334566,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.2547758359999932,
+       "tok_per_s": 5024.024334866805,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.41490878999999836,
+       "tok_per_s": 12340.06153497018,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 0.8402049719999809,
+       "tok_per_s": 24375.004531632865,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 1.6339593300000104,
+       "tok_per_s": 25067.94339856656,
+       "n_rep": 1
+      }
+     },
+     "ceiling_graphs": {
+      "8": {
+       "wall_s": 0.21140344700000924,
+       "tok_per_s": 1513.693388357977,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.24082912100001863,
+       "tok_per_s": 5314.97185508517,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.4067792350000161,
+       "tok_per_s": 12586.679848591084,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.0538117300000067,
+       "tok_per_s": 19434.21146014371,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 1.5745937730000037,
+       "tok_per_s": 26013.058543957486,
+       "n_rep": 1
+      }
+     },
+     "fork_vectorized": {
+      "8": {
+       "wall_s": 0.7447684810000084,
+       "tok_per_s": 429.66372525638127,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.6984690369999953,
+       "tok_per_s": 1832.5794447492576,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.9104998090000009,
+       "tok_per_s": 5623.285089563368,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.4039368259999918,
+       "tok_per_s": 14587.550964348105,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 2.2503722010000047,
+       "tok_per_s": 18201.433514775235,
+       "n_rep": 1
+      }
+     },
+     "ceiling_eager": {
+      "8": {
+       "wall_s": 0.7454121450000031,
+       "tok_per_s": 429.2927102764051,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 1.7734632770000047,
+       "tok_per_s": 721.7516238426157,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.9846900510000012,
+       "tok_per_s": 5199.605698057361,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.8848633810000024,
+       "tok_per_s": 10865.508984069957,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 2.730843445000005,
+       "tok_per_s": 14999.028990473647,
+       "n_rep": 1
+      }
+     }
+    }
+   }
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "12.43 ms vs 12.03 ms per step (+3.3%); wall 40 tok: 0.73s vs 0.71s (+2.7%, +0.019s per call = shipping 512 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "12.67 ms vs 12.03 ms per step (+5.3%); wall 40 tok: 0.71s vs 0.71s (-0.2%, +-0.001s per call = shipping 512 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+    "ok": true,
+    "detail": "now 0.71s vs recorded 1.40s (-49.8%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: embed-replace decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "19.08 ms vs 19.36 ms per step (-1.5%); wall 40 tok: 1.18s vs 1.11s (+5.9%, +0.065s per call = shipping 1024 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: karvonen-add (norm_match) decode-step time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "18.45 ms vs 19.36 ms per step (-4.7%); wall 40 tok: 1.20s vs 1.11s (+8.1%, +0.090s per call = shipping 1024 vectors + prefill hook)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+    "ok": true,
+    "detail": "now 1.20s vs recorded 2.25s (-46.7%)"
+   }
+  ],
+  "hidden_dim": 2048,
+  "embed_marker_norm": 1.3797909021377563,
+  "h_full_marker_norm_layer_L": 23.16317367553711,
+  "all_pass": true
+ }
+}

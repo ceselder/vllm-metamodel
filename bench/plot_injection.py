@@ -1,0 +1,130 @@
+"""Plot the throughput part of the injection-mode test matrix (bench/test_injection_modes.py).
+
+    python bench/plot_injection.py bench/results/injection_<timestamp> [--out-dir DIR] [--stem injection_throughput]
+
+One small multiple per (model, engine): wall time of one ``LLM.generate()`` call
+for B requests with 40 new tokens, three conditions side by side -- no steering,
+Karvonen-style norm-matched add at layer 1, embedding replacement -- each request
+with its own vector.  Series colours are the first three categorical slots of the
+dataviz reference palette (blue / orange / aqua: validated all-pairs); every bar
+is direct-labelled with its wall time (the aqua slot needs the relief).  Writes
+``<stem>.png`` + ``<stem>.pdf`` + ``<stem>_data.json`` (exact plotted numbers).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
+
+COND = [  # (key, label, colour) -- categorical slots 1..3, fixed order
+    ("nosteer", "no steering (hooks installed, idle)", "#2a78d6"),
+    ("karvonen_add", "norm-matched add at layer 1 (one vector per request)", "#eb6834"),
+    ("embed_replace", "embedding replacement (one vector per request)", "#1baf7a"),
+]
+INK, INK_SOFT, GRID, AXIS = "#0b0b0b", "#52514e", "#e8e7e3", "#c3c2b7"
+
+
+def load(d: Path) -> dict:
+    s = json.loads((d / "summary.json").read_text())
+    panels: dict[tuple[str, str], dict] = {}
+    for r in s["rows"]:
+        if not r["case"].startswith("throughput/"):
+            continue
+        cond = r["case"].split("/", 1)[1]
+        panels.setdefault((r["model"], r["engine"]), {}).setdefault(cond, {})[int(r["batch"])] = r
+    return panels
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("results_dir")
+    ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--stem", default="injection_throughput")
+    a = ap.parse_args()
+    d = Path(a.results_dir)
+    out_dir = Path(a.out_dir) if a.out_dir else d
+    out_dir.mkdir(parents=True, exist_ok=True)
+    panels = load(d)
+    order = sorted(panels, key=lambda k: ("27B" not in k[0], k[0], k[1] != "eager", k[1]))
+    n = len(order)
+    fig, axes = plt.subplots(1, n, figsize=(4.3 * n + 0.8, 5.6), facecolor="white", squeeze=False)
+    data_out: dict = {"conditions": [c[0] for c in COND], "panels": {}}
+    width = 0.24
+    for ax, key in zip(axes[0], order):
+        model, engine = key
+        by_cond = panels[key]
+        batches = sorted({b for c in by_cond.values() for b in c})
+        ax.set_facecolor("white")
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.spines["left"].set_color(AXIS)
+        ax.spines["bottom"].set_color(AXIS)
+        ax.tick_params(colors=INK_SOFT, labelsize=8.5)
+        ax.grid(True, axis="y", color=GRID, linewidth=0.8)
+        ax.set_axisbelow(True)
+        metric = "decode_step_ms" if all(v.get("decode_step_ms") is not None for c in by_cond.values() for v in c.values()) else "wall_s"
+        ymax = max(v[metric] for c in by_cond.values() for v in c.values())
+        pdata: dict = {"batches": batches, "series": {}}
+        T = 40
+        spreads = []
+        top = ymax
+        for j, (ck, _label, colour) in enumerate(COND):
+            xs = [i + (j - 1) * (width + 0.03) for i in range(len(batches))]
+            ys = [by_cond.get(ck, {}).get(b, {}).get(metric, float("nan")) for b in batches]
+            ax.bar(xs, ys, width=width, color=colour, edgecolor="white", linewidth=1.5, zorder=3)
+            for x, y, b in zip(xs, ys, batches):
+                if y != y:
+                    continue
+                reps = by_cond.get(ck, {}).get(b, {}).get("repeats")
+                lo = hi = None
+                if reps and metric == "decode_step_ms":  # min..max of the paired per-repeat estimates
+                    ests = [(r["wall_2T_s"] - r["wall_s"]) / T * 1000.0 for r in reps]
+                    lo, hi = min(ests), max(ests)
+                    top = max(top, hi)
+                    ax.plot([x, x], [lo, hi], color=INK_SOFT, linewidth=1.2, zorder=4)
+                    ax.plot([x - 0.05, x + 0.05], [lo, lo], color=INK_SOFT, linewidth=1.0, zorder=4)
+                    ax.plot([x - 0.05, x + 0.05], [hi, hi], color=INK_SOFT, linewidth=1.0, zorder=4)
+                    if ck == "nosteer":
+                        spreads.append((hi - lo) / y)
+                ax.text(x, (hi if hi is not None else y) + 0.012 * ymax, f"{y:.2f}", ha="center", va="bottom", fontsize=7.6, color=INK)
+            pdata["series"][ck] = {str(b): {k: by_cond.get(ck, {}).get(b, {}).get(k) for k in
+                                            ("wall_s", "wall_2T_s", "decode_step_ms", "prefill_plus_overhead_s", "tok_per_s", "hook_passes")}
+                                   for b in batches}
+        pdata["metric"] = metric
+        ax.set_xticks(range(len(batches)))
+        ax.set_xticklabels([f"B = {b:,}" for b in batches])
+        ax.set_ylim(0, top * 1.22)
+        ax.set_ylabel(("decode-step time (ms), from wall(80 tok) − wall(40 tok)" if metric == "decode_step_ms"
+                       else "wall time of one generate() call (s)") if ax is axes[0][0] else "", color=INK_SOFT, fontsize=9)
+        hp = by_cond.get("embed_replace", {}).get(max(batches), {}).get("hook_passes")
+        hp_ns = by_cond.get("nosteer", {}).get(max(batches), {}).get("hook_passes")
+        mode = "CUDA graphs" if engine.startswith("graphs") else "eager"
+        sub = f"layer-0 pre-hook invocations per generate() call: {hp} (no-steering {hp_ns})"
+        if spreads:
+            sub += f"\ncontrol's repeat spread {max(spreads):.0%} → smaller differences are noise"
+        ax.set_title(f"{model.split('/')[-1]} — {mode}\n{sub}", fontsize=8.6, color=INK, loc="left")
+        data_out["panels"][f"{model}|{engine}"] = pdata
+    fig.legend(handles=[Patch(facecolor=c, label=l) for _k, l, c in COND], loc="lower center", ncol=3, frameon=False,
+               fontsize=8.6, bbox_to_anchor=(0.5, 0.0))
+    fig.suptitle("Decode runs at the no-steering speed with one distinct vector per request: on Qwen3.6-27B the decode-step time of norm-matched "
+                 "addition and embedding replacement is within ±1.7% of no steering, eager and with CUDA graphs\n"
+                 "(on Qwen3-1.7B a 0.5–2 s call cannot resolve per-step differences: error bars = min–max over interleaved repeats; the CUDA-graph "
+                 "evidence there is the hook count, 3 vs 41 invocations)\n"
+                 "decode-step time = (wall at 80 new tokens − wall at 40) / 40 · 27B: min of 2 repeats, 1.7B: paired median of 3 · 96-token prompt · "
+                 "bf16 · 1× B200 · vllm-metamodel 1.1.0.post2",
+                 fontsize=10, color=INK, x=0.01, ha="left")
+    fig.tight_layout(rect=(0, 0.07, 1, 0.86))
+    fig.savefig(out_dir / f"{a.stem}.png", dpi=170, facecolor="white")
+    fig.savefig(out_dir / f"{a.stem}.pdf", facecolor="white")
+    (out_dir / f"{a.stem}_data.json").write_text(json.dumps(data_out, indent=1))
+    print("wrote", out_dir / f"{a.stem}.png")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1250 @@
+{
+ "returncode": 0,
+ "elapsed_s": 61.78600192070007,
+ "log_tail": "nforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none\n(EngineCore pid=91) WARNING 09-03 19:34:03 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=91) INFO 09-03 19:34:03 [vllm.py:1025] Cudagraph is disabled under eager mode\n[inj 19:34:03] engine up 27s vllm=0.19.0 vllm-lens=1.1.0.post2 {'enforce_eager': True, 'compilation_mode': 'NONE', 'cudagraph_mode': 'NONE', 'n_capture_sizes': 0, 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'num_layers': 28}\n[inj 19:34:04] D=2048 |embed[M]|=1.380 |h_L[M]|=23.163\n[inj 19:34:04]   [PASS] probe: embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)  rel=0.00e+00\n[inj 19:34:04]   [PASS] probe: clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)  rel=0.00e+00 |h|_vllm=23.163 |h|_hf=23.163\n[inj 19:34:04]   [PASS] probe: capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:05]   [PASS] karvonen_add: B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9997,1.0004] over 64 requests\n[inj 19:34:05]   [PASS] karvonen_add: B=64 coeff=1.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:34:05]   [PASS] karvonen_add: B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:05]   [PASS] karvonen_add: B=64 coeff=1.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)  cos=0.99998 ratio\u2208[1.0016,1.0020] (n=4)\n[inj 19:34:06]   [PASS] karvonen_add: B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9997,1.0002] over 17 requests\n[inj 19:34:06]   [PASS] karvonen_add: B=512 coeff=1.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:34:06]   [PASS] karvonen_add: B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:12]   [PASS] karvonen_add_generation: coeff=1.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))  steered max|d|=0.1354, clean-prompt noise=0.2389, tol=0.3683\n[inj 19:34:12]   [PASS] karvonen_add_generation: coeff=1.0: greedy 8-token steered continuation == HF-hooked reference (informational)  equal\n[inj 19:34:13]   [PASS] karvonen_add: B=64 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9998,1.0003] over 64 requests\n[inj 19:34:13]   [PASS] karvonen_add: B=64 coeff=4.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:34:13]   [PASS] karvonen_add: B=64 coeff=4.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:13]   [PASS] karvonen_add: B=64 coeff=4.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)  cos=0.99999 ratio\u2208[1.0016,1.0018] (n=4)\n[inj 19:34:13]   [PASS] karvonen_add: B=512 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9998,1.0001] over 17 requests\n[inj 19:34:13]   [PASS] karvonen_add: B=512 coeff=4.0: rows other than the marker untouched at layer L  max|\u0394|=0.00e+00\n[inj 19:34:13]   [PASS] karvonen_add: B=512 coeff=4.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:14]   [PASS] karvonen_add_generation: coeff=4.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))  steered max|d|=0.2366, clean-prompt noise=0.2389, tol=0.3683\n[inj 19:34:14]   [PASS] karvonen_add_generation: coeff=4.0: greedy 8-token steered continuation == HF-hooked reference (informational)  equal\n[inj 19:34:14]   [PASS] layer_replace: B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997\n[inj 19:34:14]   [PASS] layer_replace: B=64: other rows and the embedding stream untouched  max|\u0394| rows=0.00e+00 embed=0.00e+00\n[inj 19:34:14]   [PASS] layer_replace: B=64: vectorised replace path, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:15]   [PASS] embed_replace: B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.63e-03 min cos=0.999997 over 64 requests\n[inj 19:34:15]   [PASS] embed_replace: B=64 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:34:15]   [PASS] embed_replace: B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.895e+00\n[inj 19:34:15]   [PASS] embed_replace: B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:15]   [PASS] embed_replace: B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997 over 17 requests\n[inj 19:34:15]   [PASS] embed_replace: B=512 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:34:15]   [PASS] embed_replace: B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00\n[inj 19:34:15]   [PASS] embed_replace: B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:16]   [PASS] embed_replace: B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.63e-03 min cos=0.999997 over 64 requests\n[inj 19:34:16]   [PASS] embed_replace: B=64 norm_match=True: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:34:16]   [PASS] embed_replace: B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.898e+00\n[inj 19:34:16]   [PASS] embed_replace: B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:16]   [PASS] embed_replace: B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997 over 17 requests\n[inj 19:34:16]   [PASS] embed_replace: B=512 norm_match=True: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:34:16]   [PASS] embed_replace: B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00\n[inj 19:34:16]   [PASS] embed_replace: B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:17]   [PASS] mixed: B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=5.32e-03 min cos=0.999997 over 32 requests\n[inj 19:34:17]   [PASS] mixed: B=64 even requests (embed replace): every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 19:34:17]   [PASS] mixed: B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.895e+00\n[inj 19:34:17]   [PASS] mixed: B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched  min cos=0.99999 ratio\u2208[0.9997,1.0004] other=0.0e+00 embed=0.0e+00\n[inj 19:34:17]   [PASS] mixed: B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n[inj 19:34:19]   nosteer        B=  512:   1.49s    13721 tok/s hook passes=41\n[inj 19:34:20]   nosteer        B= 1024:   1.37s    29808 tok/s hook passes=41\n[inj 19:34:22]   karvonen_add   B=  512:   0.96s    21303 tok/s hook passes=41\n[inj 19:34:23]   karvonen_add   B= 1024:   1.50s    27371 tok/s hook passes=41\n[inj 19:34:25]   embed_replace  B=  512:   1.01s    20373 tok/s hook passes=41\n[inj 19:34:26]   embed_replace  B= 1024:   1.50s    27369 tok/s hook passes=42\n[inj 19:34:26]   [PASS] throughput: B=512: embed-replace wall time within 10% of no-steering (same engine, hooks installed)  embed 1.01s vs nosteer 1.49s (-32.7%)\n[inj 19:34:26]   [PASS] throughput: B=512: karvonen-add (norm_match) wall time within 10% of no-steering  add 0.96s vs nosteer 1.49s (-35.6%)\n[inj 19:34:26]   [PASS] throughput: B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)  now 0.96s vs recorded 1.40s (-31.5%)\n[inj 19:34:26]   [PASS] throughput: B=1024: embed-replace wall time within 10% of no-steering (same engine, hooks installed)  embed 1.50s vs nosteer 1.37s (+8.9%)\n[inj 19:34:26]   [PASS] throughput: B=1024: karvonen-add (norm_match) wall time within 10% of no-steering  add 1.50s vs nosteer 1.37s (+8.9%)\n[inj 19:34:26]   [PASS] throughput: B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)  now 1.50s vs recorded 2.25s (-33.5%)\n[inj 19:34:26] done: 51/51 checks pass\n(EngineCore pid=91) INFO 09-03 19:34:26 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=91) INFO 09-03 19:34:26 [core.py:1233] Shutdown complete\n\n--- stderr ---\n(EngineCore pid=91) \nLoading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]\n(EngineCore pid=91) \nLoading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.70it/s]\n(EngineCore pid=91) \nLoading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  3.40it/s]\n(EngineCore pid=91) \n(EngineCore pid=91) 2026-09-03 19:34:02,465 - INFO - autotuner.py:262 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=91) 2026-09-03 19:34:02,764 - INFO - autotuner.py:268 - flashinfer.jit: [Autotuner]: Autotuning process ends\n",
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "engine": "eager",
+  "chunked": false,
+  "gpu": "NVIDIA B200",
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128",
+   "vllm_lens": "1.1.0.post2"
+  },
+  "resolved_config": {
+   "enforce_eager": true,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "NONE",
+   "n_capture_sizes": 0,
+   "max_num_batched_tokens": 106496,
+   "max_num_seqs": 1024,
+   "num_layers": 28
+  },
+  "engine_up_s": 26.571899117,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "layer": 1,
+  "hf_ref": true,
+  "cases": {
+   "karvonen_add": [
+    {
+     "batch": 64,
+     "coeff": 1.0,
+     "n_checked": 64,
+     "min_cos_delta_vs_v": 0.9999856948852539,
+     "max_abs_ratio_minus_1": 0.00037467479705810547,
+     "ratios": [
+      1.0001680850982666,
+      1.0000650882720947,
+      1.000078797340393,
+      0.9999663829803467,
+      1.00031316280365,
+      0.9999791383743286,
+      0.9999751448631287,
+      1.00003182888031
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 64,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     },
+     "hf_cos": [
+      0.999988317489624,
+      0.9999845027923584,
+      0.9999854564666748,
+      0.9999865293502808
+     ],
+     "hf_ratio": [
+      1.002027153968811,
+      1.0018346309661865,
+      1.0018017292022705,
+      1.0016428232192993
+     ]
+    },
+    {
+     "batch": 512,
+     "coeff": 1.0,
+     "n_checked": 17,
+     "min_cos_delta_vs_v": 0.9999855756759644,
+     "max_abs_ratio_minus_1": 0.00027674436569213867,
+     "ratios": [
+      1.0001680850982666,
+      1.0000579357147217,
+      1.0002046823501587,
+      0.9998748898506165,
+      0.9999236464500427,
+      1.0002012252807617,
+      1.0000656843185425,
+      1.000122308731079
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 512,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "batch": 64,
+     "coeff": 4.0,
+     "n_checked": 64,
+     "min_cos_delta_vs_v": 0.9999933242797852,
+     "max_abs_ratio_minus_1": 0.00030875205993652344,
+     "ratios": [
+      1.0000110864639282,
+      0.9999335408210754,
+      0.9999613761901855,
+      0.9998713731765747,
+      0.9999648928642273,
+      0.9998268485069275,
+      1.0000267028808594,
+      1.0000782012939453
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 64,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     },
+     "hf_cos": [
+      0.9999920725822449,
+      0.9999923706054688,
+      0.9999919533729553,
+      0.999992311000824
+     ],
+     "hf_ratio": [
+      1.0017529726028442,
+      1.0017378330230713,
+      1.001734972000122,
+      1.0015602111816406
+     ]
+    },
+    {
+     "batch": 512,
+     "coeff": 4.0,
+     "n_checked": 17,
+     "min_cos_delta_vs_v": 0.9999936819076538,
+     "max_abs_ratio_minus_1": 0.00015175342559814453,
+     "ratios": [
+      1.0000110864639282,
+      1.0000872611999512,
+      0.9999595880508423,
+      0.9998482465744019,
+      0.999904990196228,
+      1.000025987625122,
+      0.9999808669090271,
+      0.9999106526374817
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 512,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "karvonen_add_generation": [
+    {
+     "coeff": 1.0,
+     "clean_logprob_noise_vs_hf": 0.23885154724121094,
+     "steered_logprob_maxdiff_vs_hf": 0.13535404205322266,
+     "tol": 0.3682773208618164,
+     "greedy8_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy_all_equal": true,
+     "n_greedy_equal": 4,
+     "hf_greedy_error": null
+    },
+    {
+     "coeff": 4.0,
+     "clean_logprob_noise_vs_hf": 0.23885154724121094,
+     "steered_logprob_maxdiff_vs_hf": 0.2365894317626953,
+     "tol": 0.3682773208618164,
+     "greedy8_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy_all_equal": true,
+     "n_greedy_equal": 4,
+     "hf_greedy_error": null
+    }
+   ],
+   "layer_replace": [
+    {
+     "batch": 64,
+     "scale": 23.16317367553711,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999969601631165,
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 64,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "embed_replace": [
+    {
+     "n_checked": 64,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.007633587786259542,
+     "min_cos_marker_row": 0.999997079372406,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.89453125,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.376953125,
+     "batch": 64,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 64,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 17,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999971985816956,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.8671875,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.484375,
+     "batch": 512,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 512,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 64,
+     "scale": 1.0,
+     "norm_match": true,
+     "max_rel_err_marker_row": 0.007633587786259542,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.8984375,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.390625,
+     "batch": 64,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 64,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 17,
+     "scale": 1.0,
+     "norm_match": true,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.8671875,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.48828125,
+     "batch": 512,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 512,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "mixed": [
+    {
+     "n_checked": 32,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.005319148936170213,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.89453125,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.376953125,
+     "batch": 64,
+     "coeff": 1.0,
+     "add_min_cos": 0.9999856948852539,
+     "add_max_abs_ratio_minus_1": 0.00037467479705810547,
+     "add_max_other_row_abs_delta": 0.0,
+     "add_max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 1,
+      "vectorized_layer_steps": 1,
+      "rows_steered": 32,
+      "rows_replaced": 32,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ],
+   "throughput": {
+    "rows": {
+     "nosteer": {
+      "512": {
+       "wall_s": 1.4926010150000053,
+       "tok_per_s": 13721.014386419889,
+       "gen_tokens": 20480,
+       "hook_passes": 41,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 2,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.3741441180000038,
+       "tok_per_s": 29807.644964936557,
+       "gen_tokens": 40960,
+       "hook_passes": 41,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 2,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     },
+     "karvonen_add": {
+      "512": {
+       "wall_s": 0.9613559160000023,
+       "tok_per_s": 21303.244364702023,
+       "gen_tokens": 20480,
+       "hook_passes": 41,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 0,
+        "steer_layer_steps": 2,
+        "vectorized_layer_steps": 2,
+        "rows_steered": 512,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.4964566109999993,
+       "tok_per_s": 27371.324834222018,
+       "gen_tokens": 40960,
+       "hook_passes": 41,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 0,
+        "steer_layer_steps": 2,
+        "vectorized_layer_steps": 2,
+        "rows_steered": 1024,
+        "rows_replaced": 0,
+        "embed_apply_steps": 0,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     },
+     "embed_replace": {
+      "512": {
+       "wall_s": 1.0052658759999957,
+       "tok_per_s": 20372.719783835662,
+       "gen_tokens": 20480,
+       "hook_passes": 41,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 2,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 512,
+        "embed_apply_steps": 2,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      },
+      "1024": {
+       "wall_s": 1.4965861080000025,
+       "tok_per_s": 27368.956440961385,
+       "gen_tokens": 40960,
+       "hook_passes": 42,
+       "stats": {
+        "steps_fast_idle": 39,
+        "steps_planned": 3,
+        "steps_idle": 0,
+        "steer_layer_steps": 0,
+        "vectorized_layer_steps": 0,
+        "rows_steered": 0,
+        "rows_replaced": 1024,
+        "embed_apply_steps": 3,
+        "embed_errors": 0,
+        "rows_skipped_generated": 0,
+        "errors": 0
+       }
+      }
+     }
+    },
+    "baseline_series": {
+     "fork_graphs": {
+      "8": {
+       "wall_s": 0.20694863500000338,
+       "tok_per_s": 1546.2774132334566,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.2547758359999932,
+       "tok_per_s": 5024.024334866805,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.41490878999999836,
+       "tok_per_s": 12340.06153497018,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 0.8402049719999809,
+       "tok_per_s": 24375.004531632865,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 1.6339593300000104,
+       "tok_per_s": 25067.94339856656,
+       "n_rep": 1
+      }
+     },
+     "ceiling_graphs": {
+      "8": {
+       "wall_s": 0.21140344700000924,
+       "tok_per_s": 1513.693388357977,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.24082912100001863,
+       "tok_per_s": 5314.97185508517,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.4067792350000161,
+       "tok_per_s": 12586.679848591084,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.0538117300000067,
+       "tok_per_s": 19434.21146014371,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 1.5745937730000037,
+       "tok_per_s": 26013.058543957486,
+       "n_rep": 1
+      }
+     },
+     "fork_vectorized": {
+      "8": {
+       "wall_s": 0.7447684810000084,
+       "tok_per_s": 429.66372525638127,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 0.6984690369999953,
+       "tok_per_s": 1832.5794447492576,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.9104998090000009,
+       "tok_per_s": 5623.285089563368,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.4039368259999918,
+       "tok_per_s": 14587.550964348105,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 2.2503722010000047,
+       "tok_per_s": 18201.433514775235,
+       "n_rep": 1
+      }
+     },
+     "ceiling_eager": {
+      "8": {
+       "wall_s": 0.7454121450000031,
+       "tok_per_s": 429.2927102764051,
+       "n_rep": 1
+      },
+      "32": {
+       "wall_s": 1.7734632770000047,
+       "tok_per_s": 721.7516238426157,
+       "n_rep": 1
+      },
+      "128": {
+       "wall_s": 0.9846900510000012,
+       "tok_per_s": 5199.605698057361,
+       "n_rep": 1
+      },
+      "512": {
+       "wall_s": 1.8848633810000024,
+       "tok_per_s": 10865.508984069957,
+       "n_rep": 1
+      },
+      "1024": {
+       "wall_s": 2.730843445000005,
+       "tok_per_s": 14999.028990473647,
+       "n_rep": 1
+      }
+     }
+    }
+   }
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)",
+    "ok": true,
+    "detail": "rel=0.00e+00"
+   },
+   {
+    "case": "probe",
+    "check": "clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)",
+    "ok": true,
+    "detail": "rel=0.00e+00 |h|_vllm=23.163 |h|_hf=23.163"
+   },
+   {
+    "case": "probe",
+    "check": "capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0004] over 64 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)",
+    "ok": true,
+    "detail": "cos=0.99998 ratio\u2208[1.0016,1.0020] (n=4)"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0002] over 17 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=1.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))",
+    "ok": true,
+    "detail": "steered max|d|=0.1354, clean-prompt noise=0.2389, tol=0.3683"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=1.0: greedy 8-token steered continuation == HF-hooked reference (informational)",
+    "ok": true,
+    "detail": "equal"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0003] over 64 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=4.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=4.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)",
+    "ok": true,
+    "detail": "cos=0.99999 ratio\u2208[1.0016,1.0018] (n=4)"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0001] over 17 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=4.0: rows other than the marker untouched at layer L",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=4.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))",
+    "ok": true,
+    "detail": "steered max|d|=0.2366, clean-prompt noise=0.2389, tol=0.3683"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=4.0: greedy 8-token steered continuation == HF-hooked reference (informational)",
+    "ok": true,
+    "detail": "equal"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: other rows and the embedding stream untouched",
+    "ok": true,
+    "detail": "max|\u0394| rows=0.00e+00 embed=0.00e+00"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: vectorised replace path, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.895e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.898e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=5.32e-03 min cos=0.999997 over 32 requests"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.895e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0004] other=0.0e+00 embed=0.0e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: embed-replace wall time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "embed 1.01s vs nosteer 1.49s (-32.7%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: karvonen-add (norm_match) wall time within 10% of no-steering",
+    "ok": true,
+    "detail": "add 0.96s vs nosteer 1.49s (-35.6%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=512: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+    "ok": true,
+    "detail": "now 0.96s vs recorded 1.40s (-31.5%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: embed-replace wall time within 10% of no-steering (same engine, hooks installed)",
+    "ok": true,
+    "detail": "embed 1.50s vs nosteer 1.37s (+8.9%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: karvonen-add (norm_match) wall time within 10% of no-steering",
+    "ok": true,
+    "detail": "add 1.50s vs nosteer 1.37s (+8.9%)"
+   },
+   {
+    "case": "throughput",
+    "check": "B=1024: no regression vs bench/results_summary.json fork_vectorized (\u2264 +10%)",
+    "ok": true,
+    "detail": "now 1.50s vs recorded 2.25s (-33.5%)"
+   }
+  ],
+  "hidden_dim": 2048,
+  "embed_marker_norm": 1.3797909021377563,
+  "h_full_marker_norm_layer_L": 23.16317367553711,
+  "all_pass": true
+ }
+}

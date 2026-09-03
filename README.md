@@ -1,13 +1,23 @@
 # vllm-lens-metamodel
 
-**A [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) fork that is up to 38× faster for RL-style workloads — one steering vector per prompt over large batches (22× at 1,024 requests, 38× at 2,048 on Qwen3.6-27B / B200) — via an indexed hook, prefill-only vectorised injection and CUDA graphs.** Drop-in replacement for vllm-lens 1.1.0 (same package name, same public API).
+**This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), it's just 38× faster at high batch sizes.** 
+
+Many meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs all require you to inject an activation.
+Default VLLM is really really annoying for this, so the external meta-model community has largely been using a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a fork of VLLM that allows you to steer using arbitrary activations.
+However, vllm-lens does not go brr. For meta-model purposes (injecting one vector at one index) It is ~38x slower on large batch sizes.
+
+This is because the injection is implemented using a python for loop. Using an indexed hook that is applied in a vectorized fashion along with utilizing cuda graphs brings performance very close to actual vllm performance.
+
+This fork can also be used to just steer the model if cuda graphs are disabled.
 
 ```bash
 pip install git+https://github.com/ceselder/vllm-lens-metamodel
 ```
 
-<!-- RESULTS:BEGIN -->
-**Measured on 1× B200, Qwen/Qwen3.6-27B bf16, 96-token prompts, 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 2,048 the fork is **37.8× faster** than stock 1.1.0 with CUDA graphs (36.3× from the indexed hook alone, 36.8× with the vectorised apply, eager), +0.5% wall time vs the same engine running no steering at all; steering output is numerically identical to stock (110/110 correctness checks pass: injected delta cos = 1.000, magnitude ratio = 1.000, same hidden states and next-token logprobs).
+## Comparisons
+The comparisons I did are for the exact situation for the model I'm training for my upcoming paper: MAEMMs
+
+**Measured on 1× B200, Qwen/Qwen3.6-27B bf16, 96-token prompts, generating 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 2,048 the fork is **37.8× faster** than stock 1.1.0 with CUDA graphs (36.3× from the indexed hook alone, 36.8× with the vectorised apply, eager), coming within +-5% of not doing steering at all.
 
 ![per-request steering throughput vs batch size](bench/steering_throughput.png)
 
@@ -19,12 +29,11 @@ Wall time of one `LLM.generate()` call (Qwen/Qwen3.6-27B, speedup vs stock in bo
 | fork: indexed hook (eager) | 1.2 s (**1.6×**) | 1.3 s (**2.7×**) | 1.9 s (**6.4×**) | 5.8 s (**13.1×**) | 10.6 s (**21.6×**) | 21.4 s (**36.3×**) |
 | fork: indexed + vectorised apply (eager) | 1.3 s (**1.5×**) | 1.4 s (**2.5×**) | 2.0 s (**6.1×**) | 5.8 s (**13.1×**) | 10.5 s (**21.8×**) | 21.1 s (**36.8×**) |
 | fork: indexed + vectorised + CUDA graphs | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.6 s (**7.9×**) | 5.5 s (**13.9×**) | 10.5 s (**21.9×**) | 20.5 s (**37.8×**) |
-| no steering, same engine config (ceiling) | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.5 s (**8.0×**) | 5.5 s (**13.9×**) | 10.4 s (**22.1×**) | 20.4 s (**38.0×**) |
-| no steering, vLLM default compile + graphs (ceiling) | 0.5 s (**3.7×**) | 0.7 s (**4.9×**) | 1.5 s (**8.4×**) | 5.3 s (**14.5×**) | 10.1 s (**22.8×**) | 19.7 s (**39.5×**) |
+| vLLM baseline (compile + graphs) (ceiling) | 0.5 s (**3.7×**) | 0.7 s (**4.9×**) | 1.5 s (**8.4×**) | 5.3 s (**14.5×**) | 10.1 s (**22.8×**) | 19.7 s (**39.5×**) |
 
 Eager rows ran with `max_num_seqs=2048` (B = 2,048 in one scheduler wave); the CUDA-graph rows with `max_num_seqs=1024` and vLLM's default capture ladder (`max_cudagraph_capture_size=1024`), so B = 2,048 is two waves there -- see the vLLM caveat below (packed GDN decode kernel grid limit). Decode at these sizes is compute-bound and scales linearly (2,048 takes 2x the 1,024 time in every configuration).
 
-Second panel, Qwen/Qwen3-1.7B (same protocol; small models are hook-overhead dominated, so the gap is larger):
+The gap is even bigger on smaller models, where the hook is actually the majority of overhead in a lot of cases (Qwen/Qwen3-1.7B, same experiment)
 
 ![Qwen/Qwen3-1.7B](bench/steering_throughput_qwen3-1.7b.png)
 
@@ -34,31 +43,12 @@ Second panel, Qwen/Qwen3-1.7B (same protocol; small models are hook-overhead dom
 | fork: indexed hook (eager) | 0.7 s (**0.9×**) | 0.7 s (**1.9×**) | 0.9 s (**5.7×**) | 1.4 s (**22.4×**) | 2.7 s (**35.2×**) |
 | fork: indexed + vectorised apply (eager) | 0.7 s (**0.8×**) | 0.7 s (**1.9×**) | 0.9 s (**5.5×**) | 1.4 s (**22.5×**) | 2.3 s (**43.0×**) |
 | fork: indexed + vectorised + CUDA graphs | 0.2 s (**2.9×**) | 0.3 s (**5.2×**) | 0.4 s (**12.0×**) | 0.8 s (**37.5×**) | 1.6 s (**59.3×**) |
-| no steering, same engine config (ceiling) | 0.2 s (**2.8×**) | 0.2 s (**5.5×**) | 0.4 s (**12.3×**) | 1.1 s (**29.9×**) | 1.6 s (**61.5×**) |
-| no steering, vLLM default compile + graphs (ceiling) | 0.1 s (**4.8×**) | 0.2 s (**7.4×**) | 0.3 s (**16.8×**) | 0.8 s (**38.9×**) | 1.7 s (**56.3×**) |
+| vLLM  baseline (compile + graphs) (ceiling) | 0.1 s (**4.8×**) | 0.2 s (**7.4×**) | 0.3 s (**16.8×**) | 0.8 s (**38.9×**) | 1.7 s (**56.3×**) |
 
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
-## Why this fork: 22–38× faster per-request steering
-
-The workload this fork targets is the activation-oracle / "meta-model" rollout used in RL:
-**every request in a batch carries its own steering vector**, applied at one layer on that
-request's marker token, with batches of hundreds to thousands of requests and a few dozen
-generated tokens each.
-
-Stock vllm-lens 1.1.0 resolves a request's steering vectors inside its forward hook with
-`_find_steering_configs`: **for every decoder layer, for every request in the batch, a
-`str.startswith` scan over every registered steering key**, plus two `Tensor.item()`
-device syncs per request per layer and one small GPU kernel per steered row. With one key
-per request that is O(layers × requests × keys) Python and O(layers × requests) GPU syncs
-on *every decode step* — about 1.5 s per step for 64 layers × 1024 requests — which is why
-batching looked sub-linear. The plugin also unconditionally forced `enforce_eager=True`, so
-vLLM never captured CUDA graphs.
-
-The fork keeps the exact 1.1.0 semantics (same matching rules, unchanged `norm_match` and
-`_apply_steering` arithmetic, identical outputs) and changes how the hook gets there:
-
+## Overview of changes
 | | stock 1.1.0 | vllm-lens-metamodel |
 |---|---|---|
 | resolve a request's vectors | `startswith` over all keys, every layer, every step | dict lookups, once per request, cached |
@@ -69,7 +59,6 @@ The fork keeps the exact 1.1.0 semantics (same matching rules, unchanged `norm_m
 | CUDA graphs | impossible (`enforce_eager` forced) | opt-in: `VLLM_LENS_CUDA_GRAPHS=1` → decode graphs, prompt-position steering |
 
 ### What changed (small, upstreamable diff)
-
 Only two library files change against upstream `v1.1.0`; every upstream function stays
 verbatim (`_get_layers`, `_find_steering_configs`, `norm_match`, `_apply_steering`, the
 capture / state methods) and only the body of `_hook_inner` is replaced. `git diff v1.1.0 --stat`:
@@ -95,7 +84,7 @@ capture / state methods) and only the body of `_hook_inner` is replaced. `git di
 - Offline `LLM.generate`: one `set_steering_block` RPC for the call's single-position vectors (+ one `set_steering_data_many` for anything else) instead of one RPC per request; clears in a `finally`.
 - `VLLM_LENS_DISABLE=1` no-op switch (as in upstream 1.2.0); `_check_graph_mode_request` fails fast on 2-D vectors under CUDA graphs.
 
-### CUDA graphs: what you get and what you give up
+### CUDA graphs
 
 ```python
 import os
@@ -114,116 +103,5 @@ once). If chunked prefill could leave a 1-token final chunk (dispatched as a dec
 the fork warns at hook installation — set `max_num_batched_tokens` above your longest
 prompt × concurrency. Without the variable, behaviour is exactly 1.1.0's (eager forced).
 
-**vLLM caveat (hybrid GatedDeltaNet models such as Qwen3.5/3.6, vLLM 0.19):** keep `max_num_seqs <= 1024` when CUDA graphs are on. vLLM's packed GDN decode kernel launches a `batch x value_heads` grid (48 heads on Qwen3.6-27B) and the CUDA grid-dimension limit is 65,535; with `max_num_seqs=2048` the engine died at start-up in the graph warm-up (`Triton Error [CUDA]: invalid argument`) with or without vllm-lens, while `max_num_seqs=1024` with vLLM's default capture ladder (`compilation_config={"max_cudagraph_capture_size": 1024}`) works (`bench/diag_engine.py`; LoRA on/off and the packed kernel on/off make no difference). Batches larger than `max_num_seqs` simply run as several scheduler waves.
+**known vLLM bug for hybrid GatedDeltaNet models such as Qwen3.5/3.6, vLLM 0.19:** keep `max_num_seqs <= 1024` when CUDA graphs are on. vLLM's packed GDN decode kernel launches a `batch x value_heads` grid (48 heads on Qwen3.6-27B) and the CUDA grid-dimension limit is 65,535; with `max_num_seqs=2048` the engine died at start-up in the graph warm-up (`Triton Error [CUDA]: invalid argument`) with or without vllm-lens, while `max_num_seqs=1024` with vLLM's default capture ladder (`compilation_config={"max_cudagraph_capture_size": 1024}`) works (`bench/diag_engine.py`; LoRA on/off and the packed kernel on/off make no difference). Batches larger than `max_num_seqs` simply run as several scheduler waves.
 
-Environment variables: `VLLM_LENS_CUDA_GRAPHS` (opt-in graphs), `VLLM_LENS_VECTORIZED=0`
-(sequential apply), `VLLM_LENS_BLOCK_RPC=0` (per-key RPC), `VLLM_LENS_DISABLE=1` (plugin off).
-
-### Benchmark
-
-`bench/bench_steering.py` measures generation throughput vs batch size for stock 1.1.0, the
-fork (indexed hook), the fork with the vectorised apply, the fork with CUDA graphs, and
-no-steering ceilings, with a fixed correctness probe in every configuration (injected
-delta vs vector: cos and magnitude ratio; steered hidden state and next-token logprobs vs
-stock). `bench/modal_bench.py` runs it on one B200 on [Modal](https://modal.com):
-
-```bash
-MODAL_PROFILE=<your workspace> modal run bench/modal_bench.py::main --small-model Qwen/Qwen3-1.7B
-python bench/compare.py bench/results/<timestamp>     # speedup table + correctness assertions
-python bench/plot_bench.py bench/results/<timestamp>  # PNG + PDF + data JSON
-```
-
-CPU-only unit tests for the indexed path: `pytest vllm_lens/tests/test_steering_index.py --noconftest`.
-
-### Relation to upstream
-
-Branch `main` = upstream `v1.1.0` + the fork commits (this is a GitHub fork, MIT license
-preserved; original author Alan Cooney, UK AI Security Institute). Upstream 1.2.x adds
-generic hooks and `LLM.chat` support but still has the per-layer key scan and forced eager
-mode; two upstream behaviour changes are deliberately not included (see `CHANGELOG.md`).
-
----
-
-## Upstream README (vllm-lens v1.1.0)
-
-
-vLLM-Lens enables top-down interpretability (e.g., probes, steering, activation oracles). It offers high performance, supporting tensor parallelism & pipeline parallelism (across GPUs and nodes) out of the box. You can also apply all these techniques concurrently (in the same dynamic batch) - removing the need to switch between model instances.
-
-Note this performance comes at the expense of flexibility - for example, you would need to edit the source to add additional custom hooks (though it should be easy enough for coding agents to do that). For more flexibility out of the box, consider [nnsight](https://nnsight.net/) or [TransformerLens](https://transformerlensorg.github.io/TransformerLens/).
-
-The module auto-registers as a [vLLM general plugin](https://docs.vllm.ai/en/latest/design/plugin_system.html) and an [Inspect](https://inspect.aisi.org.uk/) model provider on install. Interact with model internals per-call via `SamplingParams.extra_args` (vLLM) or `GenerateConfig.extra_body` (Inspect).
-
-### Install
-
-```bash
-uv add vllm-lens
-```
-
-### Examples
-
-These examples use the Inspect integration. See the [`examples/`](examples/) folder for offline and online direct vLLM usage.
-
-#### Inspect AI provider
-
-An [Inspect AI](https://inspect.ai-safety-institute.org.uk/) model provider is auto-registered as `vllm-lens`, when you install this package. This model provider extends the built-in vLLM provider to serialize `torch.Tensor` steering vectors for HTTP transport and decode base64-encoded activations from responses into `ModelOutput.metadata["activations"]`. It also supports LoRA adaptors.
-
-Usage is the same as the [default vLLM provider](https://inspect.aisi.org.uk/providers.html#vllm) but with the `vllm-lens` prefix (e.g. `vllm-lens/meta-llama/Llama-3.1-1B`).
-
-##### Extracting activations
-
-```python
-capture_config = GenerateConfig(
-    temperature=0.0,
-    max_tokens=1,
-    extra_body={
-        "extra_args": {"output_residual_stream": extraction_activation_layers},
-        "chat_template_kwargs": {"enable_thinking": False},
-    },
-)
-output = await model.generate(state.messages, config=capture_config)
-residual_stream = output.metadata["activations"]["residual_stream"]
-```
-
-##### Steering with an Activation Oracle
-
-```python
-from vllm_lens import SteeringVector
-
-messages = [ChatMessageUser(content=oracle_content)]
-oracle_config = GenerateConfig(
-    temperature=0.0,
-    max_tokens=50,
-    extra_body={
-        "extra_args": {
-            "apply_steering_vectors": [
-                SteeringVector(
-                    activations=act_vector,
-                    layer_indices=[injection_layer],
-                    scale=steering_coefficient,
-                    norm_match=True,
-                    position_indices=[special_pos],
-                )
-            ],
-        },
-        "lora_request": {
-            "lora_name": "oracle",
-            "lora_int_id": 1,
-            "lora_path": lora_path,
-        },
-        "chat_template_kwargs": {"enable_thinking": False},
-    },
-)
-response = await model.generate(messages, config=oracle_config)
-```
-
-### Theory
-
-vllm-lens registers as a [vLLM plugin](https://docs.vllm.ai/en/stable/design/plugin_system) and injects itself into vLLM's processing pipeline at broadly 3 stages:
-
-1. **Intercepting generate calls.** To utilise the plugin, you can pass [extra args](https://docs.vllm.ai/en/stable/api/vllm/sampling_params/#vllm.sampling_params.SamplingParams.extra_args) such as `output_residual_stream` or `apply_steering_vectors` in the sampling parameters. The plugin extracts these, initialises relevant [PyTorch hooks](https://docs.pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html) if they're not already setup (by adding a [worker extension](https://docs.vllm.ai/en/stable/cli/run-batch/?h=worker+extension#-worker-extension-cls)) and sends steering vectors directly to workers (vLLM typically has one worker per GPU).
-2. **Per-sample hook operations**. vLLM dynamically batches tokens from multiple concurrent requests into a single forward pass, so a core challenge is "book-keeping" - working out which operations (e.g., activation extraction) should be applied to which parts of the request. To do this we read the `forward_context` metadata, utilising the `query_start_loc` (a tensor of token boundaries per request) and `req_ids` (mapping batch index to request ID). We then, for example, apply hooks to just the slices that correspond to the request. Any extracted activations are moved to CPU ram and compressed (lossless), ready to be requested by the vLLM scheduler process. Steering runs on all tensor-parallel ranks (since it modifies the forward pass), but capture only runs on TP rank 0 (residual streams are identical across TP replicas after all-reduce).
-3. **Response collation.** The plugin intercepts the response before it is sent to the client, at which point it queries the relevant vLLM processes for any requested activations. If trims surplus activations, as vLLM does under the hook with tokens (the scheduler often gets ahead of the number of tokens it needs to generate, before stopping). Activations are then returned to the client.
-
-### Credits
-
-Developed by Alan Cooney, with credit going to Sid Black for the original vLLM worker extension idea.

@@ -1,0 +1,219 @@
+{
+ "returncode": 0,
+ "elapsed_s": 965.6100797653198,
+ "log_tail": "norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:57:11  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:57:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:57:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:57:33  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:57:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:57:44  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:57:48  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:57:56  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:58:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:58:09  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:58:16  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:58:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:58:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:58:35  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:58:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:58:47  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:58:50  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:58:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:59:05  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:59:12  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:59:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:59:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:59:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:59:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:59:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 21:59:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 21:59:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:00:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:00:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:00:23  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:00:28  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:00:36  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:00:41  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:00:49  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:00:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_fused_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:00:55  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_fused_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:00:56  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) \n                                                                                     \n\nCapturing CUDA graphs (decode, FULL):  96%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b| 80/83 [04:08<00:00,  3.30it/s]\nCapturing CUDA graphs (decode, FULL):  98%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258a| 81/83 [04:09<00:06,  3.45s/it]\nCapturing CUDA graphs (decode, FULL):  99%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2589| 82/83 [04:09<00:02,  2.55s/it]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 83/83 [04:10<00:00,  2.04s/it]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 83/83 [04:10<00:00,  3.02s/it]\n(Worker_TP0 pid=335) 2026-09-03 21:57:00  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:57:08  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:57:11  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:57:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:57:25  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:57:33  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:57:37  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:57:44  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:57:48  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:57:56  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:58:02  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:58:10  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:58:16  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:58:24  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:58:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:58:35  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:58:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:58:47  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:58:50  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:58:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:59:05  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:59:12  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:59:19  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:59:27  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:59:31  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:59:39  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:59:46  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 21:59:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 21:59:58  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:00:06  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 22:00:15  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:00:23  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 22:00:28  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:00:36  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 22:00:41  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:00:49  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 22:00:54  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_fused_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:00:55  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_fused_tilelang`\n(Worker_TP0 pid=335) 2026-09-03 22:00:56  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:01:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) INFO 09-03 22:01:07 [gpu_model_runner.py:6913] Graph capturing finished in 252 secs, took 1.58 GiB\n(Worker_TP0 pid=335) INFO 09-03 22:01:07 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP0 pid=335) INFO 09-03 22:01:07 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n2026-09-03 22:01:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP3 pid=338) INFO 09-03 22:01:07 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP3 pid=338) INFO 09-03 22:01:07 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n2026-09-03 22:01:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP1 pid=336) INFO 09-03 22:01:07 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP1 pid=336) INFO 09-03 22:01:07 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n2026-09-03 22:01:04  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) INFO 09-03 22:01:07 [gpu_worker.py:726] CUDA graph pool memory: 1.58 GiB (actual), 1.82 GiB (estimated), difference: 0.24 GiB (15.2%).\n(Worker_TP2 pid=337) INFO 09-03 22:01:07 [gpu_worker.py:789] Free memory on device (175.92/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 39.21 GiB for consumed memory (weights + non-torch), 3.6 GiB for peak activation, and 1.58 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=114966223258` (107.07 GiB) to fit into requested memory, or `--kv-cache-memory=141080936448` (131.39 GiB) to fully utilize gpu memory. Current kv cache memory in use is 108.8 GiB.\n(Worker_TP0 pid=335) INFO 09-03 22:01:07 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP1 pid=336) INFO 09-03 22:01:07 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP3 pid=338) INFO 09-03 22:01:07 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(Worker_TP2 pid=337) INFO 09-03 22:01:07 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(EngineCore pid=189) INFO 09-03 22:01:07 [core.py:355] init engine (profile, create kv cache, warmup model) took 651.59 s\n(EngineCore pid=189) WARNING 09-03 22:01:09 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=189) WARNING 09-03 22:01:09 [vllm.py:1237] VLLM_USE_BREAKABLE_CUDAGRAPH is set, disabling vLLM's torch.compile pipeline. Equivalent to -cc.mode=none.\n(EngineCore pid=189) WARNING 09-03 22:01:09 [vllm.py:1247] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=189) INFO 09-03 22:01:09 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])\nWARNING 09-03 22:01:09 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=189) INFO 09-03 22:01:09 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant, allreduce_rms\n[inj 22:01:09] engine up 889s vllm=0.27.1 vllm-lens=1.1.0.post3 {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'n_capture_sizes': 83, 'max_num_batched_tokens': 4096, 'max_num_seqs': 1024, 'num_layers': 43, 'tensor_parallel_size': 4, 'kv_cache_dtype': 'fp8_ds_mla', 'moe_backend': 'deep_gemm', 'hc_mult': 4, 'enable_prefix_caching': False, 'expert_dtype': 'fp4'}\n[inj 22:01:10] reference impl (nla.utils.dsv4_fast_hooks) installed on layer 0: ['ok', 'ok', 'ok', 'ok']\n[inj 22:01:10] D=4096 |embed[M]|=1.5324 caps={'multi_stream': True, 'prompt_only': True, 'num_layers': 43, 'hooks_installed': True}\n[inj 22:01:10]   [PASS] probe: capabilities RPC reports a multi-stream (hyper-connection) architecture  {\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}\n[inj 22:01:10]   [PASS] probe: embedding-stream capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}\n(Worker_TP0 pid=335) WARNING 09-03 22:01:13 [jit_monitor.py:135] TileLang JIT compilation during inference: mhc_pre_big_fuse_broadcast_with_norm_tilelang. This causes a latency spike; consider extending warmup to cover this shape/config.\n(Worker_TP0 pid=335) 2026-09-03 22:01:13  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:01:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) WARNING 09-03 22:01:26 [jit_monitor.py:135] TileLang JIT compilation during inference: mhc_pre_big_fuse_with_norm_tilelang. This causes a latency spike; consider extending warmup to cover this shape/config.\n(Worker_TP0 pid=335) 2026-09-03 22:01:26  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:01:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP0 pid=335) WARNING 09-03 22:01:35 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _fwd_kernel_ep_scatter_1. This causes a latency spike; consider extending warmup to cover this shape/config.\n[inj 22:01:40]   clean-vs-clean control B=64: top-20 log-prob max|\u0394| = 0.000, argmax flips 0.0% (engine nondeterminism floor)\n[inj 22:01:56]   diag a: even rows different marker TOKEN, no hooks: unsteered odd rows max|\u0394 top-20 logprob| vs clean = 1.016 (floor 0.000), argmax flips 0.0%; even rows effect 0.843, argmax changed 0%; rows_replaced=0\n[inj 22:01:57]   diag b: even rows different marker TOKEN, capture on all rows: unsteered odd rows max|\u0394 top-20 logprob| vs clean = 1.016 (floor 0.000), argmax flips 0.0%; even rows effect 0.843, argmax changed 0%; rows_replaced=0\n[inj 22:01:58]   diag c: even rows embed-replaced (alpha): unsteered odd rows max|\u0394 top-20 logprob| vs clean = 1.016 (floor 0.000), argmax flips 0.0%; even rows effect 1.089, argmax changed 0%; rows_replaced=32\n[inj 22:02:02]   diag d: even rows replaced by their OWN clean embedding (no-op write): unsteered odd rows max|\u0394 top-20 logprob| vs clean = 1.251 (floor 0.000), argmax flips 0.0%; even rows effect 0.129, argmax changed 0%; rows_replaced=32\n[inj 22:02:02]   diag e: all rows clean, capture on all rows: unsteered odd rows max|\u0394 top-20 logprob| vs clean = 1.016 (floor 0.000), argmax flips 0.0%; even rows effect 0.284, argmax changed 0%; rows_replaced=0\n[inj 22:02:02]   [n/a ] batch_composition: a: even rows different marker TOKEN, no hooks: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)  max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843\n[inj 22:02:02]   [n/a ] batch_composition: b: even rows different marker TOKEN, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)  max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843\n[inj 22:02:02]   [n/a ] batch_composition: c: even rows embed-replaced (alpha): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)  max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 1.089\n[inj 22:02:02]   [n/a ] batch_composition: d: even rows replaced by their OWN clean embedding (no-op write): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)  max|\u0394|=1.251, argmax flips 0.0%; even rows: effect 0.129\n[inj 22:02:02]   [n/a ] batch_composition: e: all rows clean, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)  max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.284\n[inj 22:02:02]   [PASS] batch_composition: fork-specific contamination? embed-replace mixed batch (c) vs the hook-free different-token control (a): the fork must not add cross-request influence beyond what plain vLLM shows for a changed prompt (\u0394_c \u2264 \u0394_a + 0.01, or both \u2264 tol)  odd-row max|\u0394|: (a) different token, no hooks = 1.016; (b) + capture = 1.016; (c) embed-replace = 1.016; (d) no-op replace = 1.251; (e) all clean + capture = 1.016; clean-vs-clean floor 0.000\n[inj 22:02:02] done (diag): 3/3 gated checks pass\nINFO 09-03 22:02:02 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore\n(EngineCore pid=189) INFO 09-03 22:02:02 [core.py:1332] [shutdown] EngineCore: trigger received signal=SIGTERM\n(EngineCore pid=189) INFO 09-03 22:02:02 [core.py:1468] [shutdown] EngineCore: start mode=abort timeout=0s\n(EngineCore pid=189) INFO 09-03 22:02:02 [core.py:1499] [shutdown] EngineCore: request processing complete; starting resource teardown\n(EngineCore pid=189) INFO 09-03 22:02:02 [core.py:1345] [shutdown] EngineCore: exiting busy loop\n(Worker_TP0 pid=335) 2026-09-03 22:01:43  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP0 pid=335) 2026-09-03 22:01:51  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP0 pid=335) INFO 09-03 22:02:02 [multiproc_executor.py:804] Parent process exited, terminating worker queues\n(EngineCore pid=189) INFO 09-03 22:02:02 [multiproc_executor.py:440] [shutdown] Executor: waiting for worker exit count=4\n(Worker_TP2 pid=337) 2026-09-03 22:01:13  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:01:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:01:26  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:01:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP2 pid=337) 2026-09-03 22:01:43  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP2 pid=337) 2026-09-03 22:01:51  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 22:01:13  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 22:01:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 22:01:26  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 22:01:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP1 pid=336) 2026-09-03 22:01:43  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP1 pid=336) 2026-09-03 22:01:51  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 22:01:13  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 22:01:21  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 22:01:26  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 22:01:34  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_with_norm_tilelang`\n(Worker_TP3 pid=338) 2026-09-03 22:01:43  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:129): TileLang begins to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang` with `out_idx=None`\n(Worker_TP3 pid=338) 2026-09-03 22:01:51  [TileLang:tilelang.jit.kernel:INFO] (kernel.py:137): TileLang completes to compile kernel `mhc_pre_big_fuse_broadcast_with_norm_tilelang`\n(EngineCore pid=189) INFO 09-03 22:02:07 [multiproc_executor.py:447] [shutdown] Executor: all workers exited gracefully\nWARNING 09-03 22:02:07 [utils.py:632] [shutdown] Process manager: force killing remaining processes count=1\nWARNING 09-03 22:02:07 [utils.py:637] [shutdown] Process manager: force killing remaining process EngineCore pid 189\n",
+ "gpu": "B200:4",
+ "result": {
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "engine": "graphs",
+  "chunked": false,
+  "multi_stream": true,
+  "gpu": "NVIDIA B200 x4",
+  "versions": {
+   "vllm": "0.27.1",
+   "torch": "2.13.0+cu130",
+   "vllm_lens": "1.1.0.post3"
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "n_capture_sizes": 83,
+   "max_num_batched_tokens": 4096,
+   "max_num_seqs": 1024,
+   "num_layers": 43,
+   "tensor_parallel_size": 4,
+   "kv_cache_dtype": "fp8_ds_mla",
+   "moe_backend": "deep_gemm",
+   "hc_mult": 4,
+   "enable_prefix_caching": false,
+   "expert_dtype": "fp4"
+  },
+  "engine_up_s": 888.612113108,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "alpha": 95.5,
+  "layer": -1,
+  "hf_ref": false,
+  "cases": {
+   "batch_composition": [
+    {
+     "variant": "a: even rows different marker TOKEN, no hooks",
+     "batch": 64,
+     "nosteer_logprob_maxdiff": 1.0160603523254395,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "even_effect_mean": 0.8427003771066666,
+     "even_argmax_changed_frac": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 3,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "variant": "b: even rows different marker TOKEN, capture on all rows",
+     "batch": 64,
+     "nosteer_logprob_maxdiff": 1.0160603523254395,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "even_effect_mean": 0.8427003771066666,
+     "even_argmax_changed_frac": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "variant": "c: even rows embed-replaced (alpha)",
+     "batch": 64,
+     "nosteer_logprob_maxdiff": 1.0160603523254395,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "even_effect_mean": 1.0891544073820114,
+     "even_argmax_changed_frac": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 32,
+      "embed_apply_steps": 3,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "variant": "d: even rows replaced by their OWN clean embedding (no-op write)",
+     "batch": 64,
+     "nosteer_logprob_maxdiff": 1.2508835792541504,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "even_effect_mean": 0.12922826409339905,
+     "even_argmax_changed_frac": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 4,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 32,
+      "embed_apply_steps": 4,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    },
+    {
+     "variant": "e: all rows clean, capture on all rows",
+     "batch": 64,
+     "nosteer_logprob_maxdiff": 1.0160603523254395,
+     "nosteer_argmax_flip": 0.0,
+     "clean_noise": 0.0,
+     "even_effect_mean": 0.284157931804657,
+     "even_argmax_changed_frac": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 3,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "errors": 0
+     }
+    }
+   ]
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "capabilities RPC reports a multi-stream (hyper-connection) architecture",
+    "ok": true,
+    "detail": "{\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}"
+   },
+   {
+    "case": "probe",
+    "check": "embedding-stream capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}"
+   },
+   {
+    "case": "batch_composition",
+    "check": "a: even rows different marker TOKEN, no hooks: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+    "ok": null,
+    "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843"
+   },
+   {
+    "case": "batch_composition",
+    "check": "b: even rows different marker TOKEN, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+    "ok": null,
+    "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843"
+   },
+   {
+    "case": "batch_composition",
+    "check": "c: even rows embed-replaced (alpha): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+    "ok": null,
+    "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 1.089"
+   },
+   {
+    "case": "batch_composition",
+    "check": "d: even rows replaced by their OWN clean embedding (no-op write): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+    "ok": null,
+    "detail": "max|\u0394|=1.251, argmax flips 0.0%; even rows: effect 0.129"
+   },
+   {
+    "case": "batch_composition",
+    "check": "e: all rows clean, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+    "ok": null,
+    "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.284"
+   },
+   {
+    "case": "batch_composition",
+    "check": "fork-specific contamination? embed-replace mixed batch (c) vs the hook-free different-token control (a): the fork must not add cross-request influence beyond what plain vLLM shows for a changed prompt (\u0394_c \u2264 \u0394_a + 0.01, or both \u2264 tol)",
+    "ok": true,
+    "detail": "odd-row max|\u0394|: (a) different token, no hooks = 1.016; (b) + capture = 1.016; (c) embed-replace = 1.016; (d) no-op replace = 1.251; (e) all clean + capture = 1.016; clean-vs-clean floor 0.000"
+   }
+  ],
+  "hidden_dim": 4096,
+  "embed_marker_norm": 1.5323737859725952,
+  "capabilities": {
+   "multi_stream": true,
+   "prompt_only": true,
+   "num_layers": 43,
+   "hooks_installed": true
+  },
+  "reference_arithmetic": "nla.utils.dsv4.scale_vector_to_alpha",
+  "max_num_cached_tokens": 0,
+  "all_pass": true
+ }
+}

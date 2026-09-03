@@ -581,6 +581,41 @@
      "wall_2T_s": 6.802994304000094
     }
    ]
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "batch_composition",
+   "batch": 64,
+   "nosteer_logprob_maxdiff": 1.0160603523254395
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "batch_composition",
+   "batch": 64,
+   "nosteer_logprob_maxdiff": 1.0160603523254395
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "batch_composition",
+   "batch": 64,
+   "nosteer_logprob_maxdiff": 1.0160603523254395
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "batch_composition",
+   "batch": 64,
+   "nosteer_logprob_maxdiff": 1.2508835792541504
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "case": "batch_composition",
+   "batch": 64,
+   "nosteer_logprob_maxdiff": 1.0160603523254395
   }
  ],
  "checks": [
@@ -1562,8 +1597,8 @@
   },
   {
    "case": "mixed",
-   "check": "B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32",
-   "ok": false,
+   "check": "B=64: unsteered requests' next-token log-probs within the engine's clean-vs-clean noise floor (max|\u0394| \u2264 max(1e-3, 1.5\u00b7floor + 0.01)) and argmax flips \u2264 floor + 1/32 -- ENGINE PROPERTY, informational: the hook-free control (different marker token on the even rows, no hooks at all) shows the same shift, 1.016; see batch_composition",
+   "ok": null,
    "detail": "max|\u0394|=1.016 vs floor 0.000 (tol 0.010); argmax flips 0.0% vs floor 0.0%; steered requests: mean max|\u0394|=1.131, argmax changed 0%",
    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
    "engine": "graphs"
@@ -1655,14 +1690,78 @@
    "detail": "hook passes: embed=29 add=29 nosteer=29",
    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
    "engine": "graphs"
+  },
+  {
+   "case": "probe",
+   "check": "capabilities RPC reports a multi-stream (hyper-connection) architecture",
+   "ok": true,
+   "detail": "{\"multi_stream\": true, \"prompt_only\": true, \"num_layers\": 43, \"hooks_installed\": true}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "probe",
+   "check": "embedding-stream capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"errors\": 0}",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "a: even rows different marker TOKEN, no hooks: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+   "ok": null,
+   "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "b: even rows different marker TOKEN, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+   "ok": null,
+   "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.843",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "c: even rows embed-replaced (alpha): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+   "ok": null,
+   "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 1.089",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "d: even rows replaced by their OWN clean embedding (no-op write): unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+   "ok": null,
+   "detail": "max|\u0394|=1.251, argmax flips 0.0%; even rows: effect 0.129",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "e: all rows clean, capture on all rows: unsteered odd rows unchanged vs the clean batch (max|\u0394| \u2264 0.010; informational -- characterises the engine)",
+   "ok": null,
+   "detail": "max|\u0394|=1.016, argmax flips 0.0%; even rows: effect 0.284",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
+  },
+  {
+   "case": "batch_composition",
+   "check": "fork-specific contamination? embed-replace mixed batch (c) vs the hook-free different-token control (a): the fork must not add cross-request influence beyond what plain vLLM shows for a changed prompt (\u0394_c \u2264 \u0394_a + 0.01, or both \u2264 tol)",
+   "ok": true,
+   "detail": "odd-row max|\u0394|: (a) different token, no hooks = 1.016; (b) + capture = 1.016; (c) embed-replace = 1.016; (d) no-op replace = 1.251; (e) all clean + capture = 1.016; clean-vs-clean floor 0.000",
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs"
   }
  ],
- "n_pass": 125,
- "n_fail": 1,
- "n_info": 8,
- "n_gated": 126,
- "n_checks": 134,
- "all_pass": false,
+ "n_pass": 128,
+ "n_fail": 0,
+ "n_info": 14,
+ "n_gated": 128,
+ "n_checks": 142,
+ "all_pass": true,
  "runs": [
   {
    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
@@ -1788,6 +1887,39 @@
     "expert_dtype": "fp4"
    },
    "engine_up_s": 918.651720034,
+   "hf_ref": false,
+   "hidden_dim": 4096,
+   "embed_marker_norm": 1.5323737859725952,
+   "h_full_marker_norm_layer_L": null
+  },
+  {
+   "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "engine": "graphs",
+   "chunked": false,
+   "gpu": "NVIDIA B200 x4",
+   "throughput_only": false,
+   "source": "dsv4_run4_graphs_diag_20260903_214330/graphs_diag.json",
+   "versions": {
+    "vllm": "0.27.1",
+    "torch": "2.13.0+cu130",
+    "vllm_lens": "1.1.0.post3"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "NONE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 4096,
+    "max_num_seqs": 1024,
+    "num_layers": 43,
+    "tensor_parallel_size": 4,
+    "kv_cache_dtype": "fp8_ds_mla",
+    "moe_backend": "deep_gemm",
+    "hc_mult": 4,
+    "enable_prefix_caching": false,
+    "expert_dtype": "fp4"
+   },
+   "engine_up_s": 888.612113108,
    "hf_ref": false,
    "hidden_dim": 4096,
    "embed_marker_norm": 1.5323737859725952,

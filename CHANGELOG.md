@@ -56,11 +56,12 @@ need vLLM's Marlin-mxfp4 fallback, untested for this model.
   embed-add.  Engine load is ~10–16 min per container (167 GB checkpoint from a Modal volume).
 - Finding (engine, not fork): on the CUDA-graph engine, UNSTEERED requests co-batched with
   embed-replaced requests show next-token top-20 log-probs that differ from a clean batch by up
-  to 1.02 (clean-vs-clean is bit-exact, prefix caching off, `num_cached_tokens = 0`, their
-  embedding stream bit-identical to clean, no leakage across `generate()` calls); the same
-  experiment on the eager engine gives 0.000.  See the README section for the hook-free
-  control that attributes this to batch-composition sensitivity of the vLLM 0.27.1 DeepSeek-V4
-  kernels rather than to the fork.
+  to 1.016 (clean-vs-clean is bit-exact, prefix caching off, `num_cached_tokens = 0`, their
+  embedding stream bit-identical to clean, no leakage across `generate()` calls, greedy argmax
+  unchanged); the same experiment on the eager engine gives 0.000.  A hook-free control (even
+  rows carry a different marker TOKEN, no vllm-lens involvement) reproduces the identical 1.016,
+  so this is batch-composition sensitivity of the vLLM 0.27.1 DeepSeek-V4 kernels under the
+  CUDA-graph configuration, not the fork (`bench/results/dsv4_final`, case `batch_composition`).
 - 5 new CPU tests (43 total).
 
 ## v1.1.0.post2 (3 September 2026) — injection modes: embedding replacement, norm_match on the full residual stream

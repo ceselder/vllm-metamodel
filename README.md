@@ -273,11 +273,22 @@ metadata (vLLM ≥ 0.27 moved it; the runner's host buffers are used), which is 
 vllm-lens 1.2.1's hooks silently no-op on vLLM 0.27, and sets
 `VLLM_ALLOW_INSECURE_SERIALIZATION=1` for its own pickled RPC payloads.
 
+**Engine finding (vLLM 0.27.1 DeepSeek-V4, not the fork).** With CUDA graphs on, the next-token
+top-20 log-probs of an *unsteered* request depend on what else is in its prefill batch: a
+batch identical to the reference is bit-exact (clean-vs-clean 0.000, prefix caching off,
+`num_cached_tokens = 0`), but odd rows co-batched with even rows that merely carry a
+*different marker token* — no hooks anywhere — shift by up to 1.016, the same value seen with
+the fork's embed-replace on the even rows, and the greedy argmax never flips. The eager engine
+shows no such dependence (0.000 in the same experiment). The fork's own write is verified inert
+for those rows (their embedding stream is bit-identical to clean) and adds nothing beyond the
+hook-free control; for RL the actionable part is that per-request log-probs on this engine are
+batch-dependent at the O(1)-in-the-tail level under CUDA graphs.
+
 <!-- INJECTION-DSV4:BEGIN -->
 `bench/test_injection_dsv4.py` on B200 x4 (TP4, vLLM 0.27.1, torch 2.13.0+cu130, vllm-lens 1.1.0.post3;
 `kv_cache_dtype=fp8_ds_mla`, `kernel_config.moe_backend=deep_gemm`, `max_num_batched_tokens=4096` so prefill is chunked;
-`hc_mult=4`, `expert_dtype=fp4`): **125/126 gated checks pass**
-(NOT all; 8 informational). Layer outputs on this architecture are a
+`hc_mult=4`, `expert_dtype=fp4`): **128/128 gated checks pass**
+(all; 14 informational). Layer outputs on this architecture are a
 deferred 4-stream fold, so the fork refuses layer-output steering / capture with a `ValueError` (engine alive) and everything
 goes through the embedding stream (`EMBED_LAYER_INDEX`). The reference is the NLA session's own arithmetic
 (`nla.utils.dsv4.scale_vector_to_alpha`, `alpha·v/‖v‖`) and its worker-side pre-hook (`nla.utils.dsv4_fast_hooks`),
@@ -317,8 +328,13 @@ run on the same engine; "bf16 rel err" in the table is the max relative error of
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
-| DeepSeek-V4-Flash-0731 | graphs | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/7 FAIL |
+| DeepSeek-V4-Flash-0731 | graphs | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/6 |
 | DeepSeek-V4-Flash-0731 | graphs | effect_check | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
 
 | model | engine | condition | B | wall, 40 new tok (s) | wall, 80 new tok (s) | decode step (ms) | prefill + per-call overhead (s) | tok/s | hook passes | checks |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---|

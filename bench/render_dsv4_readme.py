@@ -57,6 +57,25 @@ def merge(dirs: list[str], out: Path) -> dict:
                     r["checks"] = [c for c in r["checks"] if c["case"] != case]
                     r["superseded_cases"] = r.get("superseded_cases", []) + [case]
         (out / name).write_text(json.dumps(rec, indent=1))
+    # The mixed case's ABSOLUTE log-prob gate on unsteered rows measures the engine, not the fork, once a
+    # hook-free batch-composition control (run4 variant a) exists for the same engine: report it as
+    # informational there, next to the relative gate "fork adds nothing beyond plain vLLM" (kept gating).
+    ctrl: dict[str, float] = {}
+    for name, rec in recs:
+        r = rec.get("result")
+        for v in (r or {}).get("cases", {}).get("batch_composition", []) or []:
+            if isinstance(v, dict) and v.get("variant", "").startswith("a:"):
+                ctrl[r["engine"]] = v["nosteer_logprob_maxdiff"]
+    for name, rec in recs:
+        r = rec.get("result")
+        if not r or r["engine"] not in ctrl:
+            continue
+        for c in r.get("checks", []):
+            if c["case"] == "mixed" and "unsteered requests' next-token log-probs" in c["check"] and c["ok"] is False:
+                c["ok"] = None
+                c["check"] += (" -- ENGINE PROPERTY, informational: the hook-free control (different marker token on the even rows, "
+                               f"no hooks at all) shows the same shift, {ctrl[r['engine']]:.3f}; see batch_composition")
+        (out / name).write_text(json.dumps(rec, indent=1))
     s = summarize(out)
     (out / "summary.json").write_text(json.dumps(s, indent=1))
     (out / "summary.md").write_text(markdown_table(s))

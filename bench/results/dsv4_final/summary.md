@@ -32,8 +32,13 @@
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
 | DeepSeek-V4-Flash-0731 | graphs | multi_stream_guard | — | — | — | — | — | — | 8/8 |
-| DeepSeek-V4-Flash-0731 | graphs | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/7 FAIL |
+| DeepSeek-V4-Flash-0731 | graphs | mixed | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 6/6 |
 | DeepSeek-V4-Flash-0731 | graphs | effect_check | 64 | scale 95.50 | 1.00000 | 6.5e-03 | 0.0e+00 | — | 4/4 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
+| DeepSeek-V4-Flash-0731 | graphs | batch_composition | 64 | — | — | — | — | — | 1/1 |
 
 | model | engine | condition | B | wall, 40 new tok (s) | wall, 80 new tok (s) | decode step (ms) | prefill + per-call overhead (s) | tok/s | hook passes | checks |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---|

@@ -1,0 +1,72 @@
+{
+ "Qwen/Qwen3-1.7B": {
+  "batch": 512,
+  "bars": [
+   {
+    "label": "eager engine: generate only",
+    "gen_s": 1.112957234999982,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "eager engine: generate + capture every generated position",
+    "gen_s": 2.432769788999991,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "CUDA-graph engine: generate only",
+    "gen_s": 0.5948650020000059,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "CUDA-graph engine: generate, then re-encode with readout (last 5)",
+    "gen_s": 0.5881570880000027,
+    "reencode_s": 0.4425186170000188
+   },
+   {
+    "label": "CUDA-graph engine: generate, then re-encode with readout + early exit",
+    "gen_s": 0.5821722809999983,
+    "reencode_s": 0.3571109669999828
+   },
+   {
+    "label": "stock 1.1.0 eager: generate + capture every position",
+    "gen_s": 3.0609134200000057,
+    "reencode_s": 0.0
+   }
+  ]
+ },
+ "Qwen/Qwen3.6-27B": {
+  "batch": 512,
+  "bars": [
+   {
+    "label": "eager engine: generate only",
+    "gen_s": 8.135507039000004,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "eager engine: generate + capture every generated position",
+    "gen_s": 10.926187717000062,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "CUDA-graph engine: generate only",
+    "gen_s": 6.229642449000039,
+    "reencode_s": 0.0
+   },
+   {
+    "label": "CUDA-graph engine: generate, then re-encode with readout (last 5)",
+    "gen_s": 6.229801293000037,
+    "reencode_s": 4.490707071000088
+   },
+   {
+    "label": "CUDA-graph engine: generate, then re-encode with readout + early exit",
+    "gen_s": 6.253360366000152,
+    "reencode_s": 3.0984426909999456
+   },
+   {
+    "label": "stock 1.1.0 eager: generate + capture every position",
+    "gen_s": 13.531162357000028,
+    "reencode_s": 0.0
+   }
+  ]
+ }
+}

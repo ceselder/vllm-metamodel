@@ -184,7 +184,17 @@ def hf_stage(a: argparse.Namespace) -> None:
     layers = find_layers(model)
     L = a.layer
     n_layers = len(layers)
-    log(f"HF {cls.__name__} up in {load_s:.0f}s | {n_layers} layers | attn={getattr(model.config, '_attn_implementation', '?')}")
+    try:
+        fla_version: str | None = importlib.metadata.version("flash-linear-attention")
+    except importlib.metadata.PackageNotFoundError:
+        fla_version = None
+    try:
+        from transformers.utils import import_utils as _iu
+
+        fla_active = bool(getattr(_iu, "is_flash_linear_attention_available", lambda: False)())
+    except Exception:  # noqa: BLE001
+        fla_active = fla_version is not None
+    log(f"HF {cls.__name__} up in {load_s:.0f}s | {n_layers} layers | attn={getattr(model.config, '_attn_implementation', '?')} | fla={fla_version} active={fla_active}")
     pad_id = tok.pad_token_id if tok.pad_token_id is not None else (tok.eos_token_id or 0)
 
     captured: dict[str, torch.Tensor] = {}
@@ -269,6 +279,8 @@ def hf_stage(a: argparse.Namespace) -> None:
         "hidden_dim": D,
         "hf_class": cls.__name__,
         "attn_implementation": getattr(model.config, "_attn_implementation", None),
+        "fla_version": fla_version,
+        "fla_active": fla_active,
         "torch": torch.__version__,
         "transformers": importlib.metadata.version("transformers"),
         "gpu": torch.cuda.get_device_name(0),
@@ -293,6 +305,7 @@ def hf_stage(a: argparse.Namespace) -> None:
             {
                 "model": a.model,
                 "layer": L,
+                "fla_active": fla_active,
                 "texts": texts,
                 "dirs": dirs,
                 "reward": reward,
@@ -578,6 +591,8 @@ def vllm_stage(a: argparse.Namespace) -> None:
             diffs.append(d)
             coss.append(c)
         ok = pos_ok and bool(diffs) and min(coss) > 0.999 and not any(math.isnan(x) for x in diffs)
+        srt = sorted(coss)
+        worst = min(range(len(coss)), key=lambda k: coss[k]) if coss else None
         result["checks"].append(
             {
                 "condition": cond,
@@ -586,9 +601,18 @@ def vllm_stage(a: argparse.Namespace) -> None:
                 "n": len(diffs),
                 "max_abs_diff": max(diffs) if diffs else None,
                 "min_cos": min(coss) if coss else None,
+                "p1_cos": srt[len(srt) // 100] if srt else None,
+                "median_cos": srt[len(srt) // 2] if srt else None,
                 "mean_cos": statistics.fmean(coss) if coss else None,
+                "frac_cos_above_0999": (sum(c > 0.999 for c in coss) / len(coss)) if coss else None,
+                "worst_text": worst,
+                "worst_text_len": len(ids_list[worst]) if worst is not None else None,
+                "cos_per_text": [round(c, 6) for c in coss],
                 "positions_ok": pos_ok,
-                "detail": f"n={len(diffs)} max|d|={max(diffs) if diffs else float('nan'):.4f} min cos={min(coss) if coss else float('nan'):.6f} positions_ok={pos_ok}",
+                "hf_fla": bool(ref.get("fla_active")) if ref else None,
+                "detail": f"n={len(diffs)} max|d|={max(diffs) if diffs else float('nan'):.4f} min cos={min(coss) if coss else float('nan'):.6f} "
+                          f"p1={srt[len(srt) // 100] if srt else float('nan'):.5f} median={srt[len(srt) // 2] if srt else float('nan'):.6f} "
+                          f">0.999: {100 * sum(c > 0.999 for c in coss) / max(len(coss), 1):.1f}% worst text {worst} (len {len(ids_list[worst]) if worst is not None else '?'}) positions_ok={pos_ok}",
             }
         )
         log(f"check {cond}: {result['checks'][-1]['detail']} -> {'OK' if ok else 'FAIL'}")
@@ -624,6 +648,8 @@ def vllm_stage(a: argparse.Namespace) -> None:
                 "check": ("last-k cosines + reward" if last_k else "max-over-all-positions cosine") + " vs HF",
                 "ok": ok,
                 "n": len(dr),
+                "reward_abs_diff_per_text": [round(x, 6) for x in dr],
+                "hf_fla": bool(ref.get("fla_active")) if ref else None,
                 "max_abs_diff_values": max(dv) if dv else None,
                 "max_abs_diff_reward": max(dr) if dr else None,
                 "mean_abs_diff_reward": statistics.fmean(dr) if dr else None,

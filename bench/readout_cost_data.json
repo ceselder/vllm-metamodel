@@ -1,0 +1,73 @@
+{
+ "model": "Qwen/Qwen3.6-27B",
+ "batch": 1024,
+ "rows": [
+  {
+   "key": "stock_eager:cap_all",
+   "label": "stock vllm-lens 1.1.0 capture (all positions)",
+   "per_1024_s": 12.350492307999986,
+   "wall_s": 12.350492307999986
+  },
+  {
+   "key": "fork_eager:cap_all_legacy",
+   "label": "fork, 1.1.0 capture path (per-request .cpu() + RPC)",
+   "per_1024_s": 12.875923760000035,
+   "wall_s": 12.875923760000035
+  },
+  {
+   "key": "fork_eager:cap_all",
+   "label": "fork: gather capture, all positions, one RPC",
+   "per_1024_s": 11.094868068999972,
+   "wall_s": 11.094868068999972
+  },
+  {
+   "key": "fork_eager:cap_last5",
+   "label": "fork: gather capture, last 5 positions",
+   "per_1024_s": 7.270573415999991,
+   "wall_s": 7.270573415999991
+  },
+  {
+   "key": "fork_eager:read_all",
+   "label": "fork: in-engine cosine readout, all positions",
+   "per_1024_s": 7.242462809000074,
+   "wall_s": 7.242462809000074
+  },
+  {
+   "key": "fork_eager:read_last5",
+   "label": "fork: in-engine cosine readout, last 5 positions",
+   "per_1024_s": 7.177249256999971,
+   "wall_s": 7.177249256999971
+  },
+  {
+   "key": "fork_eager:exit_read_all",
+   "label": "fork: readout all positions + early exit",
+   "per_1024_s": 4.945862315999989,
+   "wall_s": 4.945862315999989
+  },
+  {
+   "key": "fork_eager:exit_read_last5",
+   "label": "fork: readout last 5 + early exit  (recommended)",
+   "per_1024_s": 4.9552188430000115,
+   "wall_s": 4.9552188430000115
+  },
+  {
+   "key": "fork_eager:nocap",
+   "label": "vLLM prefill, no hooks (ceiling)",
+   "per_1024_s": 6.985911917999999,
+   "wall_s": 6.985911917999999
+  }
+ ],
+ "hf_early_exit_s_per_1024": 7.000916396000008,
+ "hf_full_s_per_1024": 10.585687919999998,
+ "hf_batch": 128,
+ "meta": {
+  "gpu": "NVIDIA B200",
+  "layer": 42,
+  "n_layers": 64,
+  "hidden_dim": 5120,
+  "n_texts": 1024,
+  "n_tokens": 118770,
+  "mean_len": 115.986328125,
+  "last_k": 5
+ }
+}

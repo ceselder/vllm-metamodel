@@ -392,8 +392,55 @@ garbage — ignore it.  A batch that mixes generating requests with readout requ
 runs to the end (no exit), so an RL rollout engine can score with `lora_request=None`
 between generation calls without any mode switch.
 
+![seconds per 1,024 texts for every way of reading layer 42 out of vLLM, Qwen3.6-27B](bench/readout_cost.png)
+
+![wall time vs batch size for the main readout methods, both models](bench/readout_vs_batch.png)
+
 <!-- READOUT_RESULTS:BEGIN -->
+**Qwen/Qwen3.6-27B** — layer 42 of 64, 1,024 texts of 96–136 tokens (mean 116), 1× B200, wall time of one `generate()` call with B = 1,024 texts (prefill-only, `max_tokens=1`), min over repeats; HF = transformers bf16 on the same texts, batch 128:
+
+| how layer L is read out | eager engine | CUDA-graph engine | vs stock |
+|---|---:|---:|---:|
+| stock vllm-lens 1.1.0 capture (`output_residual_stream=[L]`, all positions) | 12.4 s | — | — |
+| fork, 1.1.0 capture path (per-request `.cpu()` + per-request RPC) | 12.9 s | 12.5 s | **1.0×** |
+| fork gather capture, all positions, one RPC | 11.1 s | 10.3 s | **1.2×** |
+| fork gather capture, `capture_positions={"last": 5}` | 7.271 s | 6.869 s | **1.8×** |
+| fork `ReadoutVector` cosine, all positions | 7.242 s | 6.806 s | **1.8×** |
+| fork `ReadoutVector` cosine, last 5 positions | 7.177 s | 6.751 s | **1.8×** |
+| fork `ReadoutVector` last 5 **+ early exit** | 4.955 s | 4.672 s | **2.6×** |
+| fork capture last 5 + early exit | 5.066 s | 4.773 s | **2.6×** |
+| vLLM prefill with no hooks at all (ceiling) | 6.986 s | 6.617 s | **1.9×** |
+| HF transformers bf16, forward hook + early exit after layer 42 (the trainer's `read_resid`, batch 128) | 7.001 s | — | **1.8×** |
+| HF transformers bf16, all 64 layers (batch 128) | 10.6 s | — | **1.2×** |
+
+Reading *generated* positions, B = 512 prompts × 40 new tokens: 
+stock 1.1.0 eager generate + capture **13.53 s**; eager generate, no capture **8.14 s**; eager generate + capture every generated position **10.93 s**; CUDA-graph generate, no capture **6.23 s**; CUDA-graph generate + re-encode with readout **10.72 s** (6.23 + 4.49); CUDA-graph generate + re-encode with readout + early exit **9.35 s** (6.25 + 3.10).
+
+Correctness vs the HF reference (transformers bf16, fla kernels, same token ids): 13/18 gated checks pass. Readout rewards (max cosine over the last 5 positions) agree with HF within 0.0072 on every one of the 1,024 texts, on both engines, with and without early exit. Captured rows vs HF, per text (5 rows flattened): fork_eager cap_last5: min cos 0.9894 over 1024 texts (median 0.99995, 98.6 % above 0.999, worst text 480 of length 135) [fla ref]. The fork's last-5 rows are bit-identical to its own all-positions capture, and every early-exit result is bit-identical to the non-exit one; the residual disagreement with HF is bf16 divergence in the deep layers (the same magnitude separates HF's fla kernel from its torch fallback, and vLLM's eager from its CUDA-graph engine).
+
+**Qwen/Qwen3-1.7B** — layer 18 of 28, 1,024 texts of 96–136 tokens (mean 116), 1× B200, wall time of one `generate()` call with B = 1,024 texts (prefill-only, `max_tokens=1`), min over repeats; HF = transformers bf16 on the same texts, batch 128:
+
+| how layer L is read out | eager engine | CUDA-graph engine | vs stock |
+|---|---:|---:|---:|
+| stock vllm-lens 1.1.0 capture (`output_residual_stream=[L]`, all positions) | 2.579 s | — | — |
+| fork, 1.1.0 capture path (per-request `.cpu()` + per-request RPC) | 3.836 s | 3.495 s | **0.7×** |
+| fork gather capture, all positions, one RPC | 2.335 s | 2.350 s | **1.1×** |
+| fork gather capture, `capture_positions={"last": 5}` | 0.746 s | 0.670 s | **3.8×** |
+| fork `ReadoutVector` cosine, all positions | 0.681 s | 0.664 s | **3.9×** |
+| fork `ReadoutVector` cosine, last 5 positions | 0.681 s | 0.637 s | **4.0×** |
+| fork `ReadoutVector` last 5 **+ early exit** | 0.544 s | 0.533 s | **4.8×** |
+| fork capture last 5 + early exit | 0.558 s | 0.555 s | **4.6×** |
+| vLLM prefill with no hooks at all (ceiling) | 0.615 s | 0.501 s | **5.1×** |
+| HF transformers bf16, forward hook + early exit after layer 18 (the trainer's `read_resid`, batch 128) | 0.814 s | — | **3.2×** |
+| HF transformers bf16, all 28 layers (batch 128) | 1.193 s | — | **2.2×** |
+
+Reading *generated* positions, B = 512 prompts × 40 new tokens: 
+stock 1.1.0 eager generate + capture **3.06 s**; eager generate, no capture **1.11 s**; eager generate + capture every generated position **2.43 s**; CUDA-graph generate, no capture **0.59 s**; CUDA-graph generate + re-encode with readout **1.03 s** (0.59 + 0.44); CUDA-graph generate + re-encode with readout + early exit **0.94 s** (0.58 + 0.36).
+
+Correctness vs the HF reference (transformers bf16, same token ids): 16/16 gated checks pass. Readout rewards (max cosine over the last 5 positions) agree with HF within 0.0013 on every one of the 1,024 texts, on both engines, with and without early exit. Captured rows vs HF, per text (5 rows flattened): fork_eager cap_all_legacy: min cos 1.0000 over 16 texts [torch-fallback ref]; fork_eager cap_all: min cos 1.0000 over 16 texts [torch-fallback ref]; fork_eager cap_last5: min cos 0.9998 over 1024 texts [torch-fallback ref]; fork_eager exit_cap_last5: min cos 0.9998 over 1024 texts [torch-fallback ref]; fork_graphs cap_all_legacy: min cos 1.0000 over 16 texts [torch-fallback ref]; fork_graphs cap_all: min cos 1.0000 over 16 texts [torch-fallback ref]; fork_graphs cap_last5: min cos 0.9998 over 1024 texts [torch-fallback ref]; fork_graphs exit_cap_last5: min cos 0.9998 over 1024 texts [torch-fallback ref]. The fork's last-5 rows are bit-identical to its own all-positions capture, and every early-exit result is bit-identical to the non-exit one; the residual disagreement with HF is bf16 divergence in the deep layers (the same magnitude separates HF's fla kernel from its torch fallback, and vLLM's eager from its CUDA-graph engine).
 <!-- READOUT_RESULTS:END -->
+
+![reading generated positions: eager capture during decode vs generate under CUDA graphs + re-encode](bench/generated_positions.png)
 
 **CUDA graphs and generated positions.** Hooks do not run inside replayed decode graphs,
 so with `VLLM_LENS_CUDA_GRAPHS=1` capture and readout see *prompt* positions only (a
@@ -425,7 +472,8 @@ exactly the "clean base model, LoRA off" pass an RL reward wants anyway.
 ### What changed (small, upstreamable diff)
 Two library files carry the change against upstream `v1.1.0` (`_worker_ext.py`,
 `_activations_plugin.py`), plus the `SteeringVector.mode` field / `EMBED_LAYER_INDEX`
-constant in `_helpers/types.py` and its export. Upstream's functions stay in place
+constant and the `ReadoutVector` model / position-spec helpers in `_helpers/types.py`
+(and their exports; `_serialize.py` passes non-tensor entries such as `positions` through). Upstream's functions stay in place
 (`_get_layers`, `_find_steering_configs`, `norm_match`, the capture / state methods);
 `_apply_steering` gains the `residual` argument of upstream #7 and the `mode="replace"`
 branch, and the body of `_hook_inner` is replaced. `git diff v1.1.0 --stat -- pyproject.toml vllm_lens ':!vllm_lens/tests'`:
@@ -433,11 +481,12 @@ branch, and the body of `_hook_inner` is replaced. `git diff v1.1.0 --stat -- py
 <!-- DIFFSTAT:BEGIN -->
 ```
  pyproject.toml                   |    7 +-
- vllm_lens/__init__.py            |    3 +-
- vllm_lens/_activations_plugin.py |  231 +++++++-
- vllm_lens/_helpers/types.py      |   39 +-
- vllm_lens/_worker_ext.py         | 1117 ++++++++++++++++++++++++++++++++++----
- 5 files changed, 1263 insertions(+), 134 deletions(-)
+ vllm_lens/__init__.py            |   12 +-
+ vllm_lens/_activations_plugin.py |  520 ++++++++++-
+ vllm_lens/_helpers/_serialize.py |   10 +-
+ vllm_lens/_helpers/types.py      |  153 +++-
+ vllm_lens/_worker_ext.py         | 1878 +++++++++++++++++++++++++++++++++++---
+ 6 files changed, 2414 insertions(+), 166 deletions(-)
 ```
 <!-- DIFFSTAT:END -->
 
@@ -454,6 +503,12 @@ branch, and the body of `_hook_inner` is replaced. `git diff v1.1.0 --stat -- py
 - `_patched_create_engine_config` forces `enforce_eager` only unless `VLLM_LENS_CUDA_GRAPHS=1` (`_configure_cuda_graphs` then sets compilation mode `NONE` + `cudagraph_mode=FULL_DECODE_ONLY` unless you passed a compatible config).
 - Offline `LLM.generate`: one `set_steering_block` RPC for the call's single-position vectors (+ one `set_steering_data_many` for anything else) instead of one RPC per request; clears in a `finally`.
 - `VLLM_LENS_DISABLE=1` no-op switch (as in upstream 1.2.0); `_check_graph_mode_request` fails fast on 2-D vectors under CUDA graphs.
+- (post4) `apply_readout_vectors` popped per request → one `set_readout_block` RPC (+ `set_readout_data_many` for multi-layer / multi-vector requests); results fetched for the whole call in one `get_readouts_many` RPC and attached as `output.readout`; captured states fetched in one `get_captured_states_many` RPC (`VLLM_LENS_FAST_CAPTURE=0` restores per-request retrieval); `_check_readout_request` rejects early-exit requests the engine cannot honour (`lens_capabilities()["early_exit"]`, `max_tokens != 1`, `output_residual_stream=True`) before submission.
+
+`vllm_lens/_worker_ext.py` (post4)
+- `_select_positions` / `_capture_gather` / `_HostBlock` / `_flush_host_blocks` — per layer-step one `index_select` over every capturing row's requested positions (`capture_positions`: all / last-k / explicit), one pinned asynchronous device→host copy with a CUDA event, split per request lazily at retrieval; `_pop_activations` adds `"positions"`.
+- `_ReadEntry` / `_readout_layer` — per-request directions live in one float32 `[n, hidden]` device block; the hook gathers the selected rows, computes cosine / dot (+ bias) in float32 in chunks of 8,192 rows and ships only the scalars.
+- `_EarlyExit` / `_wrap_model_forward` / `_early_exit_supported` — `_StepPlan.exit_layer` is set when every request in the pass is an eligible readout-only request; the hook at that layer raises, the wrapped `model_runner._model_forward` returns a zero placeholder. Refused unless PP = 1, `enable_prefix_caching=False`, no aux hidden-state outputs.
 
 ### CUDA graphs
 

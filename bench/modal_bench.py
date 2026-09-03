@@ -64,6 +64,8 @@ image_stock = (
 image_fork = (
     _base()
     .pip_install("datasets>=4.0.0", "pydantic>=2.0", "zstandard>=0.23.0", "accelerate>=1.0")
+    # HF reference for hybrid GatedDeltaNet models (Qwen3.5/3.6): the trainer runs the fla kernels, not the torch fallback
+    .pip_install("flash-linear-attention")
     .add_local_dir(
         REPO,
         "/opt/vllm-lens-metamodel",

@@ -120,7 +120,7 @@ def plot_cost(model: str, m: dict, out_dir: Path, stem: str) -> None:
     if "stock_eager:cap_all" in m["series"] and "fork_eager:exit_read_last5" in m["series"]:
         sp = m["series"]["stock_eager:cap_all"][b]["wall_s"] / m["series"]["fork_eager:exit_read_last5"][b]["wall_s"]
     title = (f"In-engine readout with early exit reads layer {meta.get('layer')} of {meta.get('n_layers')} for {n_texts:,} texts "
-             + (f"{sp:.0f}× faster than stock vllm-lens capture" if sp else "far faster than stock vllm-lens capture")
+             + (f"{sp:.1f}× faster than stock vllm-lens capture" if sp else "far faster than stock vllm-lens capture")
              + (f" and {hf_ee / m['series']['fork_eager:exit_read_last5'][b]['per_1024_s']:.1f}× faster than the HF early-exit forward" if hf_ee and "fork_eager:exit_read_last5" in m["series"] else ""))
     ax.set_title(title + f"\n{_short(model)} bf16 · 1× {str(meta.get('gpu', '')).replace('NVIDIA ', '')} · {n_texts:,} texts of {meta.get('mean_len', 0) or 0:.0f} tokens on average · "
                  f"cosine of every position with a per-text direction, max over the last {meta.get('last_k')} · min of repeats", fontsize=10, loc="left")

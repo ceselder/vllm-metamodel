@@ -15,7 +15,12 @@
     name="vllm-lens"
     readme="README.md"
     requires-python=">=3.12"
-    version="0.0.0" # Updated by CICD
+    version="1.1.0.post1" # vllm-lens-port: upstream v1.1.0 + indexed steering hook + opt-in CUDA graphs
+
+    [project.urls]
+        Homepage="https://github.com/ceselder/vllm-lens-port"
+        Upstream="https://github.com/UKGovernmentBEIS/vllm-lens"
+        Changelog="https://github.com/ceselder/vllm-lens-port/blob/main/CHANGELOG.md"
 
 [build-system]
     build-backend="hatchling.build"

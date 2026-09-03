@@ -1,5 +1,5 @@
 # vllm-metamodel
-<img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
+<img width="500" height="500" alt="image" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
 
 **This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) for training/sampling meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs, it's just 38× faster at high batch sizes.** 
 

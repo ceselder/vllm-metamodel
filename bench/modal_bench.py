@@ -1,8 +1,8 @@
-"""Modal launcher for bench/bench_steering.py: stock vllm-lens 1.1.0 vs vllm-lens-port on one B200.
+"""Modal launcher for bench/bench_steering.py: stock vllm-lens 1.1.0 vs vllm-lens-metamodel on one B200.
 
 Two images share the same pins (python 3.12, torch 2.10 cu128, vllm 0.19.0):
   * ``image_stock``  pip installs ``vllm-lens==1.1.0`` from PyPI
-  * ``image_fork``   installs THIS checkout (``pip install /opt/vllm-lens-port``)
+  * ``image_fork``   installs THIS checkout (``pip install /opt/vllm-lens-metamodel``)
 Each engine mode runs in its own subprocess inside the container (the plugin reads its
 environment variables at import time), all in one container so the model stays in the
 page cache between engines.
@@ -32,7 +32,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 
-app = modal.App("vllm-lens-port-bench")
+app = modal.App("vllm-lens-metamodel-bench")
 GPU = os.environ.get("BENCH_GPU", "B200")
 
 
@@ -65,7 +65,7 @@ image_fork = (
     .pip_install("datasets>=4.0.0", "pydantic>=2.0", "zstandard>=0.23.0")
     .add_local_dir(
         REPO,
-        "/opt/vllm-lens-port",
+        "/opt/vllm-lens-metamodel",
         copy=True,
         ignore=[
             ".git",
@@ -78,7 +78,7 @@ image_fork = (
         ],
     )
     .run_commands(
-        "pip install --no-deps /opt/vllm-lens-port",
+        "pip install --no-deps /opt/vllm-lens-metamodel",
         "python -c 'import vllm_lens; from vllm_lens import _worker_ext as W; "
         'assert hasattr(W.HiddenStatesExtension, "set_steering_data_many"); print(vllm_lens.__version__)\'',
     )

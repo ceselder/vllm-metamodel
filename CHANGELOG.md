@@ -1,16 +1,16 @@
 # Changelog
 
-This is **vllm-lens-port**, a maintained fork of
+This is **vllm-lens-metamodel**, a maintained fork of
 [UKGovernmentBEIS/vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens)
 (MIT, UK AI Security Institute; original author Alan Cooney).  The fork
 branches from upstream **v1.1.0** and keeps the distribution name
 `vllm-lens`, so it installs as a drop-in replacement:
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-lens-port
+pip install git+https://github.com/ceselder/vllm-lens-metamodel
 ```
 
-## v1.1.0.post1 (3 September 2026) — vllm-lens-port
+## v1.1.0.post1 (3 September 2026) — vllm-lens-metamodel
 
 Target workload: **RL-style rollouts with one steering vector per prompt**
 (activation-oracle / "meta-model" injection: a different vector for every

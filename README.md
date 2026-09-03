@@ -1,9 +1,9 @@
-# vllm-lens-port
+# vllm-lens-metamodel
 
 **A [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) fork that is up to 38× faster for RL-style workloads — one steering vector per prompt over large batches (22× at 1,024 requests, 38× at 2,048 on Qwen3.6-27B / B200) — via an indexed hook, prefill-only vectorised injection and CUDA graphs.** Drop-in replacement for vllm-lens 1.1.0 (same package name, same public API).
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-lens-port
+pip install git+https://github.com/ceselder/vllm-lens-metamodel
 ```
 
 <!-- RESULTS:BEGIN -->
@@ -59,7 +59,7 @@ vLLM never captured CUDA graphs.
 The fork keeps the exact 1.1.0 semantics (same matching rules, unchanged `norm_match` and
 `_apply_steering` arithmetic, identical outputs) and changes how the hook gets there:
 
-| | stock 1.1.0 | vllm-lens-port |
+| | stock 1.1.0 | vllm-lens-metamodel |
 |---|---|---|
 | resolve a request's vectors | `startswith` over all keys, every layer, every step | dict lookups, once per request, cached |
 | per-step bookkeeping | 2 device syncs per request per layer | one plan per forward pass from host-side buffers |

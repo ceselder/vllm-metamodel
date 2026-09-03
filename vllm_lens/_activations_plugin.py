@@ -9,7 +9,7 @@ to inject the worker extension and eager mode, and patches
 ``AsyncLLM.generate`` and ``LLM.generate`` to retrieve per-request
 activations for both online (async) and offline (sync) usage.
 
-vllm-lens-port environment variables:
+vllm-lens-metamodel environment variables:
 
 ``VLLM_LENS_CUDA_GRAPHS=1``
     Do not force ``enforce_eager``.  The plugin sets ``compilation_config``
@@ -60,7 +60,7 @@ _original_llm_generate: Callable | None = None
 _original_completion_response: Callable | None = None
 _original_chat_full_generator: Callable | None = None
 
-# vllm-lens-port: set by _patched_create_engine_config in the process that
+# vllm-lens-metamodel: set by _patched_create_engine_config in the process that
 # builds the engine config; True when decode batches run as CUDA-graph replays.
 _cuda_graphs_enabled: bool = False
 _warned_capture_prompt_only: bool = False
@@ -130,7 +130,7 @@ def _trim_activations(
 
 
 def _configure_cuda_graphs(engine_args: Any) -> bool:
-    """vllm-lens-port: make ``engine_args`` hook-compatible WITHOUT forcing eager.
+    """vllm-lens-metamodel: make ``engine_args`` hook-compatible WITHOUT forcing eager.
 
     Returns True if decode batches will run as CUDA-graph replays.  The
     forward hooks only fire for eagerly executed layers, so any
@@ -212,7 +212,7 @@ def _check_graph_mode_request(
     wants_activations: bool,
     max_tokens: int | None,
 ) -> None:
-    """vllm-lens-port: fail fast / warn for requests whose semantics change under CUDA graphs."""
+    """vllm-lens-metamodel: fail fast / warn for requests whose semantics change under CUDA graphs."""
     global _warned_capture_prompt_only
     if not _cuda_graphs_enabled:
         return
@@ -237,7 +237,7 @@ def _check_graph_mode_request(
 def _pack_steering(
     payloads: dict[str, list[SteeringVector]],
 ) -> tuple[dict[str, Any] | None, dict[str, list[SteeringVector]]]:
-    """vllm-lens-port: split an offline call's steering into one block + the rest.
+    """vllm-lens-metamodel: split an offline call's steering into one block + the rest.
 
     A request is block-packable when it has exactly one SteeringVector with
     ``(1, 1, hidden)`` activations (one layer, one position) -- the
@@ -453,7 +453,7 @@ def _patched_llm_generate(
 
     # Send steering data to workers before generation: one block RPC for the
     # single-position per-request vectors, one "many" RPC for the rest
-    # (vllm-lens-port; 1.1.0 did one RPC per request).
+    # (vllm-lens-metamodel; 1.1.0 did one RPC per request).
     if has_steering:
         block, rest = (
             _pack_steering(steering_payloads)

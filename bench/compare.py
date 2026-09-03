@@ -6,8 +6,8 @@ Usable standalone on a saved results directory:
 
 Series naming used everywhere (README, plots, report):
   stock_eager      stock vllm-lens 1.1.0, per-request steering (eager, forced by the plugin)
-  fork_eager       vllm-lens-port, per-request steering, eager
-  fork_graphs      vllm-lens-port, per-request steering, CUDA graphs (FULL_DECODE_ONLY)
+  fork_eager       vllm-lens-metamodel, per-request steering, eager
+  fork_graphs      vllm-lens-metamodel, per-request steering, CUDA graphs (FULL_DECODE_ONLY)
   ceiling_graphs   vLLM, no steering / no hooks, same FULL_DECODE_ONLY engine config
   ceiling_eager    vLLM, no steering / no hooks, eager
   ceiling_plain    vLLM, no steering, its default compilation (torch.compile + CUDA graphs)

@@ -1,4 +1,4 @@
-"""CPU-only tests for the indexed steering path in ``_worker_ext`` (vllm-lens-port).
+"""CPU-only tests for the indexed steering path in ``_worker_ext`` (vllm-lens-metamodel).
 
 No GPU or vLLM engine needed: these exercise the pure-Python / CPU-tensor
 pieces the forward hook relies on (prefix-key enumeration, per-key indexing,

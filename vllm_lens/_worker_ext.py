@@ -9,7 +9,7 @@ per-request activation capture and steering.  Each hook checks the
 request's ``extra_args["output_residual_stream"]`` to decide whether to
 capture, and reads from ``_steering_data`` to apply any steering vectors.
 
-vllm-lens-port: the hook resolves each request's steering configs ONCE
+vllm-lens-metamodel: the hook resolves each request's steering configs ONCE
 (indexed lookups instead of a per-layer ``startswith`` scan over every
 key), plans each forward pass once from host-side buffers (no device
 syncs), skips passes / layers with nothing to do, applies a layer's
@@ -89,7 +89,7 @@ def _find_steering_configs(
 
 
 # ---------------------------------------------------------------------------
-# vllm-lens-port: indexed per-request steering
+# vllm-lens-metamodel: indexed per-request steering
 #
 # 1.1.0 called ``_find_steering_configs`` for every layer x every request on
 # every forward pass (O(layers x requests x keys) ``startswith`` calls, plus
@@ -484,7 +484,7 @@ def _apply_layer_vectorized(
     target: torch.Tensor,
     plan: _StepPlan,
 ) -> bool:
-    """vllm-lens-port: apply every (row, vector) pair of this layer/pass at once.
+    """vllm-lens-metamodel: apply every (row, vector) pair of this layer/pass at once.
 
     Gathers the vectors ``_apply_steering`` would add into one ``[n, hidden]``
     tensor and adds them with a single ``index_add_`` (norm-matching in the
@@ -678,7 +678,7 @@ def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
 
 
 def _make_pre_hook(extension: HiddenStatesExtension) -> Callable:
-    """vllm-lens-port: pre-hook on this rank's first decoder layer.
+    """vllm-lens-metamodel: pre-hook on this rank's first decoder layer.
 
     A new forward pass begins: drop the previous pass's plan and decide
     whether this pass is *idle* (``_step_is_idle``), in which case every
@@ -751,7 +751,7 @@ class HiddenStatesExtension:
     # Whether this rank should capture activations (only TP rank 0).
     _should_capture: bool = True
 
-    # vllm-lens-port: index over _steering_data + per-pass state.
+    # vllm-lens-metamodel: index over _steering_data + per-pass state.
     _steering_index: dict[str, _SteerEntry] = {}
     _steering_gen: int = 0  # bumped on every set/clear; invalidates _req_plan_cache
     _steering_seq: int = 0
@@ -912,7 +912,7 @@ class HiddenStatesExtension:
         self._steering_gen += 1
 
     def set_steering_data_many(self, pickled_data: bytes) -> int:
-        """vllm-lens-port: ``set_steering_data`` for MANY keys in one RPC.
+        """vllm-lens-metamodel: ``set_steering_data`` for MANY keys in one RPC.
 
         ``pickled_data`` is a pickled ``dict[str, list[SteeringVector]]``.
         Returns the number of keys stored.
@@ -924,7 +924,7 @@ class HiddenStatesExtension:
         return len(payload)
 
     def set_steering_block(self, pickled_data: bytes) -> int:
-        """vllm-lens-port: one single-position vector for MANY keys from ONE tensor.
+        """vllm-lens-metamodel: one single-position vector for MANY keys from ONE tensor.
 
         ``pickled_data`` is a pickled dict::
 
@@ -972,19 +972,19 @@ class HiddenStatesExtension:
         self._steering_gen += 1
 
     def clear_steering_data_many(self, keys: list[str]) -> None:
-        """vllm-lens-port: ``clear_steering_data`` for many keys in one RPC."""
+        """vllm-lens-metamodel: ``clear_steering_data`` for many keys in one RPC."""
         for key in keys:
             self._steering_data.pop(key, None)
             self._steering_index.pop(key, None)
         self._steering_gen += 1
 
     def set_vectorized(self, enabled: bool) -> bool:
-        """vllm-lens-port: toggle the vectorised apply (default on, ``VLLM_LENS_VECTORIZED``)."""
+        """vllm-lens-metamodel: toggle the vectorised apply (default on, ``VLLM_LENS_VECTORIZED``)."""
         self._vectorized = bool(enabled)
         return self._vectorized
 
     def steering_stats(self, reset: bool = False) -> dict[str, int]:
-        """vllm-lens-port: hook counters (passes skipped by the idle fast path,
+        """vllm-lens-metamodel: hook counters (passes skipped by the idle fast path,
         passes planned / planned-but-idle, layer-steps steered / vectorised,
         rows steered, rows skipped as generated under CUDA graphs, errors)."""
         out = dict(self._stats)

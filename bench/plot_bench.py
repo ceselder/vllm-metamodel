@@ -33,14 +33,14 @@ SERIES_STYLE = {
         "#2a78d6",
         "o",
     ),
-    "fork_indexed": ("vllm-lens-port: indexed hook, eager", "#eda100", "s"),
+    "fork_indexed": ("vllm-lens-metamodel: indexed hook, eager", "#eda100", "s"),
     "fork_vectorized": (
-        "vllm-lens-port: indexed + vectorised apply, eager",
+        "vllm-lens-metamodel: indexed + vectorised apply, eager",
         "#1baf7a",
         "^",
     ),
     "fork_graphs": (
-        "vllm-lens-port: indexed + vectorised + CUDA graphs",
+        "vllm-lens-metamodel: indexed + vectorised + CUDA graphs",
         "#eb6834",
         "D",
     ),

@@ -10,12 +10,12 @@ Runs in ONE process with ONE vLLM engine configuration (``--engine``) and
 measures generation throughput vs batch size for the conditions that engine
 supports, plus fixed correctness probes whose outputs are saved so a driver
 (``bench/modal_bench.py`` / ``bench/compare.py``) can assert that the
-installed vllm-lens (stock 1.1.0 or vllm-lens-port, any apply mode) steers
+installed vllm-lens (stock 1.1.0 or vllm-lens-metamodel, any apply mode) steers
 identically.
 
 Engine modes
   eager   plugin active, ``enforce_eager`` (what stock 1.1.0 always forces)
-  graphs  vllm-lens-port only: ``VLLM_LENS_CUDA_GRAPHS=1`` -> compilation mode
+  graphs  vllm-lens-metamodel only: ``VLLM_LENS_CUDA_GRAPHS=1`` -> compilation mode
           NONE + ``cudagraph_mode=FULL_DECODE_ONLY`` (the plugin fills these in)
   plain   ``VLLM_LENS_DISABLE=1``: vLLM with its default compilation
           (torch.compile + CUDA graphs), no hooks -- the no-steering ceiling
@@ -131,7 +131,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def installed_variant() -> dict[str, Any]:
-    """Which vllm-lens is installed: stock 1.1.0 or vllm-lens-port."""
+    """Which vllm-lens is installed: stock 1.1.0 or vllm-lens-metamodel."""
     try:
         ver = importlib.metadata.version("vllm-lens")
     except importlib.metadata.PackageNotFoundError:
@@ -170,7 +170,7 @@ def main() -> None:
     )
     if a.engine in ("graphs", "plain") and not is_fork:
         sys.exit(
-            f"--engine {a.engine} needs vllm-lens-port (stock 1.1.0 forces enforce_eager, has no disable switch)"
+            f"--engine {a.engine} needs vllm-lens-metamodel (stock 1.1.0 forces enforce_eager, has no disable switch)"
         )
 
     from transformers import AutoTokenizer

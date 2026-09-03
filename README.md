@@ -1,23 +1,26 @@
-# vllm-lens-metamodel
+# vllm-metamodel
+<img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/989de362-b9a4-4b5c-955a-ba41fed137b1" />
 
-**This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), it's just 38× faster at high batch sizes.** 
+**This is a complete drop in replacement for [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens) for training/sampling meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs, it's just 38× faster at high batch sizes.** 
 
-Many meta-models like Activation Oracles, MAEMMs, LoRAcles and NLAs all require you to inject an activation.
-Default VLLM is really really annoying for this, so the external meta-model community has largely been using a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a fork of VLLM that allows you to steer using arbitrary activations.
-However, vllm-lens does not go brr. For meta-model purposes (injecting one vector at one index) It is ~38x slower on large batch sizes.
+Meta-models recquire steering or soft-tokens. Because vllm doesn't support this, we generally use a library called [vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens), a vllm plugin that allows for steering residual stream.
+However, vllm-lens does not go brr. It is ~40x-50x slower than standard vllm.
 
-This is because the injection is implemented using a python for loop. Using an indexed hook that is applied in a vectorized fashion along with utilizing cuda graphs brings performance very close to actual vllm performance.
+vllm-lens is slow because it iterates over every hidden state every single time a token is generated (to check if/intervene on an activation). However, for meta-models, we actually generally only inject once, during prefill. This means you can just inject once during prefill, and sample as normal. Notably, this also makes cuda-graphs not broken!
 
-This fork can also be used to just steer the model if cuda graphs are disabled.
+**Sadly, this also means you cannot use this fork as a faster vllm-lens if your goal is to actually use steering vectors for models.**
+
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-lens-metamodel
+pip install git+https://github.com/ceselder/vllm-metamodel
 ```
+
+# Cleaned up claudeslop information below
 
 ## Comparisons
 The comparisons I did are for the exact situation for the model I'm training for my upcoming paper: MAEMMs
 
-**Measured on 1× B200, Qwen/Qwen3.6-27B bf16, 96-token prompts, generating 40 new tokens, one distinct steering vector per request (layer 1, one prompt position):** at B = 2,048 the fork is **37.8× faster** than stock 1.1.0 with CUDA graphs (36.3× from the indexed hook alone, 36.8× with the vectorised apply, eager), coming within +-5% of not doing steering at all.
+Measured on 1× B200, Qwen/Qwen3.6-27B bf16, 96-token prompts, generating 40 new tokens, one distinct steering vector per request (layer 1, one prompt position): at B = 2,048 the fork is **37.8× faster** than stock 1.1.0 with CUDA graphs (36.3× from the indexed hook alone, 36.8× with the vectorised apply, eager), coming within +-5% of not doing steering at all.
 
 ![per-request steering throughput vs batch size](bench/steering_throughput.png)
 
@@ -26,9 +29,8 @@ Wall time of one `LLM.generate()` call (Qwen/Qwen3.6-27B, speedup vs stock in bo
 | configuration | B = 8 | B = 32 | B = 128 | B = 512 | B = 1,024 | B = 2,048 |
 |---|---:|---:|---:|---:|---:|---:|
 | stock vllm-lens 1.1.0 (eager forced) | 2.0 s | 3.6 s | 12.3 s | 76.3 s | 230.2 s | 777.6 s |
-| fork: indexed hook (eager) | 1.2 s (**1.6×**) | 1.3 s (**2.7×**) | 1.9 s (**6.4×**) | 5.8 s (**13.1×**) | 10.6 s (**21.6×**) | 21.4 s (**36.3×**) |
-| fork: indexed + vectorised apply (eager) | 1.3 s (**1.5×**) | 1.4 s (**2.5×**) | 2.0 s (**6.1×**) | 5.8 s (**13.1×**) | 10.5 s (**21.8×**) | 21.1 s (**36.8×**) |
-| fork: indexed + vectorised + CUDA graphs | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.6 s (**7.9×**) | 5.5 s (**13.9×**) | 10.5 s (**21.9×**) | 20.5 s (**37.8×**) |
+| fork: indexed/vectorized steering hook (eager) | 1.3 s (**1.5×**) | 1.4 s (**2.5×**) | 2.0 s (**6.1×**) | 5.8 s (**13.1×**) | 10.5 s (**21.8×**) | 21.1 s (**36.8×**) |
+| fork: indexed/vectorized steering hook + CUDA graphs | 0.6 s (**3.3×**) | 0.8 s (**4.5×**) | 1.6 s (**7.9×**) | 5.5 s (**13.9×**) | 10.5 s (**21.9×**) | 20.5 s (**37.8×**) |
 | vLLM baseline (compile + graphs) (ceiling) | 0.5 s (**3.7×**) | 0.7 s (**4.9×**) | 1.5 s (**8.4×**) | 5.3 s (**14.5×**) | 10.1 s (**22.8×**) | 19.7 s (**39.5×**) |
 
 Eager rows ran with `max_num_seqs=2048` (B = 2,048 in one scheduler wave); the CUDA-graph rows with `max_num_seqs=1024` and vLLM's default capture ladder (`max_cudagraph_capture_size=1024`), so B = 2,048 is two waves there -- see the vLLM caveat below (packed GDN decode kernel grid limit). Decode at these sizes is compute-bound and scales linearly (2,048 takes 2x the 1,024 time in every configuration).
@@ -41,15 +43,15 @@ The gap is even bigger on smaller models, where the hook is actually the majorit
 |---|---:|---:|---:|---:|---:|
 | stock vllm-lens 1.1.0 (eager forced) | 0.6 s | 1.3 s | 5.0 s | 31.5 s | 96.8 s |
 | fork: indexed hook (eager) | 0.7 s (**0.9×**) | 0.7 s (**1.9×**) | 0.9 s (**5.7×**) | 1.4 s (**22.4×**) | 2.7 s (**35.2×**) |
-| fork: indexed + vectorised apply (eager) | 0.7 s (**0.8×**) | 0.7 s (**1.9×**) | 0.9 s (**5.5×**) | 1.4 s (**22.5×**) | 2.3 s (**43.0×**) |
-| fork: indexed + vectorised + CUDA graphs | 0.2 s (**2.9×**) | 0.3 s (**5.2×**) | 0.4 s (**12.0×**) | 0.8 s (**37.5×**) | 1.6 s (**59.3×**) |
+| fork: indexed/vectorized steering hook apply (eager) | 0.7 s (**0.8×**) | 0.7 s (**1.9×**) | 0.9 s (**5.5×**) | 1.4 s (**22.5×**) | 2.3 s (**43.0×**) |
+| fork: indexed/vectorized steering hook + CUDA graphs | 0.2 s (**2.9×**) | 0.3 s (**5.2×**) | 0.4 s (**12.0×**) | 0.8 s (**37.5×**) | 1.6 s (**59.3×**) |
 | vLLM  baseline (compile + graphs) (ceiling) | 0.1 s (**4.8×**) | 0.2 s (**7.4×**) | 0.3 s (**16.8×**) | 0.8 s (**38.9×**) | 1.7 s (**56.3×**) |
 
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
 ## Overview of changes
-| | stock 1.1.0 | vllm-lens-metamodel |
+| | stock 1.1.0 | vllm-metamodel |
 |---|---|---|
 | resolve a request's vectors | `startswith` over all keys, every layer, every step | dict lookups, once per request, cached |
 | per-step bookkeeping | 2 device syncs per request per layer | one plan per forward pass from host-side buffers |

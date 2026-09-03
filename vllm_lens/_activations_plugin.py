@@ -39,7 +39,7 @@ import torch
 import zstandard as zstd
 
 from vllm_lens._helpers._serialize import serialize_activations
-from vllm_lens._helpers.types import SteeringVector
+from vllm_lens._helpers.types import EMBED_LAYER_INDEX, SteeringVector
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +234,35 @@ def _check_graph_mode_request(
             )
 
 
+def _check_layer_support(
+    caps: dict[str, Any] | None,
+    steering_vectors: Sequence[SteeringVector] | None,
+    capture_layers: Any,
+) -> None:
+    """vllm-metamodel: refuse layer-output steering / capture on hyper-connection
+    (multi-stream residual) architectures BEFORE the request reaches the engine,
+    with a clear ``ValueError`` (the engine stays alive).  ``caps`` comes from the
+    worker's ``lens_capabilities`` RPC; the worker-side validation and the runtime
+    ``UnsupportedLayerOutputError`` remain as backstops."""
+    if not caps or not caps.get("multi_stream"):
+        return
+    bad = sorted({int(l) for sv in steering_vectors or () for l in sv.layer_indices if l != EMBED_LAYER_INDEX})
+    if bad:
+        raise ValueError(
+            f"vllm-lens: steering at decoder layer(s) {bad} is unsupported on this hyper-connection "
+            "(multi-stream residual) architecture -- the residual stream at a layer boundary is a deferred "
+            "fold of several tensors. Use layer_indices=[EMBED_LAYER_INDEX] (embedding-stream injection)."
+        )
+    if capture_layers is True or (
+        isinstance(capture_layers, (list, tuple)) and any(int(l) != EMBED_LAYER_INDEX for l in capture_layers)
+    ):
+        raise ValueError(
+            "vllm-lens: output_residual_stream at decoder-layer outputs is unsupported on this hyper-connection "
+            "(multi-stream residual) architecture; only output_residual_stream=[EMBED_LAYER_INDEX] (the "
+            "embedding stream) is defined here."
+        )
+
+
 def _pack_steering(
     payloads: dict[str, list[SteeringVector]],
 ) -> tuple[dict[str, Any] | None, dict[str, list[SteeringVector]]]:
@@ -356,6 +385,10 @@ async def _patched_generate(
     if needs_hooks and not getattr(self, "_hooks_installed", False):
         await self.collective_rpc("install_hooks")
         setattr(self, "_hooks_installed", True)
+    if needs_hooks:
+        _check_layer_support(
+            await _lens_capabilities_async(self), steering_vectors, extra.get("output_residual_stream")
+        )
 
     # Send steering data to workers before the forward pass begins.
     if steering_vectors is not None:
@@ -385,6 +418,28 @@ async def _patched_generate(
             await self.collective_rpc("clear_steering_data", args=(request_id,))
         if wants_activations:
             await self.collective_rpc("clear_captured_states", args=(request_id,))
+
+
+def _lens_capabilities_sync(llm: Any) -> dict[str, Any]:
+    caps = getattr(llm, "_lens_caps", None)
+    if caps is None:
+        try:
+            caps = llm.collective_rpc("lens_capabilities")[0] or {}
+        except Exception:  # noqa: BLE001 - older worker without the RPC
+            caps = {}
+        llm._lens_caps = caps
+    return caps
+
+
+async def _lens_capabilities_async(llm: Any) -> dict[str, Any]:
+    caps = getattr(llm, "_lens_caps", None)
+    if caps is None:
+        try:
+            caps = (await llm.collective_rpc("lens_capabilities"))[0] or {}
+        except Exception:  # noqa: BLE001
+            caps = {}
+        llm._lens_caps = caps
+    return caps
 
 
 # ---------------------------------------------------------------------------
@@ -421,11 +476,13 @@ def _patched_llm_generate(
     # extra_args before vLLM serialises SamplingParams (tensors don't
     # survive msgspec), but keep them for the RPC call.
     steering_payloads: dict[str, list[SteeringVector]] = {}  # steering_id -> vectors
+    per_request: list[tuple[list[SteeringVector] | None, Any]] = []
     for idx, sp in enumerate(params_list):
         extra = sp.extra_args or {}
         vectors = extra.pop("apply_steering_vectors", None)
         if isinstance(vectors, str):
             vectors = [SteeringVector.model_validate(d) for d in json.loads(vectors)]
+        per_request.append((vectors, extra.get("output_residual_stream")))
         if vectors is not None:
             _check_graph_mode_request(vectors, False, None)
             steering_id = f"_steer_{idx}"
@@ -455,6 +512,11 @@ def _patched_llm_generate(
     if needs_hooks and not getattr(self, "_hooks_installed", False):
         self.collective_rpc("install_hooks")
         self._hooks_installed = True  # type: ignore[reportAttributeAccessIssue]
+    if needs_hooks:
+        caps = _lens_capabilities_sync(self)
+        for vectors, cap in per_request:
+            if vectors is not None or cap is not None:
+                _check_layer_support(caps, vectors, cap)
 
     # Send steering data to workers before generation: one block RPC for the
     # single-position per-request vectors, one "many" RPC for the rest
@@ -570,6 +632,9 @@ def register() -> None:
     if _env_truthy("VLLM_LENS_DISABLE"):
         logger.info("VLLM_LENS_DISABLE set; vllm-lens activation plugin inactive.")
         return
+    # vLLM >= 0.27 refuses pickled collective_rpc payloads unless opted in; the
+    # steering RPCs ship pickled SteeringVector tensors (trusted, same-user).
+    os.environ.setdefault("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
 
     from vllm import LLM
     from vllm.engine.arg_utils import EngineArgs

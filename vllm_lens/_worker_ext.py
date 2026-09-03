@@ -268,6 +268,8 @@ def _host_query_start_loc(runner: Any, meta: Any, num_reqs: int) -> list[int]:
     host = getattr(getattr(runner, "query_start_loc", None), "np", None)
     if host is not None:
         return [int(x) for x in host[: num_reqs + 1]]
+    if meta is None:
+        raise RuntimeError("vllm-lens: no host query_start_loc buffer and no attention metadata")
     q = meta.query_start_loc
     if isinstance(q, torch.Tensor):
         return [int(x) for x in q[: num_reqs + 1].tolist()]
@@ -279,7 +281,7 @@ def _host_abs_start(runner: Any, meta: Any, qsl: list[int], num_reqs: int) -> li
     nct = getattr(getattr(runner, "input_batch", None), "num_computed_tokens_cpu", None)
     if nct is not None:
         return [int(x) for x in nct[:num_reqs]]
-    seq_lens: Any = getattr(meta, "seq_lens", None)
+    seq_lens: Any = getattr(meta, "seq_lens", None) if meta is not None else None
     if seq_lens is None:
         return [0] * num_reqs  # fallback: treat as prefill from position 0
     if isinstance(seq_lens, torch.Tensor):
@@ -342,16 +344,21 @@ def _build_step_plan(
             return None
     # Hybrid models (e.g. Qwen3-Next with GatedDeltaNet) have multiple
     # attention metadata entries — some (like GDNAttentionMetadata) lack
-    # query_start_loc.  Find one that has it.
+    # query_start_loc.  Find one that has it.  vLLM >= 0.27 moved
+    # query_start_loc off several backends' metadata entirely (FlashInfer,
+    # FlashMLA sparse, ...); the model runner's persistent host buffers
+    # (``runner.query_start_loc.np``, ``input_batch.num_computed_tokens_cpu``)
+    # are the stable source, so the metadata is only a fallback here.
     meta = None
     for _meta in attn_metadata.values():
         if hasattr(_meta, "query_start_loc"):
             meta = _meta
             break
-    if meta is None:
+    if meta is None and getattr(getattr(runner, "query_start_loc", None), "np", None) is None:
         logger.warning(
-            "No attention metadata with query_start_loc found "
-            "(keys: %s). Skipping hook for this step.",
+            "No attention metadata with query_start_loc found (keys: %s) and the "
+            "model runner has no host query_start_loc buffer. Skipping hook for "
+            "this step.",
             list(attn_metadata.keys()),
         )
         return None
@@ -647,6 +654,48 @@ def _apply_layer_vectorized(
     return True
 
 
+class UnsupportedLayerOutputError(RuntimeError):
+    """A decoder layer returned a hyper-connection / multi-stream output
+    (e.g. DeepSeek-V4's ``(x, residual[T, hc, D], post_mix, res_mix)``): the
+    residual stream at this layer boundary is a deferred fold of several
+    tensors, so steering or capturing "the layer output" is undefined.  Use
+    ``EMBED_LAYER_INDEX`` (the embedding stream entering layer 0, a plain
+    ``[T, D]`` tensor on every architecture).  Raised, never swallowed."""
+
+
+def _split_layer_output(
+    output: torch.Tensor | tuple, layer_idx: int
+) -> tuple[torch.Tensor, torch.Tensor | None, tuple]:
+    """``(stream_half, residual_half_or_None, rest)`` for a decoder layer output.
+
+    Plain tensor -> ``(t, None, ())``; fused-residual 2-tuple ``(h, r)`` with
+    ``r.shape == h.shape`` -> ``(h, r, ())``; ``(h, None)`` -> ``(h, None, (None,))``.
+    Anything else (more than two elements, or a second element whose shape
+    differs from the first) is a multi-stream output ->
+    :class:`UnsupportedLayerOutputError`.
+    """
+    if not isinstance(output, tuple):
+        return output, None, ()
+    if len(output) == 0 or not isinstance(output[0], torch.Tensor):
+        raise UnsupportedLayerOutputError(
+            f"vllm-lens: layer {layer_idx} returned an unexpected output {type(output).__name__} of length {len(output)}"
+        )
+    multi = len(output) > 2
+    residual = None
+    if len(output) == 2 and isinstance(output[1], torch.Tensor):
+        residual = output[1]
+        multi = residual.shape != output[0].shape
+    if multi:
+        shapes = [tuple(o.shape) if isinstance(o, torch.Tensor) else type(o).__name__ for o in output]
+        raise UnsupportedLayerOutputError(
+            f"vllm-lens: layer {layer_idx} returned a {len(output)}-tuple {shapes}: a hyper-connection / "
+            "multi-stream residual (deferred fold), on which layer-output steering and capture are "
+            "undefined. Inject / capture at the embedding stream instead (layer_indices=[EMBED_LAYER_INDEX], "
+            "output_residual_stream=[EMBED_LAYER_INDEX])."
+        )
+    return output[0], residual, output[1:]
+
+
 class EmbedInjectionError(RuntimeError):
     """``EMBED_LAYER_INDEX`` steering could not be applied on this pass.
 
@@ -811,23 +860,20 @@ def _hook_inner(
     query_start_loc = plan.qsl
 
     # --- Phase 2: apply steering ------------------------------------
+    # Multi-stream (hyper-connection) layer outputs are refused here -- loudly.
+    stream, residual, rest = _split_layer_output(output, layer_idx)
     modified_output: torch.Tensor | tuple[torch.Tensor, ...] | None = None
     if todo:
-        residual: torch.Tensor | None = None
+        target = stream.clone()
         if isinstance(output, tuple):
-            target = output[0].clone()
-            rest = output[1:]
-            if rest and isinstance(rest[0], torch.Tensor):
+            if residual is not None and layer_idx in plan.replace_layers:
                 # Fused-residual layer: the true stream is output[0] + output[1].
                 # norm_match reads it; mode="replace" also zeroes the residual
                 # half, so clone that half only when a replace row is scheduled.
-                residual = rest[0]
-                if layer_idx in plan.replace_layers:
-                    residual = residual.clone()
-                    rest = (residual, *rest[1:])
+                residual = residual.clone()
+                rest = (residual, *rest[1:])
             modified_output = (target, *rest)
         else:
-            target = output.clone()
             modified_output = target
 
         extension._stats["steer_layer_steps"] += 1
@@ -850,15 +896,10 @@ def _hook_inner(
 
     # --- Phase 3: capture activations (rank 0 only) -----------------
     if cap_rows:
-        capture_src = modified_output if modified_output is not None else output
+        if modified_output is not None:
+            stream, residual, _ = _split_layer_output(modified_output, layer_idx)
         hidden_states: Float[torch.Tensor, "total_tokens hidden_dim"]  # type: ignore[reportUndefinedVariable]
-        if isinstance(capture_src, tuple):
-            if capture_src[1] is not None:
-                hidden_states = capture_src[0] + capture_src[1]
-            else:
-                hidden_states = capture_src[0]
-        else:
-            hidden_states = capture_src
+        hidden_states = stream + residual if residual is not None else stream
         _capture_rows(extension, runner, layer_idx, hidden_states, query_start_loc, cap_rows)
 
     return modified_output
@@ -907,6 +948,15 @@ def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
         """
         try:
             return _hook_inner(extension, layer_idx, output)
+        except UnsupportedLayerOutputError:
+            extension._stats["errors"] += 1
+            extension._stats["unsupported_layer_output"] += 1
+            logger.error(
+                "vllm-lens: layer %d has a multi-stream output; steering/capture "
+                "there is undefined -- raising rather than silently skipping",
+                layer_idx,
+            )
+            raise
         except Exception:
             extension._stats["errors"] += 1
             logger.warning(
@@ -985,6 +1035,35 @@ def _make_pre_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable
     return pre_hook
 
 
+_MULTI_STREAM_MSG = (
+    "vllm-lens: {what} is unsupported on this hyper-connection (multi-stream residual) "
+    "architecture: decoder layers return a deferred fold of several tensors, so the "
+    "residual stream at a layer boundary is not a single [tokens, hidden] tensor. "
+    "Inject with layer_indices=[EMBED_LAYER_INDEX] (mode='replace' or 'add' on the "
+    "embedding stream) and capture with output_residual_stream=[EMBED_LAYER_INDEX]. "
+    "Override the detection with VLLM_LENS_MULTI_STREAM=0/1."
+)
+
+
+def _detect_multi_stream(extension: HiddenStatesExtension) -> bool:
+    """Hyper-connection architectures (DeepSeek-V4 mHC: ``hc_mult`` > 1) keep
+    several residual streams per layer boundary; ``VLLM_LENS_MULTI_STREAM``
+    overrides the config-based detection."""
+    env = os.environ.get("VLLM_LENS_MULTI_STREAM")
+    if env is not None:
+        return env.strip().lower() in _TRUTHY
+    try:
+        cfg = getattr(extension, "vllm_config", None) or extension.model_runner.vllm_config
+        hf = cfg.model_config.hf_config
+        for c in (hf, getattr(hf, "text_config", None)):
+            hc = getattr(c, "hc_mult", None)
+            if hc is not None:
+                return int(hc) > 1
+    except Exception:  # pragma: no cover - defensive against config drift
+        return False
+    return False
+
+
 def _new_stats() -> dict[str, int]:
     return {
         "steps_fast_idle": 0,
@@ -996,6 +1075,7 @@ def _new_stats() -> dict[str, int]:
         "rows_replaced": 0,
         "embed_apply_steps": 0,
         "embed_errors": 0,
+        "unsupported_layer_output": 0,
         "rows_skipped_generated": 0,
         "errors": 0,
     }
@@ -1046,6 +1126,7 @@ class HiddenStatesExtension:
     _agg_broadcast: bool = False
     _agg_max_pos: int = -1
     _agg_embed: bool = False
+    _multi_stream: bool = False  # hyper-connection architecture (hc_mult > 1): embed-only
     _stats: dict[str, int] = _new_stats()
     _vectorized: bool = True
     _prompt_only: bool = (
@@ -1088,6 +1169,13 @@ class HiddenStatesExtension:
         tp_size = self.parallel_config.tensor_parallel_size
         self._should_capture = tp_size <= 1 or self.rank % tp_size == 0
 
+        self._multi_stream = _detect_multi_stream(self)
+        if self._multi_stream:
+            logger.info(
+                "vllm-lens: hyper-connection (multi-stream residual) architecture detected: "
+                "steering and capture are restricted to the embedding stream "
+                "(EMBED_LAYER_INDEX); layer-output requests are rejected."
+            )
         self._prompt_only = self._cuda_graphs_active()
         if self._prompt_only:
             logger.info(
@@ -1124,6 +1212,18 @@ class HiddenStatesExtension:
                 )
                 first = False
             layer.register_forward_hook(_make_hook(self, layer_idx))
+
+    def lens_capabilities(self) -> dict[str, Any]:
+        """vllm-metamodel: what this engine supports (queried once by the plugin
+        after ``install_hooks``): ``multi_stream`` (layer-output steering /
+        capture undefined -> embedding stream only), ``prompt_only`` (CUDA
+        graphs active), ``num_layers``."""
+        return {
+            "multi_stream": bool(self._multi_stream),
+            "prompt_only": bool(self._prompt_only),
+            "num_layers": len(_get_layers(self.model_runner.model)),
+            "hooks_installed": bool(self._hooks_installed),
+        }
 
     def _cuda_graphs_active(self) -> bool:
         """True when decode batches may run as CUDA-graph replays (hooks silent)."""
@@ -1165,6 +1265,8 @@ class HiddenStatesExtension:
                         f"layer_index {idx} out of range [0, {num_layers}) "
                         f"(or EMBED_LAYER_INDEX={EMBED_LAYER_INDEX})"
                     )
+                if idx != EMBED_LAYER_INDEX and self._multi_stream:
+                    raise ValueError(_MULTI_STREAM_MSG.format(what=f"steering at layer {idx}"))
             if self._prompt_only and sv.activations.dim() == 2:
                 raise ValueError(
                     "2-D (broadcast) steering vectors apply to generated positions, "
@@ -1244,6 +1346,8 @@ class HiddenStatesExtension:
                     f"layer_index {idx} out of range [0, {num_layers}) "
                     f"(or EMBED_LAYER_INDEX={EMBED_LAYER_INDEX})"
                 )
+            if idx != EMBED_LAYER_INDEX and self._multi_stream:
+                raise ValueError(_MULTI_STREAM_MSG.format(what=f"steering at layer {idx}"))
         positions = [int(x) for x in d["positions"]]
         scales = [float(x) for x in d["scales"]]
         nms = [bool(x) for x in d["norm_match"]]

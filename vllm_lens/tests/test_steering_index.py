@@ -1007,3 +1007,124 @@ def test_pack_steering_carries_mode_and_embed_layer():
     assert block["layers"] == [W.EMBED_LAYER_INDEX, 1]
     assert block["modes"] == ["replace", "add"]
     assert block["norm_match"] == [False, True] and block["scales"] == [2.0, 1.0]
+
+
+# ---------------------------------------------------------------------------
+# hyper-connection / multi-stream architectures (DeepSeek-V4 mHC): embed-only,
+# layer-output steering/capture must fail LOUDLY; vLLM 0.27 query_start_loc
+# ---------------------------------------------------------------------------
+
+
+def test_split_layer_output_classifies_outputs():
+    h = torch.randn(6, D)
+    assert W._split_layer_output(h, 0)[0] is h
+    r = torch.randn(6, D)
+    s_, res, rest = W._split_layer_output((h, r), 0)
+    assert s_ is h and res is r and rest == (r,)
+    s_, res, rest = W._split_layer_output((h, None), 0)
+    assert res is None and rest == (None,)
+    with pytest.raises(W.UnsupportedLayerOutputError, match="multi-stream"):
+        W._split_layer_output((h, torch.randn(6, 4, D), torch.randn(6, 1), torch.randn(6, 4)), 3)
+    with pytest.raises(W.UnsupportedLayerOutputError):
+        W._split_layer_output((h, torch.randn(6, 4, D)), 3)  # 2-tuple but stacked residual
+
+
+def _fake_ctx(runner, with_qsl=True):
+    import vllm.forward_context as fc
+
+    if with_qsl:
+        meta = SimpleNamespace(query_start_loc=torch.tensor(runner.query_start_loc.np))
+    else:  # vLLM 0.27 style: the attention metadata does not carry query_start_loc
+        meta = SimpleNamespace(prefill=SimpleNamespace(cum_seq_lens_q=None))
+    fc._ctx = SimpleNamespace(attn_metadata={"layer0": meta})
+    return fc
+
+
+def test_hook_inner_raises_on_multi_stream_output_for_steer_and_capture():
+    ext = make_ext()
+    store(ext, "add", [sv3d(1, [2])])
+    runner = FakeRunner(
+        [("0-aaaaaaaa", {"_steering_id": "add"}, 4, 0, 4), ("1-bbbbbbbb", {"output_residual_stream": [1]}, 4, 0, 4)]
+    )
+    ext.model_runner = runner
+    fc = _fake_ctx(runner)
+    try:
+        ext._step_plan = W._build_step_plan(ext, runner, 2)
+        hs, res4 = torch.randn(8, D), torch.randn(8, 4, D)
+        hook = W._make_hook(ext, 1)
+        with pytest.raises(W.UnsupportedLayerOutputError):  # re-raised, not swallowed
+            hook(None, (), (hs, res4, torch.randn(8, 1), torch.randn(8, 4)))
+        assert ext._stats["unsupported_layer_output"] == 1 and ext._stats["errors"] == 1
+        # ordinary errors are still swallowed into a warning
+        assert hook(None, (), "not-a-tensor") is None
+        assert ext._stats["errors"] == 2
+        # a fused 2-tuple on the same plan still works
+        out = hook(None, (), (hs, torch.randn(8, D)))
+        assert isinstance(out, tuple) and out[0].shape == hs.shape
+    finally:
+        fc._ctx = None
+
+
+def test_multi_stream_detection_and_rpc_rejection():
+    ext = make_ext()
+    ext.vllm_config = SimpleNamespace(model_config=SimpleNamespace(hf_config=SimpleNamespace(hc_mult=4)))
+    assert W._detect_multi_stream(ext) is True
+    ext.vllm_config = SimpleNamespace(model_config=SimpleNamespace(hf_config=SimpleNamespace(hidden_size=8)))
+    assert W._detect_multi_stream(ext) is False
+    ext.vllm_config = SimpleNamespace(
+        model_config=SimpleNamespace(hf_config=SimpleNamespace(text_config=SimpleNamespace(hc_mult=1)))
+    )
+    assert W._detect_multi_stream(ext) is False
+    import os
+
+    os.environ["VLLM_LENS_MULTI_STREAM"] = "1"
+    try:
+        assert W._detect_multi_stream(ext) is True
+    finally:
+        del os.environ["VLLM_LENS_MULTI_STREAM"]
+    ext._multi_stream = True
+    with pytest.raises(ValueError, match="hyper-connection"):
+        ext.set_steering_data("k", pickle.dumps([sv3d(1, [3])]))
+    with pytest.raises(ValueError, match="hyper-connection"):
+        ext.set_steering_block(
+            pickle.dumps({"keys": ["a"], "vecs": torch.randn(1, D), "layers": [2], "positions": [0],
+                          "scales": [1.0], "norm_match": [False], "modes": ["add"]})
+        )
+    ext.set_steering_data("k", pickle.dumps([sv3d(W.EMBED_LAYER_INDEX, [3], mode="replace")]))  # embed is fine
+    ext.set_steering_block(
+        pickle.dumps({"keys": ["a"], "vecs": torch.randn(1, D), "layers": [W.EMBED_LAYER_INDEX], "positions": [0],
+                      "scales": [1.0], "norm_match": [False], "modes": ["replace"]})
+    )
+    ext.parallel_config = SimpleNamespace(tensor_parallel_size=1)
+    caps = ext.lens_capabilities()
+    assert caps["multi_stream"] is True and caps["num_layers"] == 4
+
+
+def test_plugin_check_layer_support():
+    from vllm_lens._activations_plugin import _check_layer_support
+
+    caps = {"multi_stream": True}
+    _check_layer_support(caps, [sv3d(W.EMBED_LAYER_INDEX, [3], mode="replace")], [W.EMBED_LAYER_INDEX])
+    _check_layer_support({"multi_stream": False}, [sv3d(1, [3])], True)
+    _check_layer_support(None, [sv3d(1, [3])], True)
+    with pytest.raises(ValueError, match="unsupported on this hyper-connection"):
+        _check_layer_support(caps, [sv3d(1, [3])], None)
+    with pytest.raises(ValueError, match="output_residual_stream"):
+        _check_layer_support(caps, None, True)
+    with pytest.raises(ValueError, match="output_residual_stream"):
+        _check_layer_support(caps, None, [W.EMBED_LAYER_INDEX, 5])
+
+
+def test_step_plan_uses_runner_host_buffers_when_metadata_lacks_query_start_loc():
+    """vLLM >= 0.27: several attention backends no longer expose query_start_loc
+    on their metadata; the plan must still be built from the runner buffers."""
+    ext = make_ext()
+    store(ext, "_steer_0", [sv3d(1, [10])])
+    runner = FakeRunner([("0-aaaaaaaa", {"_steering_id": "_steer_0"}, 96, 0, 96), ("1-bbbbbbbb", None, 96, 96, 1)])
+    fc = _fake_ctx(runner, with_qsl=False)
+    try:
+        plan = W._build_step_plan(ext, runner, 2)
+        assert plan is not None and plan.qsl == [0, 96, 97] and plan.abs_start == [0, 96]
+        assert [i for i, _ in plan.steer[1]] == [0]
+    finally:
+        fc._ctx = None

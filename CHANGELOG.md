@@ -10,6 +10,16 @@ branches from upstream **v1.1.0** and keeps the distribution name
 pip install git+https://github.com/ceselder/vllm-metamodel
 ```
 
+## v1.1.0.post5 (4 September 2026) — docs + one-call scoring helpers
+
+- `vllm_lens.metamodel`: `readout_scores(llm, token_ids, directions, layer, positions, metric, bias, early_exit, lora_request)`
+  → `(values [n, n_layers, n_pos], positions)`, `readout_max(...)` → one reward per text, `capabilities(llm)`.
+  One prefill-only `generate()` per call; early exit is used when the engine supports it, otherwise
+  dropped with a warning. Exported from `vllm_lens`. 4 CPU tests (`test_metamodel_helpers.py`).
+- README: a **Features** table up top, a dedicated **Early exit** section (rules, capability check,
+  mixed batches, numbers), **One-call scoring**, and an **API reference** for every `extra_args` key,
+  `ReadoutVector`, and the environment switches.
+
 ## v1.1.0.post4 (4 September 2026) — fast hidden-state readout: gather-capture, in-engine projection, early exit
 
 Reading the layer-L residual stream out of vLLM (the "re-encode N texts through the

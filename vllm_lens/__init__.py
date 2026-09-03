@@ -6,6 +6,7 @@ from vllm_lens._helpers._serialize import (
     serialize_activations,
     serialize_tensor,
 )
+from vllm_lens.metamodel import capabilities, readout_max, readout_scores
 from vllm_lens._helpers.types import (
     CAPTURE_POSITIONS_KEY,
     EARLY_EXIT_KEY,
@@ -28,6 +29,9 @@ __all__ = [
     "EARLY_EXIT_KEY",
     "EMBED_LAYER_INDEX",
     "ReadoutVector",
+    "capabilities",
+    "readout_max",
+    "readout_scores",
     "SteeringVector",
     "__version__",
 ]

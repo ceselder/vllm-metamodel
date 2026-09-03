@@ -19,6 +19,23 @@ This change also allows you to use cuda-graphs after prefill, since meta-models 
 pip install git+https://github.com/ceselder/vllm-metamodel
 ```
 
+## Features
+
+Everything below is opt-in per request, keeps the upstream vllm-lens API, and (unless noted) works with CUDA graphs on.
+
+| feature | how | section |
+|---|---|---|
+| **Fast per-request steering** — one vector per prompt, batches of 1000s | same `SteeringVector` API; indexed hook + one `index_add_` per layer-step + one block RPC per `generate()` | [Comparisons](#comparisons) |
+| **CUDA graphs with hooks** | `VLLM_LENS_CUDA_GRAPHS=1` → decode runs as graph replays, prompt positions stay hookable | [CUDA graphs](#cuda-graphs) |
+| **Karvonen-style injection** `h + coeff·‖h‖·unit(v)` on the full residual stream | `SteeringVector(norm_match=True, scale=coeff)` | [Karvonen-style injection](#karvonen-style-norm-matched-injection-norm_matchtrue-scalecoeff) |
+| **Embedding replacement** (NLA-style, hyper-connection models) | `mode="replace"`, `layer_indices=[EMBED_LAYER_INDEX]` | [Embedding replacement](#embedding-replacement-nla--metamodels-on-hyper-connection-architectures) |
+| **Cheap hidden-state capture** — only the layers/positions you ask for | `extra_args={"output_residual_stream": [L], "capture_positions": {"last": k}}` | [Fast hidden-state readout](#fast-hidden-state-readout-110post4) |
+| **In-engine readout (scalars, not tensors)** — cosine / dot with a per-request direction | `ReadoutVector(...)` in `extra_args["apply_readout_vectors"]` | [Fast hidden-state readout](#fast-hidden-state-readout-110post4) |
+| **Early exit** — stop the forward pass after layer L | `extra_args["lens_early_exit"] = True` with `max_tokens=1` | [Early exit](#early-exit) |
+| **One-call reward scoring** | `vllm_lens.metamodel.readout_scores(llm, token_ids, directions, layer=42)` | [One-call scoring](#one-call-scoring-vllm_lensmetamodel) |
+| Capability introspection / kill switches | `llm.collective_rpc("lens_capabilities")`, `VLLM_LENS_DISABLE=1`, `VLLM_LENS_FAST_CAPTURE=0`, `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` | [API reference](#api-reference) |
+
+
 # Cleaned up claudeslop information below
 
 ## Comparisons
@@ -351,6 +368,82 @@ Re-run: `MODAL_PROFILE=safety-sahan modal run bench/modal_bench_dsv4.py::run1` (
 correctness + throughput), `::run3` (throughput repeat, interleaved, 3 repeats); then
 `python bench/render_dsv4_readme.py bench/results/dsv4_run1_eager_<ts> bench/results/dsv4_run2_graphs_<ts> bench/results/dsv4_run3_graphs_tp_<ts>`.
 <!-- INJECTION-DSV4:END -->
+
+## Early exit
+
+`extra_args["lens_early_exit"] = True` tells the engine that a request only needs the residual
+stream up to the deepest layer it reads (its `output_residual_stream` layers and/or its
+`ReadoutVector.layer_indices`) — so the remaining decoder layers, the final norm and the
+LM head can be skipped. On Qwen3.6-27B reading layer 42 of 64 that removes ~34 % of the
+prefill FLOPs: 1,024 texts in **4.7 s** instead of 6.6 s for a plain no-hook prefill.
+
+How it works: when *every* request in a forward pass is an early-exit request, the hook on
+the deepest requested layer raises a sentinel after it has captured / projected its rows;
+a wrapper around the model runner's forward catches it and returns a zero placeholder for
+the logits. Nothing is written to the KV cache beyond that layer for those rows.
+
+Rules:
+
+- `max_tokens=1` only (it is a scoring pass, not a generation); the one sampled token is
+  meaningless — ignore it.
+- The engine must run with **`enable_prefix_caching=False`** (skipped layers would leave stale
+  KV blocks that a later request could reuse), pipeline parallel size 1, and no auxiliary
+  hidden-state outputs (e.g. EAGLE). `llm.collective_rpc("lens_capabilities")[0]["early_exit"]`
+  reports whether the engine qualifies (`"early_exit_reason"` says why not); the plugin
+  refuses non-qualifying requests with a `ValueError` *before* they reach the engine.
+- A pass that mixes generating requests with early-exit requests simply runs to the end —
+  correct, just without the saving. So an RL rollout engine can score between generation
+  calls with no mode switch (use `lora_request=None` to read the clean base model).
+- Works identically on eager and CUDA-graph engines (prefill passes run eagerly either way).
+- `VLLM_LENS_EARLY_EXIT=0` disables it globally.
+
+```python
+sp = SamplingParams(max_tokens=1, extra_args={
+    "apply_readout_vectors": [ReadoutVector(activations=d.view(1, 5120), layer_indices=[42],
+                                            positions={"last": 5}, metric="cos")],
+    "lens_early_exit": True,
+})
+out = llm.generate([{"prompt_token_ids": ids}], sp, lora_request=None)[0]
+reward = out.readout[0]["values"].max()     # layers 43..63 never ran
+```
+
+## One-call scoring (`vllm_lens.metamodel`)
+
+```python
+from vllm_lens.metamodel import readout_scores, readout_max, capabilities
+
+values, positions = readout_scores(llm, token_ids, directions, layer=42,
+                                   positions={"last": 5}, metric="cos", early_exit=True,
+                                   lora_request=None)   # clean base on a LoRA engine
+# values: float32 [n, n_layers, n_pos] (NaN-padded for short texts); positions: per-text absolute positions
+rewards = readout_max(llm, token_ids, directions, layer=42)   # [n] = max over the window
+capabilities(llm)   # {"early_exit": True, "multi_stream": False, ...}
+```
+
+`readout_scores` builds one prefill-only request per text (`max_tokens=1`, one `ReadoutVector`
+each, `lens_early_exit` when the engine supports it — otherwise it warns and runs the full
+model), issues a single `generate()` call, and stacks the scalars. `metric="dot"` with
+`bias` gives SAE-feature pre-activations.
+
+## API reference
+
+Per-request keys in `SamplingParams.extra_args` (offline) / `vllm_xargs` (HTTP):
+
+| key | type | meaning |
+|---|---|---|
+| `apply_steering_vectors` | `list[SteeringVector]` | upstream API; `mode="add"` (default) or `"replace"`, `norm_match`, `scale`, `layer_indices` (may contain `EMBED_LAYER_INDEX`), `position_indices` |
+| `output_residual_stream` | `True` or `list[int]` | capture the residual stream at these layers (`True` = all; not allowed with early exit) |
+| `capture_positions` | `"all"` \| `{"last": k}` \| `list[int]` | which positions to capture (default `"all"`); negative ints count from the end of the prompt |
+| `apply_readout_vectors` | `list[ReadoutVector]` | in-engine projection; result on `output.readout` |
+| `lens_early_exit` | `bool` | stop after the deepest requested layer (see [Early exit](#early-exit)) |
+
+`ReadoutVector(activations=[n_layers, hidden], layer_indices, positions="all"|{"last": k}|[...], metric="cos"|"dot", bias=0.0)` →
+`output.readout[i] = {"values": Tensor[n_layers, n_pos] float32, "positions": [int], "layers": [int]}`.
+
+Environment switches (read when the engine starts): `VLLM_LENS_CUDA_GRAPHS=1` (enable graphs;
+prompt-position steering/capture only), `VLLM_LENS_DISABLE=1` (plugin off), `VLLM_LENS_FAST_CAPTURE=0`
+(upstream capture path), `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` (per-request RPCs),
+`VLLM_LENS_MULTI_STREAM=0|1` (override hyper-connection detection).
 
 ## Fast hidden-state readout (1.1.0.post4)
 

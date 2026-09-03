@@ -99,7 +99,7 @@ once). If chunked prefill could leave a 1-token final chunk (dispatched as a dec
 the fork warns at hook installation — set `max_num_batched_tokens` above your longest
 prompt × concurrency. Without the variable, behaviour is exactly 1.1.0's (eager forced).
 
-**vLLM caveat (hybrid GatedDeltaNet models such as Qwen3.5/3.6, vLLM 0.19):** pass `compilation_config={"max_cudagraph_capture_size": N}` (vLLM's default size ladder) rather than a sparse explicit `cudagraph_capture_sizes` list. In our runs the explicit list made vLLM's packed GDN decode kernel fail to launch during graph capture (`Triton Error [CUDA]: invalid argument`) with or without vllm-lens; the default ladder works (`bench/diag_engine.py` bisects this). Keep `max_num_seqs <= 1024` for that model: the packed decode kernel's launch grid is `batch x value_heads` (48) and the CUDA grid-dimension limit is 65,535.
+**vLLM caveat (hybrid GatedDeltaNet models such as Qwen3.5/3.6, vLLM 0.19):** keep `max_num_seqs <= 1024` when CUDA graphs are on. vLLM's packed GDN decode kernel launches a `batch x value_heads` grid (48 heads on Qwen3.6-27B) and the CUDA grid-dimension limit is 65,535; with `max_num_seqs=2048` the engine died at start-up in the graph warm-up (`Triton Error [CUDA]: invalid argument`) with or without vllm-lens, while `max_num_seqs=1024` with vLLM's default capture ladder (`compilation_config={"max_cudagraph_capture_size": 1024}`) works (`bench/diag_engine.py`; LoRA on/off and the packed kernel on/off make no difference). Batches larger than `max_num_seqs` simply run as several scheduler waves.
 
 Environment variables: `VLLM_LENS_CUDA_GRAPHS` (opt-in graphs), `VLLM_LENS_VECTORIZED=0`
 (sequential apply), `VLLM_LENS_BLOCK_RPC=0` (per-key RPC), `VLLM_LENS_DISABLE=1` (plugin off).

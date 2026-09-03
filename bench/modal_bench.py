@@ -189,14 +189,14 @@ def main(
     )
     if attention_backend:
         common += f" --attention-backend {attention_backend}"
-    big_extra = common + f" --sizes {sizes} --language-model-only"
-    small_extra = common + f" --sizes {small_sizes}"
     if max_capture_size:
         common += f" --max-capture-size {max_capture_size}"
     if max_num_seqs:
         common += f" --max-num-seqs {max_num_seqs}"
     if extra_args:
         common += " " + extra_args
+    big_extra = common + f" --sizes {sizes} --language-model-only"
+    small_extra = common + f" --sizes {small_sizes}"
     fork_engines = (
         [e for e in fork_engines.split(",") if e]
         if fork_engines

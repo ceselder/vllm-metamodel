@@ -1,4 +1,4 @@
-"""CPU-only tests for the fast hidden-state readout (vllm-metamodel 1.1.0.post4):
+"""CPU-only tests for the fast hidden-state readout (vllm-metamodels 1.1.0.post4):
 position specs, gather-capture + host blocks, in-engine projection (ReadoutVector),
 early exit, bulk retrieval, and the plugin-side packing / validation.
 

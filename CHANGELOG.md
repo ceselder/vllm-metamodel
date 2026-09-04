@@ -1,13 +1,13 @@
 # Changelog
 
-This is **vllm-metamodel**, a maintained fork of
+This is **vllm-metamodels**, a maintained fork of
 [UKGovernmentBEIS/vllm-lens](https://github.com/UKGovernmentBEIS/vllm-lens)
 (MIT, UK AI Security Institute; original author Alan Cooney).  The fork
 branches from upstream **v1.1.0** and keeps the distribution name
 `vllm-lens`, so it installs as a drop-in replacement:
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-metamodel
+pip install git+https://github.com/ceselder/vllm-metamodels
 ```
 
 ## v1.1.0.post5 (4 September 2026) — docs + one-call scoring helpers
@@ -231,7 +231,7 @@ chunked prefill with the marker in a non-first chunk (`max_num_batched_tokens=64
 and throughput at B ∈ {512, 1024} vs `bench/results_summary.json`.  See the
 README section "Injection modes: test matrix" for the numbers.
 
-## v1.1.0.post1 (3 September 2026) — vllm-metamodel
+## v1.1.0.post1 (3 September 2026) — vllm-metamodels
 
 Target workload: **RL-style rollouts with one steering vector per prompt**
 (activation-oracle / "meta-model" injection: a different vector for every

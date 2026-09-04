@@ -6,10 +6,10 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = Path(__file__).parent
-SERIES = [  # key, legend label, color, marker  (CUDA-graph mode is the default vllm-metamodel)
+SERIES = [  # key, legend label, color, marker  (CUDA-graph mode is the default vllm-metamodels)
     ("stock_eager", "vllm-lens", "#2a78d6", "o"),
-    ("fork_vectorized", "vllm-metamodel (eager)", "#eb6834", "s"),
-    ("fork_graphs", "vllm-metamodel (cuda graphs)", "#1baf7a", "D"),
+    ("fork_vectorized", "vllm-metamodels (eager)", "#eb6834", "s"),
+    ("fork_graphs", "vllm-metamodels (cuda graphs)", "#1baf7a", "D"),
     ("ceiling_plain", "vLLM, no steering", "#87867F", "^"),
 ]
 TITLE = {"Qwen/Qwen3.6-27B": "Generation performance (Qwen 3.6 27B)", "Qwen/Qwen3-1.7B": "Generation performance (Qwen 3 1.7B)"}
@@ -36,7 +36,7 @@ def main():
         ax.set_title(TITLE.get(model, model), loc="left", pad=14, fontweight="bold")
         leg = ax.legend(loc="upper left")
         for t in leg.get_texts():
-            if t.get_text().startswith("vllm-metamodel"):
+            if t.get_text().startswith("vllm-metamodels"):
                 t.set_fontweight("bold")
         fig.tight_layout()
         fig.savefig(out / f"{stem}.png", dpi=170, bbox_inches="tight"); fig.savefig(out / f"{stem}.pdf", bbox_inches="tight")

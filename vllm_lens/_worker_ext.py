@@ -22,7 +22,7 @@ norm of the FULL residual stream ``hidden_states + residual`` (see
 embedding stream entering layer 0, applied in the layer-0 pre-hook) are
 fork additions.
 
-Fast hidden-state readout (vllm-metamodel 1.1.0.post4):
+Fast hidden-state readout (vllm-metamodels 1.1.0.post4):
 
 * capture gathers every capturing row's requested positions of a layer with
   ONE ``index_select`` and ONE pinned, asynchronous device->host copy per
@@ -1136,7 +1136,7 @@ def _capture_gather(
     plan: _StepPlan,
     cap_rows: list[int],
 ) -> None:
-    """vllm-metamodel fast capture: ONE ``index_select`` over every capturing
+    """vllm-metamodels fast capture: ONE ``index_select`` over every capturing
     row's selected positions (``plan.cap_sel``) and ONE asynchronous pinned
     device->host copy per layer-step, split per request lazily at retrieval
     (``_flush_host_blocks``).  On fused-residual layers the stream
@@ -1475,7 +1475,7 @@ class HiddenStatesExtension:
     _prompt_only: bool = (
         False  # CUDA graphs active for decode: hooks only see prompt rows
     )
-    # vllm-metamodel fast readout state.
+    # vllm-metamodels fast readout state.
     _fast_capture: bool = True  # gather + pinned async D2H per layer-step (VLLM_LENS_FAST_CAPTURE)
     _cap_blocks: list[_HostBlock] = []  # pending capture copies, flushed at retrieval
     _read_blocks: list[_HostBlock] = []  # pending readout copies
@@ -1580,7 +1580,7 @@ class HiddenStatesExtension:
             layer.register_forward_hook(_make_hook(self, layer_idx))
 
     def lens_capabilities(self) -> dict[str, Any]:
-        """vllm-metamodel: what this engine supports (queried once by the plugin
+        """vllm-metamodels: what this engine supports (queried once by the plugin
         after ``install_hooks``): ``multi_stream`` (layer-output steering /
         capture undefined -> embedding stream only), ``prompt_only`` (CUDA
         graphs active), ``num_layers``."""
@@ -1596,7 +1596,7 @@ class HiddenStatesExtension:
         }
 
     # ------------------------------------------------------------------
-    # vllm-metamodel: early exit
+    # vllm-metamodels: early exit
     # ------------------------------------------------------------------
 
     def _early_exit_supported(self) -> tuple[bool, str]:
@@ -1801,7 +1801,7 @@ class HiddenStatesExtension:
         self._steering_gen += 1
 
     def set_fast_capture(self, enabled: bool) -> bool:
-        """vllm-metamodel: toggle the gather + pinned-copy capture path (default on,
+        """vllm-metamodels: toggle the gather + pinned-copy capture path (default on,
         ``VLLM_LENS_FAST_CAPTURE``); off = 1.1.0's per-request ``.cpu()`` slices."""
         self._flush_host_blocks()
         self._fast_capture = bool(enabled)
@@ -1824,7 +1824,7 @@ class HiddenStatesExtension:
         return out
 
     # ------------------------------------------------------------------
-    # vllm-metamodel: readout vectors (called via collective_rpc)
+    # vllm-metamodels: readout vectors (called via collective_rpc)
     # ------------------------------------------------------------------
 
     def _check_layer(self, idx: int, num_layers: int, what: str) -> None:
@@ -1914,7 +1914,7 @@ class HiddenStatesExtension:
         self._steering_gen += 1
 
     # ------------------------------------------------------------------
-    # vllm-metamodel: host blocks -> per-request results
+    # vllm-metamodels: host blocks -> per-request results
     # ------------------------------------------------------------------
 
     def _flush_host_blocks(self) -> None:
@@ -1975,7 +1975,7 @@ class HiddenStatesExtension:
         return out
 
     def get_captured_states_many(self, external_req_ids: list[str]) -> bytes:
-        """vllm-metamodel: ``get_captured_states`` for every request of a
+        """vllm-metamodels: ``get_captured_states`` for every request of a
         ``generate()`` call in ONE RPC.  Returns a pickled ``{external_id:
         {"residual_stream": Tensor(n_layers, n_pos, hidden), "positions": [int]}}``
         (uncompressed: activations do not compress; ``positions`` present on the

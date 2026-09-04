@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""GPU test matrix for the injection modes of vllm-metamodel (1×GPU, Modal).
+"""GPU test matrix for the injection modes of vllm-metamodels (1×GPU, Modal).
 
 Karvonen-style norm-matched addition (``norm_match=True, scale=coeff`` ==
 ``h + coeff·‖h‖·v/‖v‖`` at a decoder layer's output, checked against an HF

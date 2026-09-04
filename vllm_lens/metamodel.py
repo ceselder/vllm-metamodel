@@ -1,4 +1,4 @@
-"""vllm-metamodel convenience helpers: one-call reward scoring / readout on a vLLM engine.
+"""vllm-metamodels convenience helpers: one-call reward scoring / readout on a vLLM engine.
 
 These are thin wrappers over the per-request ``extra_args`` API (``apply_readout_vectors``,
 ``lens_early_exit``, ``capture_positions``) so a meta-model training loop can score a batch

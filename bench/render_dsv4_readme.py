@@ -99,7 +99,7 @@ def main(dirs: list[str]) -> None:
                                     "decode-step time of embedding replacement and embedding add vs no steering, one distinct vector per request\\n"
                                     f"vLLM {ver.get('vllm')} · TP{rc.get('tensor_parallel_size')} · {gpu} · fp8 + fp4 experts · kv fp8_ds_mla · "
                                     f"decode-step time = (wall at 80 new tokens − wall at 40) / 40, error bars = min–max over interleaved repeats · "
-                                    f"vllm-metamodel {ver.get('vllm_lens')}")], check=True)
+                                    f"vllm-metamodels {ver.get('vllm_lens')}")], check=True)
         fig = "\n![DeepSeek-V4 throughput by injection mode](bench/dsv4_throughput.png)\n"
     block = f"""<!-- INJECTION-DSV4:BEGIN -->
 `bench/test_injection_dsv4.py` on {gpu} (TP{rc.get('tensor_parallel_size')}, vLLM {ver.get('vllm')}, torch {ver.get('torch')}, vllm-lens {ver.get('vllm_lens')};

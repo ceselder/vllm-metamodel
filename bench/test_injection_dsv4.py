@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""GPU test matrix for vllm-metamodel on a hyper-connection (multi-stream) architecture:
+"""GPU test matrix for vllm-metamodels on a hyper-connection (multi-stream) architecture:
 DeepSeek-V4-Flash-0731 (mHC, hc_mult=4, fp8 + fp4 experts) on vLLM 0.27.1, TP4.
 
 On mHC the residual stream at a layer boundary is a deferred fold of
@@ -363,7 +363,7 @@ def main() -> None:
         check(case, f"B={B}: row written by the NLA session's hook == reference arithmetic (bf16), read back through our layer -1 capture",
               max(diffs_ref) == 0.0, f"max|Δ|={max(diffs_ref):.2e}")
         if diffs_ours:
-            check(case, f"B={B}: NLA session's hook and vllm-metamodel embed-replace (prescaled) write IDENTICAL bytes", max(diffs_ours) == 0.0,
+            check(case, f"B={B}: NLA session's hook and vllm-metamodels embed-replace (prescaled) write IDENTICAL bytes", max(diffs_ours) == 0.0,
                   f"max|Δ|={max(diffs_ours):.2e} over {len(diffs_ours)} requests")
         check(case, f"B={B}: our hooks stayed passive (rows_replaced == 0) and captured cleanly", st["rows_replaced"] == 0 and st["errors"] == 0, json.dumps(st))
         result["cases"].setdefault(case, []).append(rec)

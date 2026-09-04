@@ -24,14 +24,14 @@ where decoder-layer outputs are multi-stream tuples.  Applied during prefill
 only, keeping decode-only CUDA graphs legal."""
 
 CAPTURE_POSITIONS_KEY = "capture_positions"
-"""``extra_args`` key (vllm-metamodel): which positions ``output_residual_stream``
+"""``extra_args`` key (vllm-metamodels): which positions ``output_residual_stream``
 returns.  ``"all"`` (default, 1.1.0 behaviour), ``{"last": k}`` (the last ``k``
 prompt positions, plus every generated position when running eagerly) or an
 explicit list of positions (absolute; negative values count back from the end
 of the prompt, ``-1`` = last prompt token)."""
 
 EARLY_EXIT_KEY = "lens_early_exit"
-"""``extra_args`` key (vllm-metamodel): ``True`` marks a ``max_tokens=1``
+"""``extra_args`` key (vllm-metamodels): ``True`` marks a ``max_tokens=1``
 capture / readout request as *readout-only*: when every request in a forward
 pass is marked, the worker stops the pass right after the deepest requested
 layer (the remaining layers are never computed).  The sampled token of such a
@@ -103,7 +103,7 @@ class SteeringVector(BaseModel):
     Does NOT renormalize ``h'`` back to ``‖h‖``.  ``‖h‖`` is the norm of the
     FULL residual stream at that position (on fused-residual architectures
     the layer's ``hidden_states + residual``, not the ``hidden_states`` half
-    alone -- upstream #7, ported in vllm-metamodel 1.1.0.post2; 1.1.0 used
+    alone -- upstream #7, ported in vllm-metamodels 1.1.0.post2; 1.1.0 used
     the half and under-injected by ~8x on Qwen-style models).  With
     ``mode="replace"``: ``h' = scale · ‖h‖ · v/‖v‖``."""
 
@@ -167,7 +167,7 @@ class SteeringVector(BaseModel):
 
 
 class ReadoutVector(BaseModel):
-    """vllm-metamodel: an in-engine *projection* of the residual stream.
+    """vllm-metamodels: an in-engine *projection* of the residual stream.
 
     Instead of shipping ``[positions, hidden]`` activations off the GPU, the
     worker computes, at each requested layer and position, the scalar

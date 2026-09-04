@@ -358,7 +358,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
     is_fork, has_readout = variant["variant"] == "fork", variant["readout"]
     log(f"vllm {vllm.__version__} | vllm-lens {variant} | torch {torch.__version__} | engine={a.engine}")
     if a.engine == "graphs" and not is_fork:
-        sys.exit("--engine graphs needs vllm-metamodel (stock forces enforce_eager)")
+        sys.exit("--engine graphs needs vllm-metamodels (stock forces enforce_eager)")
 
     from transformers import AutoTokenizer
 

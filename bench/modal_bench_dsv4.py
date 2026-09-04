@@ -1,7 +1,7 @@
-"""Modal launcher for bench/test_injection_dsv4.py: vllm-metamodel on DeepSeek-V4-Flash-0731
+"""Modal launcher for bench/test_injection_dsv4.py: vllm-metamodels on DeepSeek-V4-Flash-0731
 (hyper-connection / multi-stream architecture), vLLM 0.27.1, TP4.
 
-App ``vllm-metamodel-bench-dsv4`` (our own). The image REPLICATES the NLA session's
+App ``vllm-metamodels-bench-dsv4`` (our own). The image REPLICATES the NLA session's
 training image layer-by-layer (nla-deepseek-v4/scripts_local/modal_common.py: CUDA 13.0.1
 devel base, vllm==0.27.1, DeepGEMM from source, kernels pin) so the expensive layers are
 cache hits, then installs THIS checkout over vllm-lens 1.2.1 (same distribution name).
@@ -38,7 +38,7 @@ EASYNLA = NLA / "easyNLA"
 GPU = os.environ.get("DSV4_GPU", "B200:4")
 TP = int(GPU.split(":")[1]) if ":" in GPU else 4
 
-app = modal.App("vllm-metamodel-bench-dsv4")
+app = modal.App("vllm-metamodels-bench-dsv4")
 vol = modal.Volume.from_name("nla-dsv4")  # mounted read-only below
 
 # --- layers identical to nla-deepseek-v4/scripts_local/modal_common.py (cache hits) ---
@@ -57,11 +57,11 @@ image = (
     .pip_install("kernels>=0.16.0,<0.17.0")
     # --- ours: the fork replaces vllm-lens 1.2.1 (same dist name) ---------------------
     .add_local_dir(
-        REPO, "/opt/vllm-metamodel", copy=True,
+        REPO, "/opt/vllm-metamodels", copy=True,
         ignore=[".git", "bench/results", "**/__pycache__", "uv.lock", ".venv", "*.png", "*.pdf"],
     )
     .run_commands(
-        "pip install --no-deps --force-reinstall /opt/vllm-metamodel",
+        "pip install --no-deps --force-reinstall /opt/vllm-metamodels",
         "python -c 'import vllm_lens; from vllm_lens import _worker_ext as W; "
         'assert hasattr(W.HiddenStatesExtension, "lens_capabilities"); print(vllm_lens.__version__)\'',
     )

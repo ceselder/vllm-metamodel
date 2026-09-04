@@ -1,7 +1,7 @@
-# vllm-metamodel
+# vllm-metamodels
 
 <p align="center">
-  <img width="280" alt="vllm-metamodel logo" src="https://github.com/user-attachments/assets/330bfba2-bac9-4385-9b96-77f760205315" />
+  <img width="280" alt="vllm-metamodels logo" src="https://github.com/user-attachments/assets/330bfba2-bac9-4385-9b96-77f760205315" />
   <img width="540" alt="steering throughput vs batch size" src="https://github.com/user-attachments/assets/9b39dd5c-c870-4b56-86e7-a91bd0ed186e" />
 </p>
 
@@ -16,7 +16,7 @@ However, vllm-lens does not go brr. At large batch sizes it is up to ~40x slower
 This change also allows you to use cuda-graphs after prefill, since meta-models generally only inject once at one token index during prefill, we can get near vllm-level performance with them applied for meta-models! yippee!
 
 ```bash
-pip install git+https://github.com/ceselder/vllm-metamodel
+pip install git+https://github.com/ceselder/vllm-metamodels
 ```
 
 ## Features
@@ -568,7 +568,7 @@ pass (`gen_then_read` rows) — the second is cheaper as soon as the batch is la
 exactly the "clean base model, LoRA off" pass an RL reward wants anyway.
 
 ## Overview of changes
-| | stock 1.1.0 | vllm-metamodel |
+| | stock 1.1.0 | vllm-metamodels |
 |---|---|---|
 | resolve a request's vectors | `startswith` over all keys, every layer, every step | dict lookups, once per request, cached |
 | per-step bookkeeping | 2 device syncs per request per layer | one plan per forward pass from host-side buffers |

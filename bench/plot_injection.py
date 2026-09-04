@@ -66,7 +66,7 @@ def main() -> None:
         "(on Qwen3-1.7B a 0.5–2 s call cannot resolve per-step differences: error bars = min–max over interleaved repeats; the CUDA-graph "
         "evidence there is the hook count, 3 vs 41 invocations)\\n"
         "decode-step time = (wall at 80 new tokens − wall at 40) / 40 · 27B: min of 2 repeats, 1.7B: paired median of 3 · 96-token prompt · "
-        "bf16 · 1× B200 · vllm-metamodel 1.1.0.post2"))
+        "bf16 · 1× B200 · vllm-metamodels 1.1.0.post2"))
     a = ap.parse_args()
     d = Path(a.results_dir)
     out_dir = Path(a.out_dir) if a.out_dir else d

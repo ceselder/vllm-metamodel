@@ -33,7 +33,7 @@ vllm-lens-metamodel environment variables:
     Never short-circuit forward passes (``extra_args["lens_early_exit"]`` is
     then rejected client-side).
 
-Readout (vllm-metamodel): ``extra_args["apply_readout_vectors"] = [ReadoutVector(...)]``
+Readout (vllm-metamodels): ``extra_args["apply_readout_vectors"] = [ReadoutVector(...)]``
 returns ``output.readout`` (per-position cosine / dot products with a per-request
 direction, computed in the worker -- no hidden states leave the GPU).
 """
@@ -182,7 +182,7 @@ def _check_readout_request(
     max_tokens: int | None,
     capture_layers: Any,
 ) -> None:
-    """vllm-metamodel: validate readout / early-exit requests before submission."""
+    """vllm-metamodels: validate readout / early-exit requests before submission."""
     if readouts:
         if caps and caps.get("readout") is False:
             raise ValueError("vllm-lens: this engine's worker has no readout support")
@@ -360,7 +360,7 @@ def _check_layer_support(
     steering_vectors: Sequence[SteeringVector] | None,
     capture_layers: Any,
 ) -> None:
-    """vllm-metamodel: refuse layer-output steering / capture on hyper-connection
+    """vllm-metamodels: refuse layer-output steering / capture on hyper-connection
     (multi-stream residual) architectures BEFORE the request reaches the engine,
     with a clear ``ValueError`` (the engine stays alive).  ``caps`` comes from the
     worker's ``lens_capabilities`` RPC; the worker-side validation and the runtime
@@ -702,7 +702,7 @@ def _patched_llm_generate(
 
     fast = _env_truthy("VLLM_LENS_FAST_CAPTURE", "1")
     if wants_activations and fast:
-        # vllm-metamodel: ONE RPC for every request of this call (per-PP-rank blobs).
+        # vllm-metamodels: ONE RPC for every request of this call (per-PP-rank blobs).
         blobs = self.collective_rpc("get_captured_states_many", args=([o.request_id for o in outputs],))
         parts = [pickle.loads(b) for b in blobs if b is not None]
         for output in outputs:

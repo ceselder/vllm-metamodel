@@ -18,11 +18,14 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | 0.16.0 | 7/7 ok | ok | 61/61 | 50/50 | graphs: 0/0 | 0.62 s (33,209 tok/s) / 1.08 s (37,808 tok/s) | — / — | 0.65 s (31,672 tok/s) / 1.14 s (36,003 tok/s) | 1.15 s (17,851 tok/s) | 6.5 s @B=128 |
 | 0.19.0 | 11/11 ok | ok | 61/61 | 142/142 | eager: 8/8, graphs: 8/8 | 0.56 s (36,429 tok/s) / 1.04 s (39,309 tok/s) | — / — | 0.66 s (31,236 tok/s) / 1.21 s (33,726 tok/s) | 1.10 s (18,579 tok/s) | 63.7 s |
+| 0.27.1 | 9/11 ok | ok | 61/61 | 72/72 | eager: 8/8, graphs: 8/8 | 0.52 s (39,733 tok/s) / 0.93 s (44,247 tok/s) | — / — | 0.64 s (32,200 tok/s) / 1.15 s (35,534 tok/s) | 1.12 s (18,255 tok/s) | 106.5 s; 1.1.0: FAILS (V2 runner) |
 | 0.28.0 | 7/7 ok | ok | 61/61 | 69/72 | graphs: 0/0 | 0.41 s (49,843 tok/s) / 0.74 s (55,505 tok/s) | — / — | 0.50 s (40,597 tok/s) / 0.91 s (44,894 tok/s) | 0.68 s (30,110 tok/s) | 5.3 s @B=128; 1.1.0: FAILS (V2 runner) |
 
 - vLLM 0.16.0 readout (graphs), per 1,024 texts: nocap 0.54 s, cap_all 2.83 s, cap_last5 0.69 s, read_last5 0.68 s, exit_read_last5 0.77 s
 - vLLM 0.19.0 readout (eager), per 1,024 texts: nocap 0.55 s, cap_all 1.97 s, cap_last5 0.66 s, read_last5 0.65 s, exit_read_last5 0.54 s
 - vLLM 0.19.0 readout (graphs), per 1,024 texts: nocap 0.52 s, cap_all 2.03 s, cap_last5 0.66 s, read_last5 0.64 s, exit_read_last5 0.54 s
+- vLLM 0.27.1 readout (eager), per 1,024 texts: nocap 0.53 s, cap_all 1.96 s, cap_last5 0.62 s, read_last5 0.62 s, exit_read_last5 0.52 s
+- vLLM 0.27.1 readout (graphs), per 1,024 texts: nocap 0.51 s, cap_all 2.12 s, cap_last5 0.66 s, read_last5 0.65 s, exit_read_last5 0.52 s
 - vLLM 0.28.0 readout (graphs), per 1,024 texts: nocap 0.53 s, cap_all 1.31 s, cap_last5 0.59 s, read_last5 0.60 s, exit_read_last5 0.48 s
 - vLLM 0.28.0 injection FAIL: eager embed_replace: B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed) pre-marker max|Δ| L0=1.95e-03 LL=1.56e-02; marker |Δ| L0≥1.867e+00
 - vLLM 0.28.0 injection FAIL: eager embed_replace: B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed) pre-marker max|Δ| L0=3.91e-03 LL=3.12e-02; marker |Δ| L0≥1.891e+00

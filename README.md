@@ -1,8 +1,7 @@
 # vllm-metamodel
 
 <p align="center">
-  
-  <img width="280" alt="vllm-metamodel logo" src="[https://github.com/user-attachments/assets/d417fc24-54e5-40d4-82b2-00725c65184d](https://github.com/user-attachments/assets/49fee78a-dd2b-48cf-9db3-96bc2c243b70)" />
+  <img width="280" alt="vllm-metamodel logo" src="https://github.com/user-attachments/assets/64ee65fe-a436-47ae-acd8-c66c73310775" />
   <img width="540" alt="steering throughput vs batch size" src="https://github.com/user-attachments/assets/9b39dd5c-c870-4b56-86e7-a91bd0ed186e" />
 </p>
 

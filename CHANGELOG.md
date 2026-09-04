@@ -43,6 +43,15 @@ the README sections "Supported vLLM versions" and "LoRA merge-on-publish", raw J
 - Upstream vllm-lens on the same vLLM: 1.1.0 works on 0.16/0.19 and silently captures nothing on
   0.27/0.28; 1.2.1 works on 0.27/0.28 but is 100–150× slower than the fork at B = 512
   (per-request steering, eager forced).
+- **Has vLLM gotten faster?** Same B200, prompts and settings, B = 1,024 generation: plain vLLM
+  (its default torch.compile + graphs) on **Qwen3.6-27B: 4,063 tok/s on 0.19.0 → 4,253 on 0.27.1
+  (+5 %)**; Qwen3-1.7B: 37.8k (0.16) → 39.3k (0.19) → 44.2k (0.27.1) → 55.5k (0.28.0).  The V1
+  model runner the plugin forces is as fast as V2 on 0.27.1 (4,257 vs 4,253 tok/s).  But the
+  hook-compatible configuration (compile off, decode graphs) got slower: fork steering + graphs on
+  the 27B **3,882 tok/s on 0.19.0 → 3,524 on 0.27.1 (−9 %)**, because torch.compile is worth 17 %
+  on 0.27.1 vs 4 % on 0.19.0.  Readout (layer 42, 1,024 texts, early exit): 4.58 s on 0.19.0 vs
+  4.84 s on 0.27.1.  Recommendation for the RL trainer: stay on 0.19 unless the hooks can run under
+  torch.compile (custom-op injection; not done).
 
 ### Feature — LoRA merge-on-publish (`vllm_lens._lora_merge`, `vllm_lens.metamodel.merge_lora`)
 
@@ -65,6 +74,22 @@ the README sections "Supported vLLM versions" and "LoRA merge-on-publish", raw J
   source, correctness vs the LoRA path, and drift; `examples/rl_reward_scoring.py` shows the
   rollout → unmerge → clean-base readout → merge loop, `examples/steer_and_generate.py` the
   basic per-request steering.
+- **Measured (Qwen3.6-27B, 1× B200, vLLM 0.19.0, CUDA graphs, one steering vector per request,
+  rank-64 rsLoRA over all 496 linear modules = 24.35 B targeted parameters / 48.7 GB):** decode step
+  at B = 512 **141 ms with the adapter as a LoRA → 96 ms merged (−32 %)**, at B = 1,024 269 → 181 ms;
+  `generate()` of 40 tokens 9.91 → 6.74 s (B = 512) and 19.1 → 12.9 s (B = 1,024) — identical to the
+  no-adapter / plain-engine time.  Publish: 0.35–0.40 s per adapter with the base copy on the GPU
+  (from a PEFT directory; 1.05 s when A/B are shipped as pickled tensors, 0.86 GB), 1.25 s with the
+  copy pinned on the host (+13 s one-time pinning), 0.6–0.7 s in `none` mode; unmerge 0.02 s (copy).
+  On vLLM 0.27.1 the same merge runs at the plain-engine speed too (6.40 vs 6.33 s at B = 512), but
+  its GDN-state pool needs `gpu_memory_utilization ≥ 0.78` at `max_num_seqs=1024`, so the base copy
+  goes to pinned host memory (1.37 s per publish) — and vLLM 0.27.1's own LoRA path crashes the
+  engine for Qwen3.6-27B (`IndexError` in `MergedColumnParallelLinearWithLoRA.set_lora`,
+  `column_parallel_linear.py:321`) both for an all-linear adapter and for one restricted to
+  q/k/v/o/gate/up/down, while the same adapters load fine on 0.19.0 and on Qwen3-1.7B/0.27.1 —
+  a second reason the RL trainer should stay on 0.19 (or serve merged weights, which sidestep the
+  LoRA kernels altogether).
+  Qwen3-1.7B: 9.2 → 7.1 ms per step at B = 512 (−23 %).
 - Fidelity: merged bf16 weights differ from the LoRA path by the bf16 rounding of `W0 + ΔW`
   (a few tenths of a nat on some tokens for a 0.5 %-relative adapter; same approximation as
   any bf16 `merge_and_unload`); merged weights are deterministic across engines; unmerge with

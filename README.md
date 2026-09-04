@@ -37,6 +37,12 @@ pip install git+https://github.com/ceselder/vllm-metamodels
 - Qwen3-1.7B (layer 18 of 28): **2.58 s → 0.53 s (4.8×)**.
 - **Reading generated positions**: stock eager generate + capture **13.5 s** → graph-mode generate + early-exit re-encode readout **9.35 s (1.45×)** at batch 512 × 40 tokens.
 
+**RL rollouts with a LoRA policy (Qwen3.6-27B, vLLM 0.19, B = 512, one steering vector per request, CUDA graphs)**
+- **LoRA merge-on-publish** (`merge_lora`): the rank-64 adapter served by vLLM's LoRA kernels costs **141 ms per decode step; merged into the weights it is 96 ms (−32 %)** — one `generate()` of 40 tokens **9.9 s → 6.7 s**, i.e. exactly the no-adapter speed. Publishing the next adapter takes **0.35–0.40 s** (base copy on the GPU) or 1.25 s (pinned host copy); merging + unmerging the 24 B targeted parameters is 0.02 s.
+
+**vLLM versions (same B200, same prompts)**
+- Tested end to end on **vLLM 0.16.0, 0.19.0, 0.27.1 and 0.28.0**. Plain vLLM 0.27.1 generates **5 % faster** than 0.19.0 on the 27B (4,253 vs 4,063 tok/s at B = 1,024; the 1.7B gains 13–47 % by 0.28), but the hook-compatible engine (compile off, decode graphs) is **10 % slower** on 0.27.1 than on 0.19.0 (3,524 vs 3,882 tok/s with steering), so for steered rollouts 0.19 is still the faster pin — see [Supported vLLM versions](#supported-vllm-versions).
+
 **Correctness features (not speedups)**
 - Karvonen-style injection `h + coeff·‖h‖·unit(v)` on the **full** residual stream (`norm_match=True, scale=coeff`; upstream 1.1.0 measured the wrong norm on fused-residual models, ~8× too weak).
 - Embedding replacement (`mode="replace"`, `EMBED_LAYER_INDEX`) for NLA-style injection and hyper-connection models; multi-stream layer outputs are refused loudly instead of mis-injected.
@@ -90,6 +96,11 @@ What broke outside the range the earlier releases were built on, and what the fo
   untouched" checks on a measured clean-vs-clean noise floor instead of exact zeros.
 - `language_model_only` (Qwen3.5/3.6 wrapper checkpoints) does not exist before 0.19; the bench
   scripts drop engine kwargs the running vLLM rejects.
+- **vLLM 0.27.1 + Qwen3.6-27B + LoRA:** vLLM's own LoRA path kills the engine (`IndexError` in
+  `MergedColumnParallelLinearWithLoRA.set_lora`) for rank-64 adapters that load fine on 0.19 (all-linear
+  and attention/MLP-only alike; the 1.7B is unaffected). Its GDN state pool also needs
+  `gpu_memory_utilization ≥ 0.78` at `max_num_seqs=1024` ("max_num_seqs exceeds available Mamba
+  cache blocks"). Merged weights (`merge_lora`) run at plain-engine speed on 0.27.1.
 
 <!-- VERSIONS:BEGIN -->
 | vLLM | torch | Qwen3.6-27B | Qwen3-1.7B | upstream vllm-lens on this vLLM |

@@ -165,10 +165,12 @@ def plot_lora(lora: dict, out: Path) -> None:
                 vals = []
                 for v in groups:
                     res = lora[v][model].get(stage)
+                    rows = [row for row in (res or {}).get("throughput", []) if row["condition"] == cond and int(row["batch"]) == B]
                     best = None
-                    for row in (res or {}).get("throughput", []):
-                        if row["condition"] == cond and int(row["batch"]) == B:
-                            best = row["decode_step_ms"] if best is None else min(best, row["decode_step_ms"])
+                    if rows:  # robust: best 40-token wall minus best 1-token wall over repeats
+                        T = (res or {}).get("max_tokens", 40)
+                        best = (min(r["wall_s"] for r in rows) - min(r["wall_1tok_s"] for r in rows)) / max(T - 1, 1) * 1000.0
+                        best = best if best > 0 else None
                     vals.append(best)
                 if any(x is not None for x in vals):
                     series[label] = vals

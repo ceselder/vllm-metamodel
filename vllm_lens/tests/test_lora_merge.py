@@ -371,3 +371,41 @@ def test_lora_wrapped_linears_are_discovered_once_under_the_wrapper_name():
     q = qkv.subs[0]
     expect = (w0["model.layers.0.self_attn.qkv_proj"][q.rows[0]:q.rows[1]].float() + (mods[q.hf_name]["B"].float() @ mods[q.hf_name]["A"].float())).to(torch.bfloat16)
     assert torch.equal(layer.self_attn.qkv_proj.base_layer.weight[q.rows[0]:q.rows[1]], expect)  # applied exactly once
+
+
+def test_single_hf_module_spanning_several_output_slices_is_merged_over_all_rows():
+    """Qwen3-Next GDN: HF `in_proj_qkvz` [q+k+v+z, hidden] is ONE LoRA module but vLLM's layer has
+    output_sizes [q, k, v, z]; the delta must land on every row, not just the first slice."""
+
+    class Inner2(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.in_proj_qkvz = MergedColumnParallelLinear(H, [8, 8, 16, 16])
+            self.in_proj_ba = MergedColumnParallelLinear(H, [4, 4])
+
+    class M(torch.nn.Module):
+        packed_modules_mapping = {"in_proj_qkvz": ["in_proj_qkvz"], "in_proj_ba": ["in_proj_ba"]}
+
+        def __init__(self):
+            super().__init__()
+            self.model = torch.nn.Module()
+            self.model.layers = torch.nn.ModuleList([Inner2()])
+
+    torch.manual_seed(8)
+    model = M()
+    targets = {t.vllm_name: t for t in LM.discover_targets(model)}
+    q = targets["model.layers.0.in_proj_qkvz"]
+    assert q.kind == "merged_col_single" and len(q.subs) == 1 and q.subs[0].rows == (0, 48) and q.subs[0].out_full == 48
+    w0 = {n: t.param.detach().clone() for n, t in targets.items()}
+    mods = {"model.layers.0.in_proj_qkvz": {"A": torch.randn(R, H), "B": torch.randn(48, R) * 0.1},
+            "model.layers.0.in_proj_ba": {"A": torch.randn(R, H), "B": torch.randn(8, R) * 0.1}}
+    merger = LM.LoRAMerger(model)
+    merger.merge(mods, 1.0, keep_base="gpu")
+    for name, t in targets.items():
+        ab = mods[name]
+        expect = (w0[name].float() + ab["B"].float() @ ab["A"].float()).to(torch.bfloat16)
+        assert torch.equal(t.param, expect), name
+        assert not torch.equal(t.param[-1], w0[name][-1])  # the LAST slice moved too
+    merger.unmerge()
+    for name, t in targets.items():
+        assert torch.equal(t.param, w0[name])

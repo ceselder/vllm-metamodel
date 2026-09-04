@@ -129,13 +129,29 @@ def discover_targets(model: torch.nn.Module, only: set[str] | None = None) -> li
         elif "MergedColumnParallelLinear" in names or (hasattr(base, "output_sizes") and "ColumnParallelLinear" in names):
             kind = "merged_col"
             output_sizes = [int(s) for s in base.output_sizes]
-            if len(hf_subs) != len(output_sizes):
-                hf_subs = [suffix] * len(output_sizes) if len(output_sizes) == 1 else hf_subs
-            r = 0
-            for hf, full in zip(hf_subs, output_sizes):
-                shard = full // tp_size
-                subs.append(SubSlice(prefix + hf, (r, r + shard), (tp_rank * shard, (tp_rank + 1) * shard), (0, in_size), full, in_size))
-                r += shard
+            if len(hf_subs) == 1 and len(output_sizes) > 1:
+                # ONE HF module whose rows span several vLLM output slices (Qwen3-Next's GDN
+                # in_proj_qkvz = [q|k|v|z], in_proj_ba = [b|a]; vLLM's "variable slice" LoRA layer).
+                # On TP = 1 the param rows are the HF rows in order; TP > 1 interleaves per-slice shards.
+                if tp_size > 1:
+                    raise NotImplementedError(
+                        f"vllm-lens: {name}: a single LoRA module spanning {len(output_sizes)} output slices is only "
+                        "supported at tensor_parallel_size=1"
+                    )
+                total = sum(output_sizes)
+                subs.append(SubSlice(prefix + hf_subs[0], (0, total), (0, total), (0, in_size), total, in_size))
+                kind = "merged_col_single"
+            else:
+                if len(hf_subs) != len(output_sizes):
+                    raise ValueError(
+                        f"vllm-lens: {name}: packed_modules_mapping lists {len(hf_subs)} HF modules but the layer has "
+                        f"{len(output_sizes)} output slices"
+                    )
+                r = 0
+                for hf, full in zip(hf_subs, output_sizes):
+                    shard = full // tp_size
+                    subs.append(SubSlice(prefix + hf, (r, r + shard), (tp_rank * shard, (tp_rank + 1) * shard), (0, in_size), full, in_size))
+                    r += shard
         elif "RowParallelLinear" in names:
             kind = "row"
             ips = int(getattr(base, "input_size_per_partition", w.shape[1]))

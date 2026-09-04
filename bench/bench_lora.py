@@ -103,6 +103,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--skip-ipc", action="store_true", help="skip the option-(b) CUDA-IPC full-matrix push emulation")
     p.add_argument("--skip-cpu-mode", action="store_true")
     p.add_argument("--keep-base", default="auto", help="keep_base for the throughput 'merged' condition: auto|gpu|cpu (auto = gpu if the copy fits)")
+    p.add_argument("--exclude-modules", default="", help="comma list of HF module-name suffixes to leave OUT of the synthetic adapter (e.g. in_proj_qkvz,in_proj_ba,out_proj)")
     p.add_argument("--work", default="/tmp/lora_bench")
     p.add_argument("--seed", type=int, default=0)
     return p.parse_args()
@@ -192,6 +193,14 @@ def main() -> None:
 
     # ---------------- adapter synthesis from the served model's own layout ----------------
     layout = rpc("lens_lora_layout", True)
+    if a.exclude_modules:
+        excl = tuple(x.strip() for x in a.exclude_modules.split(",") if x.strip())
+        for t in layout:
+            t["subs"] = [s for s in t["subs"] if not s["hf_name"].endswith(excl)]
+        layout = [t for t in layout if t["subs"]]
+        log(f"excluding modules ending in {excl}: {len(layout)} vLLM params remain")
+    result["exclude_modules"] = a.exclude_modules
+    result["layout_all"] = [{"vllm_name": t["vllm_name"], "kind": t["kind"], "shape": t["shape"], "subs": [s["hf_name"] for s in t["subs"]]} for t in layout]
     n_hf = sum(len(t["subs"]) for t in layout)
     targeted_params = sum(math.prod(t["shape"]) for t in layout)
     lora_params = sum(a.rank * (s["in"] + s["out"]) for t in layout for s in t["subs"])
@@ -325,6 +334,7 @@ def main() -> None:
     if lora_engine:
         result["correctness"]["lora_vs_merged"] = compare(ref["lora"], ref["merged"])
         result["correctness"]["nolora_vs_lora_control"] = compare(ref["nolora"], ref["lora"])
+        ref["layout_names"] = sorted(t["vllm_name"] for t in layout)
         with open(a.ref, "w") as f:
             json.dump(ref, f)
     else:
@@ -334,6 +344,10 @@ def main() -> None:
             result["correctness"]["merged_plain_vs_merged_lora_engine"] = compare(ref_prev["merged"], ref["merged"])
             result["correctness"]["merged_plain_vs_lora_path"] = compare(ref_prev["lora"], ref["merged"])
             result["correctness"]["plain_vs_nolora_lora_engine"] = compare(ref_prev["nolora"], ref["plain"])
+            mine = sorted(t["vllm_name"] for t in layout)
+            theirs = ref_prev.get("layout_names", [])
+            result["layout_diff_vs_lora_engine"] = {"only_lora_engine": sorted(set(theirs) - set(mine))[:20], "only_plain_engine": sorted(set(mine) - set(theirs))[:20]}
+            log(f"layout diff vs LoRA engine: {result['layout_diff_vs_lora_engine']}")
         except Exception as e:  # noqa: BLE001
             result["correctness"]["cross_stage_error"] = repr(e)
     for k, v in result["correctness"].items():

@@ -120,8 +120,14 @@ def lora_block(lora: dict) -> str:
             le, pe = lora[ver][model].get("lora_engine", {}), lora[ver][model].get("plain_engine", {})
 
             def best(res, cond, B, key="decode_step_ms"):
-                vals = [r[key] for r in res.get("throughput", []) if r["condition"] == cond and int(r["batch"]) == B]
-                return min(vals) if vals else None
+                rows = [r for r in res.get("throughput", []) if r["condition"] == cond and int(r["batch"]) == B]
+                if not rows:
+                    return None
+                if key == "decode_step_ms":  # robust: best 40-token wall minus best 1-token wall, over repeats
+                    T = res.get("max_tokens", 40)
+                    v = (min(r["wall_s"] for r in rows) - min(r["wall_1tok_s"] for r in rows)) / max(T - 1, 1) * 1000.0
+                    return v if v > 0 else None
+                return min(r[key] for r in rows)
 
             for B in (512, 1024):
                 lo = best(le, "lora", B)

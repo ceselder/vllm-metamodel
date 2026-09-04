@@ -21,6 +21,29 @@ pip install git+https://github.com/ceselder/vllm-metamodel
 
 ## Features
 
+### Speedups at a glance (1× B200 unless noted; every number is in the tables below and in `bench/results/`)
+
+**Steering (one distinct vector per request, layer 1, 96-token prompt, 40 new tokens)**
+- **Indexed steering hook** (dict lookup instead of a per-token string scan over all layers, no per-request GPU syncs, idle decode steps skipped): Qwen3.6-27B `generate()` at batch 2,048 **777.6 s → 21.1 s (36.8×)**; batch 512 **76.3 → 5.8 s (13.1×)**.
+- **CUDA graphs with steering** (`VLLM_LENS_CUDA_GRAPHS=1`; upstream forces eager): batch 2,048 **→ 20.5 s (37.8×)**, batch 8 **2.0 → 0.6 s (3.3×)**; within **0.5 %** of the same engine with no steering at every batch size.
+- Qwen3-1.7B, batch 1,024: **96.8 s → 1.6 s (59×)**; the hook was 98 % of stock's time on a small model.
+- **Vector shipping**: one `[n, hidden]` block RPC per `generate()` instead of one RPC per request (~50–90 µs per vector remains).
+- DeepSeek-V4-Flash (283B MoE, TP4, vLLM 0.27.1): decode step with embedding injection **24.3 ms vs 24.7 ms** without any steering, graphs engaged.
+
+**Reading hidden states back out (Qwen3.6-27B, layer 42 of 64, 1,024 texts, prefill-only)**
+- **Gather capture, only the positions you ask for** (`capture_positions={"last": 5}`, one gather + one pinned copy per layer-step, one RPC per call): stock capture **12.4 s → 6.9 s (1.8×)**.
+- **In-engine readout** (`ReadoutVector`: cosine / dot with a per-request direction computed in the worker; only float32 scalars leave the GPU): **6.75 s (1.8×)** = the no-hook prefill ceiling.
+- **Early exit** (`lens_early_exit=True`: layers 43–63 never run): **4.67 s (2.6× vs stock, 29 % below a no-hook prefill, 1.5× faster than an HF forward with early exit)**.
+- Qwen3-1.7B (layer 18 of 28): **2.58 s → 0.53 s (4.8×)**.
+- **Reading generated positions**: stock eager generate + capture **13.5 s** → graph-mode generate + early-exit re-encode readout **9.35 s (1.45×)** at batch 512 × 40 tokens.
+
+**Correctness features (not speedups)**
+- Karvonen-style injection `h + coeff·‖h‖·unit(v)` on the **full** residual stream (`norm_match=True, scale=coeff`; upstream 1.1.0 measured the wrong norm on fused-residual models, ~8× too weak).
+- Embedding replacement (`mode="replace"`, `EMBED_LAYER_INDEX`) for NLA-style injection and hyper-connection models; multi-stream layer outputs are refused loudly instead of mis-injected.
+- Robust against vLLM API drift: layer-0 pre-hook handles keyword-called layers (vLLM 0.19 Qwen3-Next), step plan no longer depends on attention-metadata fields that moved in vLLM 0.27 (where upstream 1.2.1 silently becomes a no-op).
+
+### Feature index
+
 Everything below is opt-in per request, keeps the upstream vllm-lens API, and (unless noted) works with CUDA graphs on.
 
 | feature | how | section |

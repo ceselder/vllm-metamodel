@@ -102,6 +102,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--language-model-only", action="store_true")
     p.add_argument("--skip-ipc", action="store_true", help="skip the option-(b) CUDA-IPC full-matrix push emulation")
     p.add_argument("--skip-cpu-mode", action="store_true")
+    p.add_argument("--keep-base", default="auto", help="keep_base for the throughput 'merged' condition: auto|gpu|cpu (auto = gpu if the copy fits)")
     p.add_argument("--work", default="/tmp/lora_bench")
     p.add_argument("--seed", type=int, default=0)
     return p.parse_args()
@@ -308,9 +309,10 @@ def main() -> None:
         run_condition("plain", None)
         ref["plain"] = check_outputs("plain", None)
 
-    m = merge_lora(llm, a0_path, keep_base="gpu")
+    m = merge_lora(llm, a0_path, keep_base=a.keep_base)
     result["publish"].append({**m, "source": "dir", "adapter": "a0", "phase": "throughput"})
-    log(f"merged a0 (gpu mode) in {m['publish_s']:.2f}s: {m['n_params']} params, base copy {m['base_bytes']/1e9:.1f} GB")
+    result["merge_mode_throughput"] = m["mode"]
+    log(f"merged a0 ({m['mode']} mode) in {m['publish_s']:.2f}s: {m['n_params']} params, base copy {m['base_bytes']/1e9:.1f} GB on {m.get('base_where')}")
     run_condition("merged", None)
     ref["merged"] = check_outputs("merged", None)
     u = unmerge_lora(llm)
@@ -340,7 +342,8 @@ def main() -> None:
     dump()
 
     # ---------------- publish latency: modes x sources ----------------
-    modes = ["gpu"] + ([] if (a.skip_cpu_mode or not lora_engine) else ["cpu"]) + (["none"] if lora_engine else [])
+    exact_mode = result["merge_mode_throughput"] if result.get("merge_mode_throughput") in ("gpu", "cpu") else "gpu"
+    modes = [exact_mode] + ([] if (a.skip_cpu_mode or not lora_engine or exact_mode == "cpu") else ["cpu"]) + (["none"] if lora_engine else [])
     a1_payload = pickle.dumps({k: v for k, v in a1_t.items()}, protocol=pickle.HIGHEST_PROTOCOL)
     result["publish_payload_bytes"] = len(a1_payload)
     for mode in modes:
@@ -362,7 +365,7 @@ def main() -> None:
 
     # ---------------- drift: n publishes in keep_base="none" mode vs exact ----------------
     if lora_engine and a.n_publishes > 0:
-        merge_lora(llm, a0_path, keep_base="gpu")  # snapshot W0
+        merge_lora(llm, a0_path, keep_base=exact_mode)  # snapshot W0 (gpu if it fits, else pinned host)
         unmerge_lora(llm)  # copies retained
         t_all = time.perf_counter()
         pub_s = []
@@ -386,7 +389,7 @@ def main() -> None:
         result["drift"]["base_after_subtract_unmerge"] = {**u, **base_drift}
         log(f"base after subtract-unmerge: max {base_drift['max_diff_ulps']:.2f} ulp, rel Frobenius {base_drift['rel_frobenius']:.2e}, {base_drift['frac_changed']*100:.2f}% changed")
         # exact restore
-        merge_lora(llm, a0_path, keep_base="gpu")
+        merge_lora(llm, a0_path, keep_base=exact_mode)
         u = rpc("lens_unmerge_lora", True, "copy")
         fp = fp_equal(rpc("lens_weight_fingerprint"))
         result["drift"]["exact_restore"] = {**u, **fp}

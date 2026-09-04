@@ -1,0 +1,53 @@
+{
+ "batch": 1024,
+ "models": {
+  "Qwen/Qwen3.6-27B": {
+   "versions": [
+    "0.19.0",
+    "0.27.1"
+   ],
+   "tok_per_s": {
+    "plain vLLM (its default runner)": [
+     4063.467634714771,
+     4252.835845997458
+    ],
+    "plain vLLM, V1 model runner": [
+     null,
+     4256.510389458249
+    ],
+    "fork: per-request steering + CUDA graphs": [
+     3881.5582358531874,
+     3524.357637345622
+    ]
+   }
+  },
+  "Qwen/Qwen3-1.7B": {
+   "versions": [
+    "0.16.0",
+    "0.19.0",
+    "0.27.1",
+    "0.28.0"
+   ],
+   "tok_per_s": {
+    "plain vLLM (its default runner)": [
+     37808.375171516986,
+     39308.96475278933,
+     44247.2852437865,
+     55504.923950076765
+    ],
+    "fork: per-request steering + CUDA graphs": [
+     36002.684647063434,
+     33725.805455251786,
+     35534.16204672894,
+     44893.665730315945
+    ],
+    "fork: per-request steering, eager": [
+     null,
+     24705.3444504077,
+     21972.71529280858,
+     null
+    ]
+   }
+  }
+ }
+}

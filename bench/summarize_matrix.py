@@ -148,8 +148,16 @@ def markdown(all_: list[dict]) -> str:
             cpu = rec.get("cpu_tests", {})
             ro = rec.get("readout", {})
             ro_txt = ", ".join(f"{e}: {r['n_pass']}/{r['n_checks']}" for e, r in ro.items()) or "—"
-            stock = rec["steering"]["series"].get("stock_eager", {}).get(512)
-            stock_txt = f"{stock['wall_s']:.1f} s" if stock else ("n/a" if rec.get("stock110_rc") is None else f"rc={rec.get('stock110_rc')}")
+            st_series = rec["steering"]["series"].get("stock_eager", {})
+            if 512 in st_series:
+                stock_txt = f"{st_series[512]['wall_s']:.1f} s"
+            elif st_series:
+                bmax = max(st_series)
+                stock_txt = f"{st_series[bmax]['wall_s']:.1f} s @B={bmax}"
+            else:
+                stock_txt = "n/a"
+            if rec.get("stock110_rc") is not None:
+                stock_txt += f"; 1.1.0: {'ok' if rec['stock110_rc'] == 0 else 'FAILS (V2 runner)'}"
             lines.append(
                 f"| {a['vllm']} | {fork_ok}/{fork_n} ok | {'ok' if cpu.get('rc') == 0 else cpu.get('summary', '—')} | "
                 f"{rec['steering']['n_pass']}/{rec['steering']['n_checks']} | {rec.get('injection', {}).get('n_pass', '—')}/{rec.get('injection', {}).get('n_checks', '—')} | {ro_txt} | "
@@ -178,10 +186,13 @@ def markdown(all_: list[dict]) -> str:
 
 def main(dirs: list[str]) -> None:
     all_ = [summarize_dir(Path(d)) for d in dirs if (Path(d) / "matrix.json").exists()]
-    # keep the latest dir per version
+    # merge dirs of the same vLLM version (e.g. a 1.7B run and a 27B run); latest dir wins per model
     latest: dict[str, dict] = {}
     for a in sorted(all_, key=lambda a: a["dir"]):
-        latest[a["vllm"]] = a
+        cur = latest.setdefault(a["vllm"], {**a, "models": {}, "dirs": []})
+        cur["models"].update(a["models"])
+        cur["dirs"].append(a["dir"])
+        cur["dir"] = a["dir"]
     all_ = list(latest.values())
     out_json = HERE / "results" / "version_matrix.json"
     out_json.write_text(json.dumps(all_, indent=1))

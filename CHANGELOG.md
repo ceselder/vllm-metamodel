@@ -10,6 +10,66 @@ branches from upstream **v1.1.0** and keeps the distribution name
 pip install git+https://github.com/ceselder/vllm-metamodels
 ```
 
+## v1.1.0.post6 (4 September 2026) — vLLM 0.16 → 0.28 compatibility, V1 model runner forced, LoRA merge-on-publish
+
+Two user questions drove this release: *which vLLM versions does this run on (and has vLLM
+gotten faster since our 0.19 pin)?* and *what does serving the RL policy as a rank-64 LoRA
+cost, and is merging it into the weights better?*  Everything measured on 1× B200; numbers in
+the README sections "Supported vLLM versions" and "LoRA merge-on-publish", raw JSON in
+`bench/results/matrix_*` / `bench/results/lora_*`, report section 9.
+
+### Compatibility — tested on vLLM 0.16.0, 0.19.0, 0.27.1, 0.28.0
+
+- **vLLM ≥ 0.23 defaults dense models to the V2 GPU model runner**, which has none of the
+  per-step state the hooks read (`input_batch`, `requests`, host `query_start_loc`).  post5 and
+  upstream 1.1.0 raise `AttributeError` inside every layer hook there (swallowed into warnings),
+  capture nothing and steer nothing.  The plugin now sets `VLLM_USE_V2_MODEL_RUNNER=0` when it
+  builds the engine config (the same fix upstream 1.2.1 carries since its #12; an explicit `=1`
+  is refused with a `RuntimeError`), `install_hooks` raises a clear error instead of warning when
+  the runner lacks V1 state, and `lens_capabilities()` reports `model_runner`.
+- `bench/modal_bench.py` is parametrised by `BENCH_VLLM` (one image per release; upstream
+  vllm-lens 1.1.0 and 1.2.1 as stock rows), new `matrix` / `lora` / `cpu_tests` entrypoints,
+  `bench/summarize_matrix.py`, `bench/plot_matrix.py`, `bench/render_versions_readme.py`;
+  the bench scripts drop engine kwargs the running vLLM rejects (`language_model_only` predates
+  0.19); `bench/bench_steering.py --model-runner v1|v2` for plain-vLLM runner comparisons.
+- The injection matrix (`bench/test_injection_modes.py`) now runs a second identical clean
+  pass and gates its "untouched rows" checks on that clean-vs-clean noise floor: vLLM ≥ 0.27
+  kernels are batch-composition sensitive at the bf16 level (0.16–0.19 are bit-exact).
+- `compare.py`: the `norm_match` comparisons against stock 1.1.0 are informational since post2
+  (different semantics by design); the fork's own arithmetic is asserted instead
+  (|Δ| = scale·‖h_full‖ at the marker, per position for broadcast vectors).
+- The CPU suites run with a real vLLM installed (the tests route the forward-context accessors
+  through one stub attribute); new GitHub Actions workflow `cpu-tests.yaml` runs them on push.
+- Upstream vllm-lens on the same vLLM: 1.1.0 works on 0.16/0.19 and silently captures nothing on
+  0.27/0.28; 1.2.1 works on 0.27/0.28 but is 100–150× slower than the fork at B = 512
+  (per-request steering, eager forced).
+
+### Feature — LoRA merge-on-publish (`vllm_lens._lora_merge`, `vllm_lens.metamodel.merge_lora`)
+
+- `merge_lora(llm, adapter_dir | tensors=..., scaling=..., keep_base="auto")` merges a PEFT
+  LoRA into the served base weights in place on every worker (`W = round_bf16(W0 + s·B·A)`
+  per targeted matrix, fp32 accumulate, one rounding); `unmerge_lora(llm)` restores the base;
+  `lora_status(llm)`.  Only A/B cross the process boundary.  The worker resolves PEFT module
+  names against vLLM's fused layout (`qkv_proj` = [q|k|v], `gate_up_proj` = [gate|up], TP row /
+  column shards from vLLM's own layer attributes; TP > 1 untested, `VLLM_LENS_MERGE_ALLOW_TP=1`),
+  refuses partial or mis-shaped adapters loudly, and de-duplicates LoRA-wrapped linears.
+- `keep_base`: `gpu` (bf16 copy of the targeted weights on the device — exact publishes, exact
+  unmerge), `cpu` (pinned host copy), `none` (subtract the previous adapter; drifts one bf16
+  rounding per publish — measured: rel. Frobenius 7.6e-3 after 20 publishes, comparable to a
+  0.5 %-relative adapter itself, so not for long runs), `auto` = gpu if it fits else cpu.
+- RPCs: `lens_lora_layout`, `lens_merge_lora`, `lens_unmerge_lora(release, how)`,
+  `lens_lora_status`, `lens_weight_fingerprint`, `lens_lora_compare_exact`,
+  `lens_release_lora_base`, `lens_load_weights_ipc` (EasyNLA-style full-matrix push over
+  CUDA-IPC handles, for comparison).  `bench/bench_lora.py` measures decode-step time with the
+  adapter as a LoRA vs merged (LoRA-capable and plain engines), publish latency per mode and
+  source, correctness vs the LoRA path, and drift; `examples/rl_reward_scoring.py` shows the
+  rollout → unmerge → clean-base readout → merge loop, `examples/steer_and_generate.py` the
+  basic per-request steering.
+- Fidelity: merged bf16 weights differ from the LoRA path by the bf16 rounding of `W0 + ΔW`
+  (a few tenths of a nat on some tokens for a 0.5 %-relative adapter; same approximation as
+  any bf16 `merge_and_unload`); merged weights are deterministic across engines; unmerge with
+  a base copy is bit-exact.  9 new CPU tests (`test_lora_merge.py`; 75 total).
+
 ## v1.1.0.post5 (4 September 2026) — docs + one-call scoring helpers
 
 - `vllm_lens.metamodel`: `readout_scores(llm, token_ids, directions, layer, positions, metric, bias, early_exit, lora_request)`

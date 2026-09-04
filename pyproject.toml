@@ -15,7 +15,7 @@
     name="vllm-lens"
     readme="README.md"
     requires-python=">=3.12"
-    version="1.1.0.post5" # vllm-metamodels: upstream v1.1.0 + indexed steering hook + opt-in CUDA graphs + injection modes + multi-stream guard + fast hidden-state readout
+    version="1.1.0.post6" # vllm-metamodels: upstream v1.1.0 + indexed steering hook + opt-in CUDA graphs + injection modes + multi-stream guard + fast hidden-state readout + V1-runner guard + LoRA merge-on-publish
 
     [project.urls]
         Homepage="https://github.com/ceselder/vllm-metamodels"

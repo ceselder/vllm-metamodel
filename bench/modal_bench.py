@@ -524,8 +524,10 @@ PROFILES: dict[str, dict] = {
 
 
 @app.function(image=image_fork, **_FN)
-def run_matrix_fork(model: str, profile: str, common: str, attention_backend: str, layer: int, big: bool) -> dict:
-    """One container: CPU test suites, steering (eager / graphs / plain), injection matrix, readout."""
+def run_matrix_fork(model: str, profile: str, common: str, attention_backend: str, layer: int, big: bool, plain_v1: bool = False) -> dict:
+    """One container: CPU test suites, steering (eager / graphs / plain), injection matrix, readout.
+    ``plain_v1``: also run plain vLLM on its V1 model runner (vLLM >= 0.23; decided locally -- the
+    container does not see BENCH_VLLM)."""
     p = PROFILES[profile]
     offline = _in_volume(model)
     env = _env(offline)
@@ -541,7 +543,7 @@ def run_matrix_fork(model: str, profile: str, common: str, attention_backend: st
     # steering throughput + correctness probes (+ on vLLM >= 0.23: plain vLLM on its V1 runner as
     # well, since the plugin forces V1 and "plain" runs vLLM's default = the V2 runner)
     stages = [("eager", p["steer_eager"], ""), ("graphs", p["steer_graphs"], ""), ("plain", p["steer_plain"], "")]
-    if VLLM_TUPLE >= (0, 23, 0) and p["steer_plain"]:
+    if plain_v1 and p["steer_plain"]:
         stages.append(("plain_v1", p["steer_plain"] + " --model-runner v1", "plain"))
     for tag, args, eng in stages:
         if not args:
@@ -625,15 +627,16 @@ def matrix(
     common = f"--max-tokens {max_tokens} --prompt-tokens {prompt_tokens} --inject-layer {inject_layer} --marker {marker}"
     stock_common = common + (f" --attention-backend {attention_backend}" if attention_backend else "")
     jobs = []
+    plain_v1 = VLLM_TUPLE >= (0, 23, 0)
     if not skip_small and small_model:
-        jobs.append((small_model, "fork", run_matrix_fork.spawn(small_model, profile, common, attention_backend, small_layer, False)))
+        jobs.append((small_model, "fork", run_matrix_fork.spawn(small_model, profile, common, attention_backend, small_layer, False, plain_v1)))
         sizes = PROFILES[profile]["stock_sizes"]
         if sizes and not skip_stock:
             jobs.append((small_model, f"stock{STOCK_LENS}", run_matrix_stock.spawn(small_model, sizes, stock_common, False)))
             if STOCK_LENS != "1.1.0" and not skip_stock_110:
                 jobs.append((small_model, "stock1.1.0", run_matrix_stock_110.spawn(small_model, sizes, stock_common, False)))
     if not skip_big:
-        jobs.append((model, "fork", run_matrix_fork.spawn(model, big_profile, common, attention_backend, layer, True)))
+        jobs.append((model, "fork", run_matrix_fork.spawn(model, big_profile, common, attention_backend, layer, True, plain_v1)))
     print(f"[local] vLLM {VLLM}: {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
     matrix_json: dict = {"vllm": VLLM, "stock_lens": STOCK_LENS, "gpu": GPU, "profile": profile, "big_profile": big_profile, "models": {}}
     steering_results: dict = {}
@@ -679,6 +682,27 @@ def matrix(
     print(f"[local] results in {dest}; summarise with: python bench/summarize_matrix.py bench/results/matrix_*")
 
 
+@app.function(image=image_fork, cpu=4, timeout=1800)
+def run_cpu_tests() -> dict:
+    """The fork's CPU suites against this vLLM version's real modules (no GPU)."""
+    cmd = [sys.executable, "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_steering_index.py", "/opt/vllm-metamodels/vllm_lens/tests/test_readout.py",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_metamodel_helpers.py", "/opt/vllm-metamodels/vllm_lens/tests/test_lora_merge.py"]
+    return _run(cmd, _env(False), None, "cpu_tests", tail_chars=4000)
+
+
+@app.local_entrypoint()
+def cpu_tests(out_dir: str = str(HERE / "results")):
+    """BENCH_VLLM=<ver> modal run bench/modal_bench.py::cpu_tests -- refresh the CPU-suite cell of a matrix dir."""
+    rec = run_cpu_tests.remote()
+    dests = sorted(Path(out_dir).glob(f"matrix_{VLLM}_*"))
+    for d in dests[-1:]:
+        for f in d.glob("*__fork__cpu_tests.json"):
+            f.write_text(json.dumps(rec, indent=1))
+            print(f"[local] refreshed {f}")
+    print(f"[local] vLLM {VLLM} cpu tests rc={rec['returncode']}: {rec['log_tail'][-300:]}")
+
+
 # ---------------------------------------------------------------------------
 # LoRA decode overhead + merge-on-publish:  modal run bench/modal_bench.py::lora
 # ---------------------------------------------------------------------------
@@ -713,10 +737,14 @@ def lora(
     skip_big: bool = False,
     skip_small: bool = False,
     stages: str = "lora_engine,plain_engine",
+    big_gpu_mem: float = 0.55,
     extra_args: str = "",
     out_dir: str = str(HERE / "results"),
 ):
-    """LoRA rank-64 decode overhead vs merged weights (bench/bench_lora.py) on vLLM ``BENCH_VLLM``."""
+    """LoRA rank-64 decode overhead vs merged weights (bench/bench_lora.py) on vLLM ``BENCH_VLLM``.
+    ``big_gpu_mem``: gpu_memory_utilization for the 27B (0.55 leaves room for the 48 GB base copy on
+    vLLM 0.19; vLLM >= 0.27 needs >= 0.78 so the GDN state pool has one block per sequence at
+    max_num_seqs=1024 -- the base copy then lives in pinned host memory, keep_base auto -> cpu)."""
     ts = time.strftime("%Y%m%d_%H%M%S")
     dest = Path(out_dir) / f"lora_{VLLM}_{ts}"
     dest.mkdir(parents=True, exist_ok=True)
@@ -730,7 +758,7 @@ def lora(
     if not skip_small and small_model:
         jobs.append((small_model, run_lora.spawn(small_model, engine, common, False, stage_list)))
     if not skip_big:
-        jobs.append((model, run_lora.spawn(model, engine, common + " --gpu-mem 0.55", True, stage_list)))
+        jobs.append((model, run_lora.spawn(model, engine, common + f" --gpu-mem {big_gpu_mem}", True, stage_list)))
     print(f"[local] vLLM {VLLM}: {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
     for mtag, fut in jobs:
         res = fut.get()

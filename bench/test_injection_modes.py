@@ -455,15 +455,29 @@ def vllm_stage(a: argparse.Namespace) -> None:
     check("probe", "capture pass: no hook errors", ps["errors"] == 0 and ps["embed_errors"] == 0, json.dumps(ps))
 
     clean_cache: dict[int, Any] = {}
+    noise_cache: dict[int, float] = {}
 
     def clean(B: int):
-        """Clean capture at CAP for the subset rows of a B-request batch (cached per B)."""
+        """Clean capture at CAP for the subset rows of a B-request batch (cached per B), plus a SECOND
+        identical clean pass: its max |difference| is the engine's own run-to-run noise floor (vLLM >= 0.27
+        kernels give bf16-level differences between two identical batches; 0.16-0.19 are bit-exact), against
+        which the "untouched rows" checks below are gated instead of demanding exact zeros."""
         if B not in clean_cache:
             S = subset(B)
             outs = gen([sp(CAP) if i in S else sp(None) for i in range(B)])
             clean_cache[B] = {i: acts(outs[i]) for i in S}
+            outs2 = gen([sp(CAP) if i in S else sp(None) for i in range(B)])
+            noise_cache[B] = max(float((acts(outs2[i]) - clean_cache[B][i]).abs().max()) for i in S)
+            result.setdefault("clean_vs_clean_noise", {})[str(B)] = noise_cache[B]
+            log(f"clean-vs-clean run-to-run noise floor at B={B}: max|Δ|={noise_cache[B]:.2e}")
             _ = stats()
         return clean_cache[B]
+
+    def floor(B: int) -> float:
+        return noise_cache.get(B, 0.0)
+
+    def within(x: float, B: int) -> str:
+        return f"max|Δ|={x:.2e} (clean-vs-clean noise floor {floor(B):.2e})"
 
     # ---- case A: Karvonen-style norm-matched add at layer L -------------------------------
     def case_karvonen(case: str, B: int, coeff: float, with_hf: bool) -> None:
@@ -496,8 +510,8 @@ def vllm_stage(a: argparse.Namespace) -> None:
         check(case, f"B={B} coeff={coeff}: injected delta == coeff·‖h_full‖·unit(v) per request (cos≥0.999, ratio within 1%)",
               min(coss) >= 0.999 and max(abs(r - 1) for r in ratios) <= 0.01,
               f"min cos={min(coss):.5f} ratio∈[{min(ratios):.4f},{max(ratios):.4f}] over {len(S)} requests")
-        check(case, f"B={B} coeff={coeff}: rows other than the marker untouched at layer L", max(others) == 0.0,
-              f"max|Δ|={max(others):.2e}")
+        check(case, f"B={B} coeff={coeff}: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+              max(others) <= floor(B), within(max(others), B))
         check(case, f"B={B} coeff={coeff}: hook errors == 0, every steered layer-step vectorised",
               st["errors"] == 0 and st["vectorized_layer_steps"] == st["steer_layer_steps"] > 0, json.dumps(st))
         if hf_cos:
@@ -576,10 +590,10 @@ def vllm_stage(a: argparse.Namespace) -> None:
             check(case, f"{tag}: embedding-stream marker row == {'scale·‖e‖·v/‖v‖' if nm else 'scale·v'} per request "
                         f"(bf16 rel<1e-2, cos>0.9999)", max(r_row) < 1e-2 and min(c_row) > 0.9999,
                   f"max rel={max(r_row):.2e} min cos={min(c_row):.6f} over {len(r_row)} requests")
-        check(case, f"{tag}: every other embedding row untouched", max(others) == 0.0, f"max|Δ|={max(others):.2e}")
+        check(case, f"{tag}: every other embedding row untouched", max(others) == 0.0, f"max|Δ|={max(others):.2e}")  # embedding lookup: exact on every version
         if l0_pre:
-            check(case, f"{tag}: downstream layers differ from clean only causally (positions < marker identical at layers 0 and L; marker row changed)",
-                  max(l0_pre) == 0.0 and max(lL_pre) == 0.0 and (min(l0_mark) > 0 if any(expect_replaced(i) for i in S) else True),
+            check(case, f"{tag}: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+                  max(l0_pre) <= floor(B) and max(lL_pre) <= floor(B) and (min(l0_mark) > 0 if any(expect_replaced(i) for i in S) else True),
                   f"pre-marker max|Δ| L0={max(l0_pre):.2e} LL={max(lL_pre):.2e}; marker |Δ| L0≥{min(l0_mark):.3e}")
         return rec
 
@@ -619,7 +633,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
                "max_other_row_abs_delta": max(others), "max_embed_stream_abs_delta": max(emb), "stats": st}
         check(case, f"B={B}: FULL residual stream at layer L marker == scale·v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)",
               max(rr) < 1e-2 and min(cc_) > 0.9999, f"max rel={max(rr):.2e} min cos={min(cc_):.6f}")
-        check(case, f"B={B}: other rows and the embedding stream untouched", max(others) == 0.0 and max(emb) == 0.0,
+        check(case, f"B={B}: other rows (within the clean-vs-clean noise floor) and the embedding stream untouched", max(others) <= floor(B) and max(emb) == 0.0,
               f"max|Δ| rows={max(others):.2e} embed={max(emb):.2e}")
         check(case, f"B={B}: vectorised replace path, no errors",
               st["errors"] == 0 and st["vectorized_layer_steps"] == st["steer_layer_steps"] > 0, json.dumps(st))
@@ -653,7 +667,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
         rec.update(batch=B, coeff=coeff, add_min_cos=min(coss), add_max_abs_ratio_minus_1=max(abs(r - 1) for r in ratios),
                    add_max_other_row_abs_delta=max(others), add_max_embed_stream_abs_delta=max(emb), stats=st)
         check(case, f"B={B} odd requests (karvonen add): delta == coeff·‖h‖·unit(v), embedding stream untouched, other rows untouched",
-              min(coss) >= 0.999 and max(abs(r - 1) for r in ratios) <= 0.01 and max(others) == 0.0 and max(emb) == 0.0,
+              min(coss) >= 0.999 and max(abs(r - 1) for r in ratios) <= 0.01 and max(others) <= floor(B) and max(emb) == 0.0,
               f"min cos={min(coss):.5f} ratio∈[{min(ratios):.4f},{max(ratios):.4f}] other={max(others):.1e} embed={max(emb):.1e}")
         check(case, f"B={B}: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors",
               st["rows_replaced"] == B // 2 and st["rows_steered"] == B // 2 and st["errors"] == 0
@@ -754,7 +768,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
                   f"planned passes: add={st_k['steps_planned']} embed={st_e['steps_planned']}; rows_steered={st_k['rows_steered']} rows_replaced={st_e['rows_replaced']}")
         result["all_pass"] = all(c["ok"] for c in checks)
         dump()
-        log(f"chunked engine done: {sum(c['ok'] for c in checks)}/{len(checks)} checks pass")
+        log(f"chunked engine done: {sum(1 for c in checks if c['ok'])}/{len(checks)} checks pass")
         return
 
     if not a.only_throughput:
@@ -771,7 +785,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
         case_throughput()
     result["all_pass"] = all(c["ok"] for c in checks)
     dump()
-    log(f"done: {sum(c['ok'] for c in checks)}/{len(checks)} checks pass")
+    log(f"done: {sum(1 for c in checks if c['ok'])}/{len(checks)} checks pass")
 
 
 # ---------------------------------------------------------------------------

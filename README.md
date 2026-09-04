@@ -56,8 +56,175 @@ Everything below is opt-in per request, keeps the upstream vllm-lens API, and (u
 | **In-engine readout (scalars, not tensors)** — cosine / dot with a per-request direction | `ReadoutVector(...)` in `extra_args["apply_readout_vectors"]` | [Fast hidden-state readout](#fast-hidden-state-readout-110post4) |
 | **Early exit** — stop the forward pass after layer L | `extra_args["lens_early_exit"] = True` with `max_tokens=1` | [Early exit](#early-exit) |
 | **One-call reward scoring** | `vllm_lens.metamodel.readout_scores(llm, token_ids, directions, layer=42)` | [One-call scoring](#one-call-scoring-vllm_lensmetamodel) |
+| **LoRA merge-on-publish** — serve the RL policy as merged weights, no LoRA kernels | `merge_lora(llm, adapter_dir)` / `unmerge_lora(llm)` | [LoRA merge-on-publish](#lora-merge-on-publish-rl-rollouts-without-lora-kernels) |
+| **vLLM 0.16 → 0.28 tested**, V1 model runner forced where vLLM defaults to V2 | automatic | [Supported vLLM versions](#supported-vllm-versions) |
 | Capability introspection / kill switches | `llm.collective_rpc("lens_capabilities")`, `VLLM_LENS_DISABLE=1`, `VLLM_LENS_FAST_CAPTURE=0`, `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` | [API reference](#api-reference) |
 
+
+## Supported vLLM versions
+
+**Tested: vLLM 0.16.0, 0.19.0, 0.27.1 and 0.28.0** (1× B200, the same benchmark + correctness
+matrix on every version: steering throughput, injection modes against an HF reference,
+hidden-state readout against HF, the CPU suites against that version's vLLM modules).
+`pip install vllm-lens` metadata allows `vllm>=0.16.0`; 0.16.0 is the oldest release we ran and
+it passes everything, so "a very old version" works as long as it is ≥ 0.16.
+
+What broke outside the range the earlier releases were built on, and what the fork does about it:
+
+- **vLLM ≥ 0.23 runs dense models on the V2 GPU model runner by default.** Every vllm-lens hook
+  (upstream 1.1.0, this fork ≤ post5) reads the V1 runner's per-step state (`input_batch`,
+  `requests`, host `query_start_loc`); on V2 those do not exist, so captures came back empty and
+  steering silently did nothing (upstream 1.1.0 still does exactly this on 0.27/0.28). Since
+  **1.1.0.post6** the plugin defaults `VLLM_USE_V2_MODEL_RUNNER=0` when it builds the engine
+  config (as upstream 1.2.1 does since its #12); an explicit `=1` is refused with a clear error, and
+  `install_hooks` raises instead of warning when the runner has no V1 state. Plain vLLM without the
+  plugin (`VLLM_LENS_DISABLE=1`) keeps vLLM's default (V2) runner — see the throughput table for
+  what that costs / gains.
+- **vLLM ≥ 0.27 moved `query_start_loc` off several attention backends' metadata** (post3 reads
+  the model runner's host buffers instead; upstream 1.2.1's per-request hooks no-op there) and
+  **refuses pickled `collective_rpc` payloads** unless `VLLM_ALLOW_INSECURE_SERIALIZATION=1`
+  (post3 sets it).
+- **vLLM ≥ 0.27 kernels are batch-composition sensitive at the bf16 level**: two identical clean
+  batches give the same argmax but hidden states that differ by up to 6e-2 (0.16–0.19 are
+  bit-exact). The injection test matrix therefore gates its "rows other than the marker are
+  untouched" checks on a measured clean-vs-clean noise floor instead of exact zeros.
+- `language_model_only` (Qwen3.5/3.6 wrapper checkpoints) does not exist before 0.19; the bench
+  scripts drop engine kwargs the running vLLM rejects.
+
+<!-- VERSIONS:BEGIN -->
+| vLLM | torch | Qwen3.6-27B | Qwen3-1.7B | upstream vllm-lens on this vLLM |
+|---|---|---|---|---|
+| **0.16.0** | 2.9.1+cu128 | not run | **7/7 stages ok**; CPU suites pass; steering 61/61, injection 50/50, readout-vs-HF n/a | 1.1.0: works, 6 s per `generate()` at B=128 |
+| **0.19.0** | 2.10.0+cu128 | **5/5 stages ok**; CPU suites pass; steering 20/20, injection 20/20, readout-vs-HF n/a | **11/11 stages ok**; CPU suites pass; steering 61/61, injection 142/142, readout-vs-HF 8/8, 8/8 | 1.1.0: works, 64 s per `generate()` at B=512 |
+| **0.27.1** | 2.13.0+cu130 | **6/6 stages ok**; CPU suites pass; steering 20/20, injection 18/20, readout-vs-HF n/a | **9/11 stages ok**; CPU suites pass; steering 61/61, injection 72/72, readout-vs-HF 8/8, 8/8 | 1.2.1: works, 107 s per `generate()` at B=512; 1.1.0: **silently captures nothing** (V2 model runner) |
+| **0.28.0** | 2.13.0+cu130 | not run | **7/7 stages ok**; CPU suites pass; steering 61/61, injection 69/72, readout-vs-HF n/a | 1.2.1: works, 5 s per `generate()` at B=128; 1.1.0: **silently captures nothing** (V2 model runner) |
+
+Apples-to-apples generation throughput per vLLM version (same GPU type, prompts and settings; 96-token prompt, 40 new tokens, B = 512 / 1,024; one distinct steering vector per request for the fork rows; best of 2 repeats; each version in its own container, so treat ±10 % as noise):
+
+**Qwen/Qwen3.6-27B**
+
+| configuration | vLLM 0.19.0 | vLLM 0.27.1 |
+|---|---|---|
+| plain vLLM, its default (torch.compile + graphs; V2 model runner on ≥ 0.23) | 5.23 s (3,913 tok/s) / 10.08 s (4,063 tok/s) | 5.02 s (4,083 tok/s) / 9.63 s (4,253 tok/s) |
+| plain vLLM forced onto the V1 model runner (what the plugin uses) | — / — | 5.05 s (4,058 tok/s) / 9.62 s (4,257 tok/s) |
+| hook-compatible engine, no steering (compile off, decode graphs) | 5.45 s (3,757 tok/s) / 10.48 s (3,910 tok/s) | 6.06 s (3,382 tok/s) / 11.45 s (3,579 tok/s) |
+| **fork: one steering vector per request + CUDA graphs** | 5.51 s (3,714 tok/s) / 10.55 s (3,882 tok/s) | 6.15 s (3,332 tok/s) / 11.62 s (3,524 tok/s) |
+| fork: one steering vector per request, eager | 7.81 s (2,621 tok/s) / — | 7.74 s (2,645 tok/s) / — |
+
+Hidden-state readout on Qwen3.6-27B (seconds per 1,024 texts, prefill only, CUDA-graph engine): vLLM 0.19.0: nocap 6.46 s, cap_all 10.38 s, cap_last5 6.74 s, read_last5 6.62 s, exit_read_last5 4.58 s; vLLM 0.27.1: nocap 6.82 s, cap_all 11.89 s, cap_last5 7.06 s, read_last5 6.93 s, exit_read_last5 4.84 s
+
+**Qwen/Qwen3-1.7B**
+
+| configuration | vLLM 0.16.0 | vLLM 0.19.0 | vLLM 0.27.1 | vLLM 0.28.0 |
+|---|---|---|---|---|
+| plain vLLM, its default (torch.compile + graphs; V2 model runner on ≥ 0.23) | 0.62 s (33,209 tok/s) / 1.08 s (37,808 tok/s) | 0.56 s (36,429 tok/s) / 1.04 s (39,309 tok/s) | 0.52 s (39,733 tok/s) / 0.93 s (44,247 tok/s) | 0.41 s (49,843 tok/s) / 0.74 s (55,505 tok/s) |
+| hook-compatible engine, no steering (compile off, decode graphs) | 0.62 s (33,082 tok/s) / 1.12 s (36,600 tok/s) | 0.62 s (33,249 tok/s) / 1.12 s (36,431 tok/s) | 0.61 s (33,327 tok/s) / 1.10 s (37,395 tok/s) | 0.47 s (43,939 tok/s) / 0.87 s (47,084 tok/s) |
+| **fork: one steering vector per request + CUDA graphs** | 0.65 s (31,672 tok/s) / 1.14 s (36,003 tok/s) | 0.66 s (31,236 tok/s) / 1.21 s (33,726 tok/s) | 0.64 s (32,200 tok/s) / 1.15 s (35,534 tok/s) | 0.50 s (40,597 tok/s) / 0.91 s (44,894 tok/s) |
+| fork: one steering vector per request, eager | 1.15 s (17,851 tok/s) / — | 1.10 s (18,579 tok/s) / 1.66 s (24,705 tok/s) | 1.12 s (18,255 tok/s) / 1.86 s (21,973 tok/s) | 0.68 s (30,110 tok/s) / — |
+| upstream vllm-lens, one vector per request (eager, forced) | — / — | 63.66 s (322 tok/s) / 217.34 s (188 tok/s) | 106.52 s (192 tok/s) / 365.75 s (112 tok/s) | — / — |
+
+Hidden-state readout on Qwen3-1.7B (seconds per 1,024 texts, prefill only, CUDA-graph engine): vLLM 0.16.0: nocap 0.54 s, cap_all 2.83 s, cap_last5 0.69 s, read_last5 0.68 s, exit_read_last5 0.77 s; vLLM 0.19.0: nocap 0.52 s, cap_all 2.03 s, cap_last5 0.66 s, read_last5 0.64 s, exit_read_last5 0.54 s; vLLM 0.27.1: nocap 0.51 s, cap_all 2.12 s, cap_last5 0.66 s, read_last5 0.65 s, exit_read_last5 0.52 s; vLLM 0.28.0: nocap 0.53 s, cap_all 1.31 s, cap_last5 0.59 s, read_last5 0.60 s, exit_read_last5 0.48 s
+
+<!-- VERSIONS:END -->
+
+Re-run any cell: `BENCH_VLLM=<version> modal run bench/modal_bench.py::matrix` (one image per
+vLLM release; `bench/summarize_matrix.py bench/results/matrix_*` builds the table). Newer
+releases will need the same check — the per-step state the hooks read is vLLM-internal.
+
+## LoRA merge-on-publish (RL rollouts without LoRA kernels)
+
+An RL trainer that serves the current policy as a LoRA pays for vLLM's LoRA shrink/expand
+kernels on every linear layer of every decode step. `vllm_lens.metamodel.merge_lora` folds the
+adapter into the served base weights **on the worker, in place**, so generation runs plain GEMMs;
+`unmerge_lora` restores the base (a device copy), and calling `merge_lora` again with the next
+adapter replaces the previous one:
+
+```python
+from vllm_lens.metamodel import merge_lora, unmerge_lora, lora_status
+
+merge_lora(llm, "/tmp/adapter_step42", keep_base="gpu")   # PEFT dir (adapter_config.json + safetensors), or tensors=..., scaling=...
+outs = llm.generate(prompts, params)                       # no LoRARequest: the merged policy IS the base now
+unmerge_lora(llm)                                          # clean base again (e.g. for readout_scores on the rollouts)
+lora_status(llm)   # {"merged": ..., "mode": "gpu", "base_bytes": ..., "publishes": ..., "last_publish_s": ...}
+```
+
+- Only the adapter's `A`/`B` cross the process boundary (~0.7 GB for a rank-64 all-linear
+  adapter of Qwen3.6-27B). The worker resolves the PEFT module names against vLLM's fused
+  layout (`qkv_proj` = [q|k|v] rows, `gate_up_proj` = [gate|up], TP shards; TP > 1 is
+  implemented from vLLM's `weight_loader` rules but untested — needs `VLLM_LENS_MERGE_ALLOW_TP=1`)
+  and does `W = round_bf16(W0 + s·B·A)` per targeted matrix in one fp32 pass.
+- `keep_base="gpu"`: a bf16 copy of the LoRA-targeted weights stays on the device (48 GB for the
+  27B) — every publish is exact (one rounding) and unmerge is a copy. `"cpu"`: the copy is pinned
+  host memory (publish streams it back). `"none"`: no copy; the previous adapter is subtracted and
+  the new one added, which drifts by a bf16 rounding per publish (measured below) — don't use it
+  for a long run. `"auto"` (default) = gpu if the copy fits, else cpu.
+- Works on a LoRA-capable engine (`enable_lora=True`; LoRA requests then apply on top of the
+  merged weights) and on a plain engine (`enable_lora=False`, whose CUDA graphs contain no LoRA
+  kernels at all — the fastest configuration).
+- Fidelity: serving `round_bf16(W0 + ΔW)` instead of `W0 x + B(A x)` is the same approximation as
+  any bf16 `merge_and_unload`: the rounding is of the order of bf16's spacing (0.78 % of |W|), so a
+  small adapter (0.5 %-relative in the benchmark) is reproduced with an SNR of ~2 per element and
+  the merged model differs from the LoRA path by a few tenths of a nat on some tokens (table
+  below); the trainer's HF model with the adapter unmerged is the reference policy. Merged weights
+  are deterministic: the plain and the LoRA-capable engine give bit-identical outputs from them.
+- Compared with pushing full merged matrices (the EasyNLA / TRL colocate pattern, `model.load_weights`
+  over CUDA-IPC handles): that moves the whole 48 GB per publish and cannot target a LoRA-capable
+  engine (vLLM wraps the linears; `load_weights` no longer finds `qkv_proj.weight`). The fork
+  exposes it too as `lens_load_weights_ipc` for benchmarking.
+
+<!-- LORA:BEGIN -->
+| model | vLLM | B | rank-64 LoRA on every request | LoRA-capable engine, no adapter | merged (same engine) | plain engine | **merged, plain engine** | `generate()` 40 tokens: LoRA → merged |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| Qwen3-1.7B | 0.19.0 | 512 | 9.2 ms | 7.3 ms (-21%) | 7.6 ms (-18%) | 7.0 ms (-25%) | **7.1 ms (-23%)** | 0.93 s → 0.54 s |
+| Qwen3-1.7B | 0.19.0 | 1,024 | 17.9 ms | 14.1 ms (-21%) | 14.1 ms (-21%) | 14.6 ms (-18%) | **16.5 ms (-8%)** | 1.71 s → 1.08 s |
+| Qwen3-1.7B | 0.27.1 | 512 | 9.4 ms | 6.1 ms (-35%) | 5.2 ms (-45%) | 5.9 ms (-37%) | **6.2 ms (-34%)** | 0.85 s → 0.49 s |
+| Qwen3-1.7B | 0.27.1 | 1,024 | 15.1 ms | 0.2 ms (-99%) | 9.8 ms (-35%) | 10.8 ms (-29%) | **10.7 ms (-29%)** | 1.54 s → 0.90 s |
+
+Publish latency (replace the served adapter by the next one; the 27B has ~24 B LoRA-targeted parameters = 48 GB bf16, ~0.7 GB of A/B):
+
+| model | vLLM | `keep_base` | adapter source | worker time | RPC total | base copy |
+|---|---|---|---|---:|---:|---:|
+| Qwen3-1.7B | 0.19.0 | gpu | dir | 0.061 s | — | 2.8 GB (gpu) |
+| Qwen3-1.7B | 0.19.0 | gpu | pickled_tensors | 0.042 s | 0.233 s | 2.8 GB (gpu) |
+| Qwen3-1.7B | 0.19.0 | cpu | dir | 0.105 s | — | 2.8 GB (cpu) |
+| Qwen3-1.7B | 0.19.0 | cpu | pickled_tensors | 0.092 s | 0.297 s | 2.8 GB (cpu) |
+| Qwen3-1.7B | 0.19.0 | none | dir | 0.098 s | — | 0.0 GB (—) |
+| Qwen3-1.7B | 0.19.0 | none | pickled_tensors | 0.080 s | 0.287 s | 0.0 GB (—) |
+| Qwen3-1.7B | 0.19.0 | EasyNLA-style full-matrix push (CUDA IPC → `load_weights`) | 2.8 GB in 28 buckets | 0.28 s | 10 GB/s | — |
+| Qwen3-1.7B | 0.27.1 | gpu | dir | 0.046 s | — | 2.8 GB (gpu) |
+| Qwen3-1.7B | 0.27.1 | gpu | pickled_tensors | 0.038 s | 0.176 s | 2.8 GB (gpu) |
+| Qwen3-1.7B | 0.27.1 | cpu | dir | 0.099 s | — | 2.8 GB (cpu) |
+| Qwen3-1.7B | 0.27.1 | cpu | pickled_tensors | 0.087 s | 0.223 s | 2.8 GB (cpu) |
+| Qwen3-1.7B | 0.27.1 | none | dir | 0.094 s | — | 0.0 GB (—) |
+| Qwen3-1.7B | 0.27.1 | none | pickled_tensors | 0.075 s | 0.229 s | 0.0 GB (—) |
+| Qwen3-1.7B | 0.27.1 | EasyNLA-style full-matrix push (CUDA IPC → `load_weights`) | 2.8 GB in 28 buckets | 0.07 s | 40 GB/s | — |
+
+Correctness (16 prompts, greedy 16 tokens, first-token top-20 log-probs):
+
+| model | vLLM | comparison | argmax equal | token agreement | max abs Δ log-prob | median |
+|---|---|---|---:|---:|---:|---:|
+| Qwen3-1.7B | 0.19.0 | after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.19.0 | lora_vs_merged | 16/16 | 0.996 | 0.230 | 0.131 |
+| Qwen3-1.7B | 0.19.0 | nolora_vs_lora_control | 16/16 | 0.992 | 0.325 | 0.191 |
+| Qwen3-1.7B | 0.19.0 | plain engine: after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.19.0 | plain engine: merged_plain_vs_merged_lora_engine | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.19.0 | plain engine: merged_plain_vs_lora_path | 16/16 | 0.996 | 0.230 | 0.131 |
+| Qwen3-1.7B | 0.19.0 | plain engine: plain_vs_nolora_lora_engine | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.19.0 | `keep_base="none"`, 20 publishes, vs exact merge — weights: max 19.3 bf16 spacings, rel-Frobenius 7.6e-03; base after subtract-unmerge rel-F 7.6e-03 | 16/16 | 0.988 | 0.255 | 0.196 |
+| Qwen3-1.7B | 0.27.1 | after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.27.1 | lora_vs_merged | 16/16 | 0.992 | 0.239 | 0.131 |
+| Qwen3-1.7B | 0.27.1 | nolora_vs_lora_control | 16/16 | 0.984 | 0.243 | 0.155 |
+| Qwen3-1.7B | 0.27.1 | plain engine: after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.27.1 | plain engine: merged_plain_vs_merged_lora_engine | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3-1.7B | 0.27.1 | plain engine: merged_plain_vs_lora_path | 16/16 | 0.992 | 0.239 | 0.131 |
+| Qwen3-1.7B | 0.27.1 | plain engine: plain_vs_nolora_lora_engine | 16/16 | 0.996 | 0.086 | 0.000 |
+| Qwen3-1.7B | 0.27.1 | `keep_base="none"`, 20 publishes, vs exact merge — weights: max 19.3 bf16 spacings, rel-Frobenius 7.6e-03; base after subtract-unmerge rel-F 7.6e-03 | 16/16 | 0.980 | 0.267 | 0.161 |
+<!-- LORA:END -->
+
+Measured with `bench/bench_lora.py` (`modal run bench/modal_bench.py::lora`): a synthetic rank-64
+rsLoRA adapter (alpha 16) over every LoRA-capable linear layer the served model exposes, one
+steering vector per request as in the rollout workload, CUDA graphs on; decode-step time =
+(wall for 40 new tokens − wall for 1 token) / 39.
 
 # Cleaned up claudeslop information below
 
@@ -94,7 +261,7 @@ The gap is even bigger on smaller models, where the hook is actually the majorit
 Full numbers, per-condition hook counters and every correctness assertion: `bench/results/` (`python bench/compare.py bench/results/<timestamp>`).
 <!-- RESULTS:END -->
 
-Changelog: [CHANGELOG.md](CHANGELOG.md) (current: **1.1.0.post4** — fast hidden-state readout: gather capture, `ReadoutVector` projections, early exit).
+Changelog: [CHANGELOG.md](CHANGELOG.md) (current: **1.1.0.post6** — vLLM 0.16–0.28 compatibility matrix, V1 model runner forced, LoRA merge-on-publish).
 
 ## Embedding replacement (NLA / metamodels on hyper-connection architectures)
 
@@ -466,7 +633,14 @@ Per-request keys in `SamplingParams.extra_args` (offline) / `vllm_xargs` (HTTP):
 Environment switches (read when the engine starts): `VLLM_LENS_CUDA_GRAPHS=1` (enable graphs;
 prompt-position steering/capture only), `VLLM_LENS_DISABLE=1` (plugin off), `VLLM_LENS_FAST_CAPTURE=0`
 (upstream capture path), `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` (per-request RPCs),
-`VLLM_LENS_MULTI_STREAM=0|1` (override hyper-connection detection).
+`VLLM_LENS_MULTI_STREAM=0|1` (override hyper-connection detection), `VLLM_USE_V2_MODEL_RUNNER`
+(vLLM's own switch; the plugin defaults it to `0` because the hooks need the V1 runner),
+`VLLM_LENS_MERGE_ALLOW_TP=1` (allow `merge_lora` on TP > 1 engines, untested).
+
+Worker RPCs (`llm.collective_rpc(name, args=...)`): `lens_capabilities`, `steering_stats`,
+`lens_lora_layout`, `lens_merge_lora(adapter_path | pickled_tensors, scaling, keep_base)`,
+`lens_unmerge_lora(release, how)`, `lens_lora_status`, `lens_weight_fingerprint`,
+`lens_lora_compare_exact`, `lens_release_lora_base`, `lens_load_weights_ipc`.
 
 ## Fast hidden-state readout (1.1.0.post4)
 

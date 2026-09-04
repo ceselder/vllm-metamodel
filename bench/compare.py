@@ -144,6 +144,7 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                 {"model": model, "check": check, "ok": bool(ok), "detail": detail}
             )
 
+        probes = {k: v for k, v in probes.items() if isinstance(v, dict)}
         p3 = {k: v for k, v in probes.items() if "_steer3d" in k}
         for k, p in p3.items():
             add(
@@ -178,15 +179,19 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                     "h_steer_normmatch_marker" in ref
                     and "h_steer_normmatch_marker" in p
                 ):
+                    # Since 1.1.0.post2 the fork's norm_match scales to the FULL residual stream
+                    # (upstream #7); stock 1.1.0 used the MLP-delta half, so the two differ BY
+                    # DESIGN -- report the difference, and check the fork's own arithmetic instead.
                     reln = _rel(
                         ref["h_steer_normmatch_marker"], p["h_steer_normmatch_marker"]
                     )
                     add(
-                        f"{k} vs stock: norm_match=True steered hidden state identical (rel<{TOL['hidden_rel_max']})",
-                        reln < TOL["hidden_rel_max"],
+                        f"{k} vs stock: norm_match=True steered hidden state (informational: differs by design since post2, "
+                        "fork = full-stream norm, stock 1.1.0 = MLP-delta-half norm)",
+                        True,
                         f"rel={reln:.2e}",
                     )
-                a_lp, b_lp = ref["next_token_top20"], p["next_token_top20"]
+                a_lp, b_lp = ref.get("next_token_top20") or {}, p.get("next_token_top20") or {}
                 common = set(a_lp) & set(b_lp)
                 mx = max((abs(a_lp[t] - b_lp[t]) for t in common), default=math.inf)
                 add(
@@ -198,7 +203,13 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                     ref.get("next_token_top20_clean"),
                     p.get("next_token_top20_clean"),
                 )
-                if a_cl and b_cl:
+                if not a_lp or not b_lp:
+                    add(
+                        f"{k} vs stock: steered next-token top-20 logprobs (informational: no logprobs returned by one engine)",
+                        True,
+                        f"stock={len(a_lp)} fork={len(b_lp)} tokens",
+                    )
+                elif a_cl and b_cl:
                     # Two engine processes can pick different Triton autotune configs, so even the
                     # CLEAN prompt's logits differ slightly between them.  Steering is fine if the
                     # steered cross-engine difference is no larger than that noise floor.
@@ -226,6 +237,18 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                     True,
                     f"{'equal' if same8 else 'DIFFERS: ' + str(ref['greedy8']) + ' vs ' + str(p['greedy8'])}",
                 )
+        for k, p in p3.items():
+            if "h_steer_normmatch_marker" in p and "h_clean_marker" in p and k.startswith("fork_"):
+                import torch as _t
+
+                hc = _t.tensor(p["h_clean_marker"], dtype=_t.float64)
+                hn = _t.tensor(p["h_steer_normmatch_marker"], dtype=_t.float64)
+                ratio = float((hn - hc).norm() / hc.norm())
+                add(
+                    f"{k}: norm_match=True, scale=0.8 injects 0.8 * |h_full| at the marker (ratio in [0.79, 0.81])",
+                    0.79 < ratio < 0.81,
+                    f"|delta|/|h_clean|={ratio:.4f}",
+                )
         r2 = probes.get("stock_eager_steer2d_normmatch")
         for f2name in (
             "fork_eager_steer2d_normmatch_loop",
@@ -236,16 +259,25 @@ def summarize(all_results: dict[str, dict[str, dict[str, dict]]]) -> dict[str, A
                 continue
             rel = _rel(r2["delta_norms"], f2["delta_norms"])
             add(
-                f"{f2name} vs stock: per-position |delta| of norm_match broadcast steering (rel<{TOL['delta_norm_rel_max']})",
-                rel < TOL["delta_norm_rel_max"],
+                f"{f2name} vs stock: per-position |delta| of norm_match broadcast steering (informational: differs by "
+                "design since post2 -- fork scales to the full residual stream, stock 1.1.0 to the MLP-delta half)",
+                True,
                 f"rel={rel:.2e} positions={len(r2['delta_norms'])}/{len(f2['delta_norms'])}",
             )
             relh = _rel(r2["h_steer_last"], f2["h_steer_last"])
             add(
-                f"{f2name} vs stock: last generated-position hidden state identical",
-                relh < TOL["hidden_rel_max"],
+                f"{f2name} vs stock: last generated-position hidden state (informational, same reason)",
+                True,
                 f"rel={relh:.2e}",
             )
+            if f2.get("clean_norms"):
+                ratios = [d / c for d, c in zip(f2["delta_norms"], f2["clean_norms"]) if c > 0]
+                add(
+                    f"{f2name}: norm_match=True broadcast (scale 0.5) injects 0.5 * |h_full| at EVERY position incl. generated "
+                    f"(all ratios in [0.49, 0.51])",
+                    bool(ratios) and all(0.49 < r < 0.51 for r in ratios),
+                    f"min={min(ratios):.4f} max={max(ratios):.4f} n={len(ratios)}",
+                )
             add(
                 f"{f2name} vs stock: generated tokens equal (informational)",
                 True,

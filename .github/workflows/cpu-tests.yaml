@@ -1,0 +1,42 @@
+name: CPU tests
+
+# vllm-metamodels: the fork's GPU-free test suites (indexed steering hook, readout / early exit,
+# LoRA merge-on-publish, one-call helpers) against CPU torch.  The GPU matrices live in bench/
+# (Modal) and are linked from the README; upstream's ruff / pyright job is checks.yaml.
+
+on:
+  push:
+    branches: ["**"]
+    paths-ignore:
+      - "README.md"
+      - "CHANGELOG.md"
+      - "bench/results/**"
+      - "**/*.png"
+      - "**/*.pdf"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  cpu-tests:
+    name: pytest (CPU, no vLLM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CPU torch + test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install "pydantic>=2" "zstandard>=0.23" numpy pytest safetensors
+      - name: Run the fork's CPU suites
+        run: |
+          python -m pytest -q --noconftest -p no:cacheprovider \
+            vllm_lens/tests/test_steering_index.py \
+            vllm_lens/tests/test_readout.py \
+            vllm_lens/tests/test_metamodel_helpers.py \
+            vllm_lens/tests/test_lora_merge.py \
+            vllm_lens/tests/test_serialize.py

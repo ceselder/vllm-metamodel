@@ -1500,6 +1500,14 @@ class HiddenStatesExtension:
         """
         if self._hooks_installed:
             return
+        runner = self.model_runner
+        if not hasattr(runner, "input_batch") or not hasattr(runner, "requests"):
+            raise RuntimeError(
+                f"vllm-lens: model runner {type(runner).__name__} has no V1 per-step state "
+                "(input_batch / requests) -- this is vLLM's V2 model runner (default for dense models "
+                "on vLLM >= 0.23). Run with VLLM_USE_V2_MODEL_RUNNER=0 (the plugin sets this when it "
+                "builds the engine config) so the hooks can see the scheduled requests."
+            )
         self._hooks_installed = True
         # Reset to instance-level dicts (class-level defaults are shared)
         self._captured_states = {}
@@ -1593,6 +1601,8 @@ class HiddenStatesExtension:
             "readout": True,
             "early_exit": bool(self._early_exit_ok),
             "early_exit_reason": self._early_exit_reason,
+            "model_runner": "v1" if hasattr(self.model_runner, "input_batch") else "v2",
+            "lora_merge": True,
         }
 
     # ------------------------------------------------------------------
@@ -2075,3 +2085,111 @@ class HiddenStatesExtension:
     def _debug_captured_states_count(self) -> int:
         """Return the number of entries in _captured_states (for testing)."""
         return len(self._captured_states)
+
+    # ------------------------------------------------------------------
+    # vllm-metamodels: LoRA merge-on-publish (see _lora_merge.py)
+    # ------------------------------------------------------------------
+
+    _lora_merger: Any = None
+
+    def _merger(self) -> Any:
+        if self._lora_merger is None:
+            from vllm_lens._lora_merge import LoRAMerger, tp_allowed
+
+            tp = int(getattr(self.parallel_config, "tensor_parallel_size", 1) or 1)
+            if not tp_allowed(tp):
+                raise ValueError(
+                    f"vllm-lens: LoRA merge with tensor_parallel_size={tp} is untested; set "
+                    "VLLM_LENS_MERGE_ALLOW_TP=1 to proceed anyway"
+                )
+            self._lora_merger = LoRAMerger(self.model_runner.model)
+        return self._lora_merger
+
+    def lens_lora_layout(self, with_norms: bool = False) -> list[dict[str, Any]]:
+        """Every LoRA-capable linear layer of the served model with its HF sub-module layout
+        (``[{vllm_name, kind, shape, subs: [{hf_name, out, in, rows[, frob]}]}]``)."""
+        from vllm_lens._lora_merge import layout_summary
+
+        return layout_summary(self._merger().targets, with_norms=with_norms)
+
+    def lens_merge_lora(
+        self,
+        adapter_path: str | None = None,
+        pickled_tensors: bytes | None = None,
+        scaling: float | None = None,
+        keep_base: str = "auto",
+    ) -> dict[str, Any]:
+        """Merge a LoRA adapter into the served weights in place (replacing the previously merged
+        one).  Either a PEFT adapter directory (``adapter_config.json`` + ``adapter_model.safetensors``,
+        scaling from ``lora_alpha`` / ``r`` / ``use_rslora``) or pickled ``{name: tensor}`` PEFT-style
+        tensors plus an explicit ``scaling``.  ``keep_base``: ``gpu`` | ``cpu`` | ``none`` | ``auto``
+        (exact single-rounding merges need a base copy; ``none`` subtracts the previous adapter and
+        drifts by <= 1/2 ulp per publish).  Returns timings and counts."""
+        from vllm_lens._lora_merge import load_adapter_dir, parse_adapter_tensors
+
+        merger = self._merger()
+        if adapter_path is not None:
+            modules, s, _cfg = load_adapter_dir(adapter_path)
+            if scaling is not None:
+                s = float(scaling)
+        elif pickled_tensors is not None:
+            if scaling is None:
+                raise ValueError("vllm-lens: lens_merge_lora(pickled_tensors=...) needs an explicit scaling")
+            modules, s = parse_adapter_tensors(pickle.loads(pickled_tensors)), float(scaling)
+        else:
+            raise ValueError("vllm-lens: lens_merge_lora needs adapter_path or pickled_tensors")
+        out = merger.merge(modules, s, keep_base=keep_base)
+        self._req_plan_cache.clear()
+        return out
+
+    def lens_unmerge_lora(self, release: bool = False, how: str = "auto") -> dict[str, Any]:
+        """Restore the base weights (exact with gpu/cpu base copies; ``how`` = auto | copy | subtract);
+        ``release`` frees the copies."""
+        if self._lora_merger is None:
+            return {"restored_params": 0, "how": "nothing", "unmerge_s": 0.0, "base_bytes": 0}
+        out = self._merger().unmerge(release=release, how=how)
+        self._req_plan_cache.clear()
+        return out
+
+    def lens_lora_status(self) -> dict[str, Any]:
+        if self._lora_merger is None:
+            return {"merged": False, "publishes": 0, "keep_base": "none", "base_bytes": 0}
+        return self._merger().status()
+
+    def lens_weight_fingerprint(self, names: list[str] | None = None) -> dict[str, list[float]]:
+        """Per-parameter float64 (sum, sum of squares) of the LoRA-capable weights."""
+        return self._merger().fingerprint(names)
+
+    def lens_lora_compare_exact(self, adapter_path: str | None = None) -> dict[str, Any]:
+        """Diagnostic: drift of the CURRENT weights vs an exact merge of ``adapter_path`` (``None`` =
+        vs the stored base itself; needs base copies): max |diff| (abs and in bf16 ulps), relative
+        Frobenius, changed fraction."""
+        from vllm_lens._lora_merge import load_adapter_dir
+
+        if adapter_path is None:
+            return self._merger().compare_to_exact(None)
+        modules, s, _cfg = load_adapter_dir(adapter_path)
+        return self._merger().compare_to_exact(modules, s)
+
+    def lens_release_lora_base(self) -> int:
+        """Free the stored base-weight copies (the next exact merge snapshots again)."""
+        return self._merger().release_base() if self._lora_merger is not None else 0
+
+    def lens_load_weights_ipc(self, pickled_handles: bytes) -> dict[str, Any]:
+        """EasyNLA-style weight push: ``[(hf_name, (rebuild_fn, args))]`` CUDA-IPC handles from
+        ``torch.multiprocessing.reductions.reduce_tensor`` (or plain tensors) -> ``model.load_weights``.
+        The producer's tensors must stay alive until this returns."""
+        t0 = time.perf_counter()
+        items = pickle.loads(pickled_handles)
+        rebuilt = []
+        for name, h in items:
+            if isinstance(h, torch.Tensor):
+                rebuilt.append((name, h))
+            else:
+                fn, args = h
+                rebuilt.append((name, fn(*args)))
+        t1 = time.perf_counter()
+        loaded = self.model_runner.model.load_weights(iter(rebuilt))
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        return {"n": len(items), "loaded": len(loaded) if loaded is not None else None, "rebuild_s": t1 - t0, "load_s": time.perf_counter() - t1}

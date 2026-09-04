@@ -52,6 +52,25 @@ def log(msg: str) -> None:
     print(f"[inj {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+def make_llm(LLM, kw: dict, log=print):
+    """Build the engine, dropping engine kwargs this vLLM version does not know
+    (``language_model_only`` appeared in 0.19, ``attention_backend`` values differ
+    between releases) so one script runs on vLLM 0.16 .. 0.28.  Returns ``(llm, kw)``."""
+    kw = dict(kw)
+    for _ in range(4):
+        try:
+            return LLM(**kw), kw
+        except (TypeError, ValueError, KeyError, RuntimeError) as e:
+            msg = str(e)
+            drop = next((k for k in ("language_model_only", "attention_backend", "gdn_prefill_backend")
+                         if k in kw and (k in msg or (k == "attention_backend" and "backend" in msg.lower()))), None)
+            if drop is None:
+                raise
+            log(f"engine arg {drop!r}={kw[drop]!r} rejected by this vLLM ({msg[:160]}); retrying without it")
+            kw.pop(drop)
+    raise RuntimeError("engine construction failed after dropping compatibility kwargs")
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--model", required=True)
@@ -336,7 +355,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
         kw["compilation_config"] = {"max_cudagraph_capture_size": min(mns, 1024)}
 
     t0 = time.perf_counter()
-    llm = LLM(**kw)
+    llm, kw = make_llm(LLM, kw, log)
     up = time.perf_counter() - t0
     vc = llm.llm_engine.vllm_config
     cc = vc.compilation_config

@@ -62,6 +62,25 @@ def log(msg: str) -> None:
     print(f"[bench {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+def make_llm(LLM, kw: dict, log=print):
+    """Build the engine, dropping engine kwargs this vLLM version does not know
+    (``language_model_only`` appeared in 0.19, ``attention_backend`` values differ
+    between releases) so one script runs on vLLM 0.16 .. 0.28.  Returns ``(llm, kw)``."""
+    kw = dict(kw)
+    for _ in range(4):
+        try:
+            return LLM(**kw), kw
+        except (TypeError, ValueError, KeyError, RuntimeError) as e:
+            msg = str(e)
+            drop = next((k for k in ("language_model_only", "attention_backend", "gdn_prefill_backend")
+                         if k in kw and (k in msg or (k == "attention_backend" and "backend" in msg.lower()))), None)
+            if drop is None:
+                raise
+            log(f"engine arg {drop!r}={kw[drop]!r} rejected by this vLLM ({msg[:160]}); retrying without it")
+            kw.pop(drop)
+    raise RuntimeError("engine construction failed after dropping compatibility kwargs")
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -122,6 +141,13 @@ def parse_args() -> argparse.Namespace:
         help="VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE=0 (GDN models)",
     )
     p.add_argument(
+        "--model-runner",
+        choices=["default", "v1", "v2"],
+        default="default",
+        help="vLLM >= 0.23: force the V1 or V2 GPU model runner (VLLM_USE_V2_MODEL_RUNNER); "
+        "'default' leaves vLLM's choice (the plugin itself forces V1 whenever it is active)",
+    )
+    p.add_argument(
         "--capture-mode",
         choices=["list", "max"],
         default="list",
@@ -158,6 +184,8 @@ def main() -> None:
         os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
     if a.no_packed_decode:
         os.environ["VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE"] = "0"
+    if a.model_runner != "default":
+        os.environ["VLLM_USE_V2_MODEL_RUNNER"] = "1" if a.model_runner == "v2" else "0"
 
     import torch
     import vllm
@@ -220,7 +248,7 @@ def main() -> None:
         kw["compilation_config"] = dict(cc_kw)
 
     t0 = time.perf_counter()
-    llm = LLM(**kw)
+    llm, kw = make_llm(LLM, kw, log)
     engine_up_s = time.perf_counter() - t0
     resolved: dict[str, Any] = {}
     try:
@@ -263,6 +291,8 @@ def main() -> None:
         "capture_mode": a.capture_mode,
         "enable_lora": a.enable_lora,
         "packed_decode": not a.no_packed_decode,
+        "model_runner": a.model_runner,
+        "model_runner_resolved": "v2" if getattr(getattr(llm.llm_engine, "vllm_config", None), "use_v2_model_runner", False) else "v1",
         "throughput": [],
         "probes": {},
         "stats": {},

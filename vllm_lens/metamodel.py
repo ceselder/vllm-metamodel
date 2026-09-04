@@ -100,3 +100,67 @@ def readout_max(llm: Any, prompt_token_ids: Sequence[Sequence[int]], directions:
     """``readout_scores`` reduced to one reward per text: the max over the read positions (NaN-safe)."""
     values, _ = readout_scores(llm, prompt_token_ids, directions, layer, positions=positions, **kw)
     return torch.nan_to_num(values[:, 0, :], nan=-float("inf")).max(dim=-1).values
+
+
+# ---------------------------------------------------------------------------
+# LoRA merge-on-publish (vllm-metamodels): serve the current adapter as plain merged weights
+# ---------------------------------------------------------------------------
+
+
+def _rpc0(llm: Any, name: str, *args: Any, **kw: Any) -> Any:
+    res = llm.collective_rpc(name, args=args, kwargs=kw or None)
+    return res[0] if isinstance(res, (list, tuple)) else res
+
+
+def merge_lora(llm: Any, adapter_dir: str | None = None, tensors: dict[str, torch.Tensor] | None = None,
+               scaling: float | None = None, keep_base: str = "auto") -> dict[str, Any]:
+    """Merge a PEFT LoRA adapter INTO the served weights on every worker (in place), so generation
+    runs without LoRA kernels; call again with the next adapter to replace it.  ``adapter_dir`` is a
+    PEFT directory (``adapter_config.json`` + ``adapter_model.safetensors``); alternatively pass the
+    PEFT-style ``tensors`` (``base_model.model.<module>.lora_A.weight`` / ``lora_B.weight``) with an
+    explicit ``scaling`` (``alpha / r`` or ``alpha / sqrt(r)`` for rsLoRA).
+
+    ``keep_base``: ``"gpu"`` keeps a bf16 copy of the LoRA-targeted weights on the device (exact
+    single-rounding merges, exact unmerge; costs ~ the size of those weights), ``"cpu"`` keeps it in
+    pinned host memory (publish streams it back), ``"none"`` keeps no copy and subtracts the previous
+    adapter instead (<= 1/2 ulp drift per publish), ``"auto"`` = gpu if it fits else cpu.
+
+    After a merge the *base* served by this engine IS the merged policy: clean-base readout /
+    reward scoring needs :func:`unmerge_lora` first (a copy in gpu/cpu mode), and LoRA requests are
+    applied on top of the merged weights.  Prefix caches are reset (weights changed).
+    """
+    import pickle
+
+    if adapter_dir is None and tensors is None:
+        raise ValueError("merge_lora needs adapter_dir or tensors")
+    if tensors is not None:
+        if scaling is None:
+            raise ValueError("merge_lora(tensors=...) needs an explicit scaling")
+        payload = pickle.dumps({k: v.detach().cpu() for k, v in tensors.items()}, protocol=pickle.HIGHEST_PROTOCOL)
+        out = _rpc0(llm, "lens_merge_lora", None, payload, float(scaling), keep_base)
+    else:
+        out = _rpc0(llm, "lens_merge_lora", adapter_dir, None, scaling, keep_base)
+    _reset_prefix_cache(llm)
+    return out
+
+
+def unmerge_lora(llm: Any, release: bool = False, how: str = "auto") -> dict[str, Any]:
+    """Restore the base weights on every worker (exact when a base copy exists; ``how`` = ``"auto"`` |
+    ``"copy"`` | ``"subtract"``); ``release`` frees the copies."""
+    out = _rpc0(llm, "lens_unmerge_lora", release, how)
+    _reset_prefix_cache(llm)
+    return out
+
+
+def lora_status(llm: Any) -> dict[str, Any]:
+    """``{merged, n_modules, n_params, mode, base_where, base_bytes, publishes, last_publish_s, tp_size}``."""
+    return _rpc0(llm, "lens_lora_status")
+
+
+def _reset_prefix_cache(llm: Any) -> None:
+    try:
+        eng = getattr(llm, "llm_engine", None)
+        if eng is not None and hasattr(eng, "reset_prefix_cache"):
+            eng.reset_prefix_cache()
+    except Exception:  # noqa: BLE001
+        logger.debug("reset_prefix_cache failed", exc_info=True)

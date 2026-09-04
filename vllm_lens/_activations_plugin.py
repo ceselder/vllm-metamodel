@@ -32,6 +32,9 @@ vllm-lens-metamodel environment variables:
 ``VLLM_LENS_EARLY_EXIT=0``
     Never short-circuit forward passes (``extra_args["lens_early_exit"]`` is
     then rejected client-side).
+``VLLM_USE_V2_MODEL_RUNNER`` (vLLM's own switch, >= 0.23)
+    The plugin defaults it to ``0``: the hooks read the V1 model runner's per-step
+    state; with the V2 runner forced on, engine construction fails loudly.
 
 Readout (vllm-metamodels): ``extra_args["apply_readout_vectors"] = [ReadoutVector(...)]``
 returns ``output.readout`` (per-position cosine / dot products with a per-request
@@ -323,9 +326,21 @@ def _patched_create_engine_config(self, *args, **kwargs):
     else:
         self.enforce_eager = True
         _cuda_graphs_enabled = False
+    # vLLM >= 0.23 runs dense models on its "V2" GPU model runner by default.  The hooks
+    # read the V1 runner's per-step state (``input_batch``, ``requests``, host
+    # ``query_start_loc``); on V2 they would find nothing and silently capture / steer
+    # nothing.  Default to V1 (an explicit user setting still wins, and is refused below).
+    os.environ.setdefault("VLLM_USE_V2_MODEL_RUNNER", "0")
 
     assert _original_create_engine_config is not None
-    return _original_create_engine_config(self, *args, **kwargs)
+    config = _original_create_engine_config(self, *args, **kwargs)
+    if getattr(config, "use_v2_model_runner", False):
+        raise RuntimeError(
+            "vllm-lens: the vLLM V2 model runner is active (VLLM_USE_V2_MODEL_RUNNER=1) but the "
+            "hooks need the V1 runner's per-step state; unset VLLM_USE_V2_MODEL_RUNNER (the plugin "
+            "defaults it to 0) or set VLLM_LENS_DISABLE=1 to run plain vLLM."
+        )
+    return config
 
 
 def _check_graph_mode_request(

@@ -6,7 +6,7 @@ from vllm_lens._helpers._serialize import (
     serialize_activations,
     serialize_tensor,
 )
-from vllm_lens.metamodel import capabilities, readout_max, readout_scores
+from vllm_lens.metamodel import capabilities, lora_status, merge_lora, readout_max, readout_scores, unmerge_lora
 from vllm_lens._helpers.types import (
     CAPTURE_POSITIONS_KEY,
     EARLY_EXIT_KEY,
@@ -30,8 +30,11 @@ __all__ = [
     "EMBED_LAYER_INDEX",
     "ReadoutVector",
     "capabilities",
+    "lora_status",
+    "merge_lora",
     "readout_max",
     "readout_scores",
+    "unmerge_lora",
     "SteeringVector",
     "__version__",
 ]

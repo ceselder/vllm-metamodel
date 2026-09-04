@@ -24,6 +24,15 @@ from vllm_lens.tests.test_steering_index import (  # noqa: F401  (stubs vLLM whe
 )
 from vllm_lens import ReadoutVector, SteeringVector  # noqa: E402
 from vllm_lens import _worker_ext as W  # noqa: E402
+
+import vllm.forward_context as _fc_mod  # noqa: E402
+
+if not hasattr(_fc_mod, "_ctx"):
+    # Real vLLM installed (CI image / GPU box): route _worker_ext's accessors through the same
+    # ``_ctx`` attribute the stub uses so every test can set ``fc._ctx`` regardless of environment.
+    _fc_mod._ctx = None
+    W.get_forward_context = lambda: _fc_mod._ctx
+    W.is_forward_context_available = lambda: _fc_mod._ctx is not None
 from vllm_lens._helpers import types as T  # noqa: E402
 
 

@@ -34,3 +34,10 @@ vllm_lens/_benchmarks/logs/
 .claude/scheduled_tasks.lock
 bench/results/*
 !bench/results/20260903_060613/
+# vllm-metamodels 1.1.0.post6: keep the small per-version summaries + LoRA benchmark JSON in the repo
+# (full per-stage matrix JSON with logs is ~55 MB and lives in the report's data/versions folder)
+!bench/results/version_matrix.json
+!bench/results/version_matrix.md
+!bench/results/lora_*/
+!bench/results/injection_20260904_080711/
+!bench/results/injection_20260904_080715/

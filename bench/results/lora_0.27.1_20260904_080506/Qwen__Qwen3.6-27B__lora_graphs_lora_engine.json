@@ -1,0 +1,238 @@
+{
+ "returncode": 1,
+ "elapsed_s": 352.5119059085846,
+ "log_tail": "d AttentionBackendEnum.FLASH_ATTN for vit attention\n(EngineCore pid=90) INFO 09-04 08:06:05 [mm_encoder_attention.py:375] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.\n(EngineCore pid=90) INFO 09-04 08:06:05 [qwen_gdn_linear_attn.py:150] Using FlashInfer GDN prefill kernel (requested=auto, head_k_dim=128).\n(EngineCore pid=90) INFO 09-04 08:06:05 [cuda.py:422] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=90) INFO 09-04 08:06:05 [weight_utils.py:867] Filesystem type for checkpoints: 9P. Checkpoint size: 51.75 GiB. Available RAM: 1015.33 GiB.\n(EngineCore pid=90) INFO 09-04 08:06:05 [weight_utils.py:890] Auto-prefetch is disabled because the filesystem (9P) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.\n(EngineCore pid=90) INFO 09-04 08:06:37 [default_loader.py:430] Loading weights took 31.42 seconds\n(EngineCore pid=90) INFO 09-04 08:06:37 [punica_selector.py:20] Using PunicaWrapperGPU.\n(EngineCore pid=90) INFO 09-04 08:06:37 [model_manager.py:211] Qwen3_5ForConditionalGeneration supports adding LoRA to the tower modules. If needed, please set `enable_tower_connector_lora=True`.\n(EngineCore pid=90) INFO 09-04 08:06:38 [gpu_model_runner.py:5405] Model loading took 52.26 GiB memory and 32.315967 seconds\n(EngineCore pid=90) INFO 09-04 08:06:38 [interface.py:911] Setting attention block size to 784 tokens to ensure that attention page size is >= mamba page size.\n(EngineCore pid=90) INFO 09-04 08:06:38 [interface.py:935] Padding mamba page size by 0.13% to ensure that mamba page size and attention page size are exactly equal.\n(EngineCore pid=90) INFO 09-04 08:08:04 [gpu_model_runner.py:6681] Profiling CUDA graph memory: FULL=22 (largest=1024)\n(EngineCore pid=90) WARNING 09-04 08:08:04 [utils.py:279] Using default LoRA kernel configs\n(EngineCore pid=90) INFO 09-04 08:08:09 [gpu_model_runner.py:6806] Estimated CUDA graph memory: 0.43 GiB total\n(EngineCore pid=90) INFO 09-04 08:08:09 [gpu_worker.py:563] Available KV cache memory: 71.37 GiB\n(EngineCore pid=90) INFO 09-04 08:08:09 [gpu_worker.py:578] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.8000 is equivalent to --gpu-memory-utilization=0.7976 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.8024. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.\n(EngineCore pid=90) INFO 09-04 08:08:09 [kv_cache_utils.py:2235] GPU KV cache size: 53,676 tokens\n(EngineCore pid=90) INFO 09-04 08:08:09 [kv_cache_utils.py:2236] Maximum concurrency for 144 tokens per request: 372.75x\n(EngineCore pid=90) INFO 09-04 08:08:10 [qwen_triton_warmup.py:270] Warming up Qwen Triton kernels for model_type=qwen3_5_text.\n(EngineCore pid=90) INFO 09-04 08:08:11 [kernel_warmup.py:256] Using FlashInfer autotune cache file: /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/7ed8ab715858b7bd41c8a86c8b6ad08468b1478fbf7903def98e2be6bb8db126/autotune_configs.json\n(EngineCore pid=90) INFO 09-04 08:08:15 [gpu_model_runner.py:6867] Rank 0: Torch profiler disabled for CUDA graph capture\n(EngineCore pid=90) INFO 09-04 08:08:32 [gpu_model_runner.py:6913] Graph capturing finished in 17 secs, took 0.45 GiB\n(EngineCore pid=90) INFO 09-04 08:08:32 [gpu_worker.py:726] CUDA graph pool memory: 0.45 GiB (actual), 0.43 GiB (estimated), difference: 0.02 GiB (4.4%).\n(EngineCore pid=90) INFO 09-04 08:08:32 [gpu_worker.py:789] Free memory on device (177.63/178.35 GiB) on startup. Desired GPU memory utilization is (0.8, 142.68 GiB). Actual usage is 55.56 GiB for consumed memory (weights + non-torch), 15.75 GiB for peak activation, and 0.45 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=75992921293` (70.77 GiB) to fit into requested memory, or `--kv-cache-memory=113522059264` (105.73 GiB) to fully utilize gpu memory. Current kv cache memory in use is 71.37 GiB.\n(EngineCore pid=90) INFO 09-04 08:08:33 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(EngineCore pid=90) INFO 09-04 08:08:33 [core.py:355] init engine (profile, create kv cache, warmup model) took 115.82 s\n(EngineCore pid=90) WARNING 09-04 08:08:33 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=90) WARNING 09-04 08:08:34 [vllm.py:1247] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=90) INFO 09-04 08:08:34 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])\n(EngineCore pid=90) INFO 09-04 08:08:34 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant\nWARNING 09-04 08:08:34 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\nINFO 09-04 08:08:34 [hf.py:540] Detected the chat template content format to be 'openai'. You can set `--chat-template-content-format` to override this.\n[lora 08:08:34] engine up in 187s | {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'max_num_seqs': 1024, 'enable_lora': True, 'num_layers': 64, 'model_runner': 'v1'}\n[lora 08:08:34] layout: 304 vLLM params / 496 HF modules, 24.35B targeted params, 429M LoRA params\n[lora 08:09:59] adapters a0/a1 synthesised + saved in 84.3s (scaling 2.000)\n(EngineCore pid=90) WARNING 09-04 08:09:59 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.\n[lora 08:10:00] |h_marker| at layer 1 = 13.19; hidden 5120\n[lora 08:10:11] nolora   B=  512 rep0:   6.44s (    3180 tok/s) | prefill+1tok  3.58s | decode step   73.3 ms\n[lora 08:10:21] nolora   B=  512 rep1:   6.48s (    3159 tok/s) | prefill+1tok  3.16s | decode step   85.1 ms\n[lora 08:10:39] nolora   B= 1024 rep0:  12.31s (    3328 tok/s) | prefill+1tok  6.19s | decode step  156.8 ms\n[lora 08:10:58] nolora   B= 1024 rep1:  12.47s (    3285 tok/s) | prefill+1tok  6.18s | decode step  161.2 ms\nWARNING 09-04 08:10:58 [input_processor.py:166] vLLM has deprecated support for supporting different tokenizers for different LoRAs. By default, vLLM uses base model's tokenizer. If you are using a LoRA with its own tokenizer, consider specifying `--tokenizer [lora_path]` to use the LoRA tokenizer.\n(EngineCore pid=90) INFO 09-04 08:10:58 [peft_helper.py:57] Loading LoRA weights trained with rsLoRA.\n(EngineCore pid=90) ERROR 09-04 08:10:59 [dump_input.py:72] Dumping input data for V1 LLM engine (v0.27.1) with config: model='/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9', speculative_config=None, tokenizer='/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=144, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [106496], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_DECODE_ONLY: (2, 0)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 1024, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto'), \n(EngineCore pid=90) ERROR 09-04 08:10:59 [dump_input.py:79] Dumping scheduler output for model execution: SchedulerOutput(scheduled_new_reqs=[NewRequestData(req_id=6153-812fa0d0,prompt_token_ids_len=96,prefill_token_ids_len=None,mm_features=[],sampling_params=SamplingParams(n=1, presence_penalty=0.0, frequency_penalty=0.0, repetition_penalty=1.0, temperature=1.0, top_p=1.0, top_k=0, min_p=0.0, seed=None, stop=[], stop_token_ids=[], bad_words=[], thinking_token_budget=None, include_stop_str_in_output=False, ignore_eos=True, max_tokens=40, min_tokens=40, logprobs=None, prompt_logprobs=None, skip_special_tokens=True, spaces_between_special_tokens=True, structured_outputs=None, extra_args={'_steering_id': '_steer_0'}),block_ids=([773], [774], [775], [776]),num_computed_tokens=0,lora_request=LoRARequest(lora_name='a0', lora_int_id=1, lora_path='/tmp/lora_bench/a0', base_model_name=None, tensorizer_config_dict=None, load_inplace=False, is_3d_lora_weight=False),prompt_embeds_shape=None)], scheduled_cached_reqs=CachedRequestData(req_ids=[],resumed_req_ids=set(),new_token_ids_lens=[],all_token_ids_lens={},new_block_ids=[],num_computed_tokens=[],num_output_tokens=[]), num_scheduled_tokens={6153-812fa0d0: 96}, total_num_scheduled_tokens=96, scheduled_spec_decode_tokens={}, scheduled_encoder_inputs={}, num_common_prefix_blocks=[0, 0, 0, 0], finished_req_ids=[], free_encoder_mm_hashes=[], scheduled_encoder_input_stats=null, preempted_req_ids=[], has_structured_output_requests=false, pending_structured_output_tokens=false, num_invalid_spec_tokens=null, kv_connector_metadata=null, ec_connector_metadata=null, ec_manager_metadata=null, new_block_ids_to_zero=[776], kv_cache_block_copies=null, partial_tail_offloads=null, num_spec_tokens_to_schedule=0)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351] EngineCore encountered a fatal error.\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351] Traceback (most recent call last):\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1342, in run_engine_core\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     engine_core.run_busy_loop()\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/fault_tolerance/engine_core_sentinel.py\", line 179, in run_with_fault_tolerance\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     busy_loop_func(self)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1386, in run_busy_loop\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self._process_engine_step()\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1439, in _process_engine_step\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     outputs, model_executed = self.step_fn()\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]                               ^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 655, in step_with_batch_queue\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     exec_future = self.model_executor.execute_model(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py\", line 120, in execute_model\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     output.result()\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/concurrent/futures/_base.py\", line 449, in result\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return self.__get_result()\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/concurrent/futures/_base.py\", line 401, in __get_result\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     raise self._exception\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py\", line 98, in collective_rpc\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     result = run_method(self.driver_worker, method, args, kwargs)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/serial_utils.py\", line 510, in run_method\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return func(*args, **kwargs)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py\", line 351, in execute_model\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return self.worker.execute_model(scheduler_output)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return func(*args, **kwargs)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py\", line 1079, in execute_model\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     output = self.model_runner.execute_model(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py\", line 124, in decorate_context\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return func(*args, **kwargs)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py\", line 4250, in execute_model\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     logits_indices, spec_decode_metadata = self._prepare_inputs(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]                                            ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py\", line 2275, in _prepare_inputs\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self.set_active_loras(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/lora_model_runner_mixin.py\", line 89, in set_active_loras\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     return self._set_active_loras(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]            ^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/worker/lora_model_runner_mixin.py\", line 67, in _set_active_loras\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self.lora_manager.set_active_adapters(lora_requests, lora_mapping)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/worker_manager.py\", line 194, in set_active_adapters\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self._apply_adapters(requests)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/worker_manager.py\", line 283, in _apply_adapters\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self.add_adapter(lora)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/worker_manager.py\", line 318, in add_adapter\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     self._adapter_manager.activate_adapter(lora_request.lora_int_id)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/model_manager.py\", line 1200, in activate_adapter\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     result = super().activate_adapter(lora_id)\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/model_manager.py\", line 334, in activate_adapter\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     module.set_lora(\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]   File \"/usr/local/lib/python3.12/site-packages/vllm/lora/layers/column_parallel_linear.py\", line 321, in set_lora\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]     if (lora_a_i := lora_a[i]) is not None:\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351]                     ~~~~~~^^^\n(EngineCore pid=90) ERROR 09-04 08:10:59 [core.py:1351] IndexError: list index out of range\nINFO 09-04 08:10:59 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore\n\n--- stderr ---\nors checkpoint shards:  13% Completed | 2/15 [00:05<00:31,  2.41s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  20% Completed | 3/15 [00:07<00:28,  2.39s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  27% Completed | 4/15 [00:09<00:26,  2.39s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  33% Completed | 5/15 [00:11<00:23,  2.31s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  40% Completed | 6/15 [00:14<00:20,  2.28s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  47% Completed | 7/15 [00:16<00:18,  2.33s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  53% Completed | 8/15 [00:18<00:16,  2.30s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  60% Completed | 9/15 [00:21<00:13,  2.31s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  67% Completed | 10/15 [00:23<00:10,  2.19s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  73% Completed | 11/15 [00:25<00:08,  2.16s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  80% Completed | 12/15 [00:27<00:06,  2.11s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  87% Completed | 13/15 [00:28<00:04,  2.02s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards:  93% Completed | 14/15 [00:31<00:02,  2.03s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:31<00:00,  1.53s/it]\n(EngineCore pid=90) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:31<00:00,  2.09s/it]\n(EngineCore pid=90) \n(EngineCore pid=90) 2026-09-04 08:08:11,666 - INFO - autotuner.py:829 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=90) 2026-09-04 08:08:15,439 - INFO - autotuner.py:852 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=90) 2026-09-04 08:08:15,488 - INFO - autotuner.py:2269 - flashinfer.jit: [Autotuner]: Saved 0 configs to /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/7ed8ab715858b7bd41c8a86c8b6ad08468b1478fbf7903def98e2be6bb8db126/autotune_configs.json (0 new, 0 from previous config)\n(EngineCore pid=90) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/22 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):   5%|\u258d         | 1/22 [00:00<00:08,  2.43it/s]\nCapturing CUDA graphs (decode, FULL):   9%|\u2589         | 2/22 [00:00<00:05,  3.60it/s]\nCapturing CUDA graphs (decode, FULL):  14%|\u2588\u258e        | 3/22 [00:00<00:05,  3.72it/s]\nCapturing CUDA graphs (decode, FULL):  18%|\u2588\u258a        | 4/22 [00:01<00:04,  4.43it/s]\nCapturing CUDA graphs (decode, FULL):  23%|\u2588\u2588\u258e       | 5/22 [00:01<00:04,  4.24it/s]\nCapturing CUDA graphs (decode, FULL):  27%|\u2588\u2588\u258b       | 6/22 [00:01<00:03,  4.82it/s]\nCapturing CUDA graphs (decode, FULL):  32%|\u2588\u2588\u2588\u258f      | 7/22 [00:01<00:03,  4.53it/s]\nCapturing CUDA graphs (decode, FULL):  36%|\u2588\u2588\u2588\u258b      | 8/22 [00:01<00:02,  4.82it/s]\nCapturing CUDA graphs (decode, FULL):  41%|\u2588\u2588\u2588\u2588      | 9/22 [00:03<00:08,  1.60it/s]\nCapturing CUDA graphs (decode, FULL):  45%|\u2588\u2588\u2588\u2588\u258c     | 10/22 [00:03<00:06,  1.99it/s]\nCapturing CUDA graphs (decode, FULL):  50%|\u2588\u2588\u2588\u2588\u2588     | 11/22 [00:04<00:06,  1.57it/s]\nCapturing CUDA graphs (decode, FULL):  55%|\u2588\u2588\u2588\u2588\u2588\u258d    | 12/22 [00:04<00:05,  1.99it/s]\nCapturing CUDA graphs (decode, FULL):  59%|\u2588\u2588\u2588\u2588\u2588\u2589    | 13/22 [00:05<00:04,  2.16it/s]\nCapturing CUDA graphs (decode, FULL):  64%|\u2588\u2588\u2588\u2588\u2588\u2588\u258e   | 14/22 [00:05<00:03,  2.59it/s]\nCapturing CUDA graphs (decode, FULL):  68%|\u2588\u2588\u2588\u2588\u2588\u2588\u258a   | 15/22 [00:09<00:10,  1.43s/it]\nCapturing CUDA graphs (decode, FULL):  73%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e  | 16/22 [00:09<00:06,  1.08s/it]\nCapturing CUDA graphs (decode, FULL):  77%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b  | 17/22 [00:09<00:04,  1.14it/s]\nCapturing CUDA graphs (decode, FULL):  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 18/22 [00:10<00:02,  1.52it/s]\nCapturing CUDA graphs (decode, FULL):  86%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258b | 19/22 [00:10<00:01,  1.84it/s]\nCapturing CUDA graphs (decode, FULL):  91%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 | 20/22 [00:10<00:00,  2.32it/s]\nCapturing CUDA graphs (decode, FULL):  95%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258c| 21/22 [00:14<00:01,  1.56s/it]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 22/22 [00:14<00:00,  1.14s/it]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 22/22 [00:14<00:00,  1.49it/s]\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/site-packages/vllm_lens/_activations_plugin.py\", line 708, in _patched_llm_generate\n    outputs = _original_llm_generate(self, prompts, sampling_params, **kwargs)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/entrypoints/llm.py\", line 468, in generate\n    return self._run_completion(\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/entrypoints/offline_utils.py\", line 349, in _run_completion\n    return self._run_engine(use_tqdm=use_tqdm, output_type=output_type)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/entrypoints/offline_utils.py\", line 595, in _run_engine\n    step_outputs = self.llm_engine.step()\n                   ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py\", line 304, in step\n    outputs = self.engine_core.get_output()\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core_client.py\", line 879, in get_output\n    raise self._format_exception(outputs) from None\nvllm.v1.engine.exceptions.EngineDeadError: EngineCore encountered an issue. See stack trace (above) for the root cause.\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/bench/bench_lora.py\", line 458, in <module>\n    main()\n  File \"/bench/bench_lora.py\", line 305, in main\n    run_condition(\"lora\", lora_a0)\n  File \"/bench/bench_lora.py\", line 260, in run_condition\n    gen(min(8, max_num_seqs), T, lora_req)  # warm-up (graphs, LoRA slot load)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/bench/bench_lora.py\", line 250, in gen\n    outs = llm.generate(prompts, params(B, T, greedy, logprobs), lora_request=lora_req, use_tqdm=False)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm_lens/_activations_plugin.py\", line 712, in _patched_llm_generate\n    self.collective_rpc(\n  File \"/usr/local/lib/python3.12/site-packages/vllm/entrypoints/llm.py\", line 593, in collective_rpc\n    return self.llm_engine.collective_rpc(method, timeout, args, kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py\", line 426, in collective_rpc\n    return self.engine_core.collective_rpc(method, timeout, args, kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core_client.py\", line 966, in collective_rpc\n    return self.call_utility(\"collective_rpc\", method, timeout, args, kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core_client.py\", line 897, in call_utility\n    self._send_input(EngineCoreRequestType.UTILITY, (0, call_id, method, args))\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core_client.py\", line 885, in _send_input\n    self.ensure_alive()\n  File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core_client.py\", line 703, in ensure_alive\n    raise EngineDeadError()\nvllm.v1.engine.exceptions.EngineDeadError: EngineCore encountered an issue. See stack trace (above) for the root cause.\n/usr/local/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown\n  warnings.warn('resource_tracker: There appear to be %d '\n",
+ "versions": {
+  "vllm": "0.27.1",
+  "torch": "2.13.0",
+  "transformers": "5.16.1",
+  "vllm-lens": "1.1.0.post5",
+  "flashinfer-python": "0.6.16.post3",
+  "triton": "3.7.1"
+ },
+ "result": {
+  "model": "Qwen/Qwen3.6-27B",
+  "engine": "graphs",
+  "stage": "lora_engine",
+  "versions": {
+   "vllm": "0.27.1",
+   "torch": "2.13.0+cu130",
+   "vllm_lens": "1.1.0.post5"
+  },
+  "gpu": "NVIDIA B200",
+  "engine_kwargs": {
+   "model": "Qwen/Qwen3.6-27B",
+   "tensor_parallel_size": 1,
+   "gpu_memory_utilization": 0.8,
+   "max_model_len": 144,
+   "enable_prefix_caching": false,
+   "max_num_seqs": 1024,
+   "max_num_batched_tokens": 106496,
+   "dtype": "bfloat16",
+   "seed": 0,
+   "attention_backend": "TRITON_ATTN",
+   "language_model_only": true,
+   "enable_lora": true,
+   "max_loras": 2,
+   "max_lora_rank": 64,
+   "compilation_config": {
+    "cudagraph_capture_sizes": [
+     1,
+     2,
+     4,
+     8,
+     16,
+     32,
+     64,
+     128,
+     256,
+     512,
+     1024
+    ]
+   }
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "max_num_seqs": 1024,
+   "enable_lora": true,
+   "num_layers": 64,
+   "model_runner": "v1"
+  },
+  "engine_up_s": 187.47861712899999,
+  "prompt_tokens": 96,
+  "max_tokens": 40,
+  "rank": 64,
+  "rel_norm": 0.005,
+  "sizes": [
+   512,
+   1024
+  ],
+  "throughput": [
+   {
+    "condition": "nolora",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 6.440628583999967,
+    "wall_1tok_s": 3.5827882650000333,
+    "decode_step_ms": 73.2779568974342,
+    "gen_tokens": 20480,
+    "tok_per_s": 3179.813854019952,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "nolora",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 6.482544614999995,
+    "wall_1tok_s": 3.163742749999983,
+    "decode_step_ms": 85.09748371794902,
+    "gen_tokens": 20480,
+    "tok_per_s": 3159.253227908562,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "nolora",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 12.307248493999964,
+    "wall_1tok_s": 6.190646309999977,
+    "decode_step_ms": 156.8359534358971,
+    "gen_tokens": 40960,
+    "tok_per_s": 3328.1200115500096,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "nolora",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 12.46947039600002,
+    "wall_1tok_s": 6.184479302,
+    "decode_step_ms": 161.1536177948723,
+    "gen_tokens": 40960,
+    "tok_per_s": 3284.8227470141173,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   }
+  ],
+  "publish": [],
+  "correctness": {
+   "fingerprint_params": 304
+  },
+  "drift": {},
+  "ipc_push": {},
+  "stats": {
+   "warmup_nolora": {
+    "steps_fast_idle": 0,
+    "steps_planned": 3,
+    "steps_idle": 0,
+    "steer_layer_steps": 2,
+    "vectorized_layer_steps": 2,
+    "rows_steered": 8,
+    "rows_replaced": 0,
+    "embed_apply_steps": 0,
+    "embed_errors": 0,
+    "unsupported_layer_output": 0,
+    "rows_skipped_generated": 1,
+    "capture_layer_steps": 1,
+    "capture_rows": 96,
+    "hook_capture_s": 0.0004046419999781392,
+    "readout_layer_steps": 0,
+    "readout_rows": 0,
+    "hook_readout_s": 0.0,
+    "early_exits": 0,
+    "retrieval_s": 0.001379381999981888,
+    "errors": 0
+   }
+  },
+  "layout": {
+   "n_vllm_params": 304,
+   "n_hf_modules": 496,
+   "targeted_params": 24350556160,
+   "targeted_bytes_bf16": 48701112320,
+   "lora_params": 429162496,
+   "kinds": [
+    "merged_col",
+    "qkv",
+    "row"
+   ],
+   "example": {
+    "vllm_name": "language_model.model.layers.0.linear_attn.in_proj_qkvz",
+    "kind": "merged_col",
+    "shape": [
+     16384,
+     5120
+    ],
+    "dtype": "torch.bfloat16",
+    "subs": [
+     {
+      "hf_name": "language_model.model.layers.0.linear_attn.in_proj_qkv",
+      "out": 2048,
+      "in": 5120,
+      "rows": [
+       0,
+       2048
+      ],
+      "frob": 46.87070846557617
+     },
+     {
+      "hf_name": "language_model.model.layers.0.linear_attn.in_proj_z",
+      "out": 2048,
+      "in": 5120,
+      "rows": [
+       2048,
+       4096
+      ],
+      "frob": 51.981842041015625
+     }
+    ]
+   },
+   "synth_s": 84.27668126199998,
+   "scaling": 2.0
+  }
+ }
+}

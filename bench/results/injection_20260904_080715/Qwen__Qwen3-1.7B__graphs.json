@@ -1,0 +1,757 @@
+{
+ "returncode": 0,
+ "elapsed_s": 36.09482479095459,
+ "log_tail": "yConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])\nWARNING 09-04 08:10:18 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\nINFO 09-04 08:10:19 [hf.py:551] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.\n[inj 08:10:19] engine up 19s vllm=0.28.0 vllm-lens=1.1.0.post5 {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'n_capture_sizes': 83, 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'num_layers': 28}\n(EngineCore pid=309) WARNING 09-04 08:10:20 [jit_monitor.py:141] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.\n[inj 08:10:20] D=2048 |embed[M]|=1.380 |h_L[M]|=23.085\n[inj 08:10:20]   [PASS] probe: embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)  rel=0.00e+00\n[inj 08:10:20]   [PASS] probe: clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)  rel=3.42e-03 |h|_vllm=23.085 |h|_hf=23.163\n[inj 08:10:20]   [PASS] probe: capture pass: no hook errors  {\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 3, \"capture_rows\": 288, \"hook_capture_s\": 0.002330295000007254, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.0033560500000078264, \"errors\": 0}\n[inj 08:10:21] clean-vs-clean run-to-run noise floor at B=64: max|\u0394|=0.00e+00\n[inj 08:10:21]   [PASS] karvonen_add: B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9997,1.0002] over 64 requests\n[inj 08:10:21]   [PASS] karvonen_add: B=64 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)  max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)\n[inj 08:10:21]   [PASS] karvonen_add: B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017372300000033647, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.11903054900000143, \"errors\": 0}\n[inj 08:10:21]   [PASS] karvonen_add: B=64 coeff=1.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)  cos=0.99999 ratio\u2208[0.9984,1.0003] (n=4)\n[inj 08:10:22] clean-vs-clean run-to-run noise floor at B=512: max|\u0394|=6.25e-02\n[inj 08:10:22]   [PASS] karvonen_add: B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)  min cos=0.99999 ratio\u2208[0.9997,1.0001] over 17 requests\n[inj 08:10:22]   [PASS] karvonen_add: B=512 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)  max|\u0394|=0.00e+00 (clean-vs-clean noise floor 6.25e-02)\n[inj 08:10:22]   [PASS] karvonen_add: B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.005785484000028873, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.012897842999990417, \"errors\": 0}\n[inj 08:10:23]   [PASS] karvonen_add_generation: coeff=1.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))  steered max|d|=0.1537, clean-prompt noise=0.1910, tol=0.2965\n[inj 08:10:23]   [PASS] karvonen_add_generation: coeff=1.0: greedy 8-token steered continuation == HF-hooked reference (informational)  equal\n[inj 08:10:23]   [PASS] layer_replace: B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997\n[inj 08:10:23]   [PASS] layer_replace: B=64: other rows (within the clean-vs-clean noise floor) and the embedding stream untouched  max|\u0394| rows=0.00e+00 embed=0.00e+00\n[inj 08:10:23]   [PASS] layer_replace: B=64: vectorised replace path, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0016455319999977291, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.17930022100000542, \"errors\": 0}\n[inj 08:10:23]   [PASS] embed_replace: B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.63e-03 min cos=0.999997 over 64 requests\n[inj 08:10:23]   [PASS] embed_replace: B=64 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 08:10:23]   [PASS] embed_replace: B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00\n[inj 08:10:23]   [PASS] embed_replace: B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0015645360000178243, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.10097879400001375, \"errors\": 0}\n[inj 08:10:24]   [PASS] embed_replace: B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997 over 17 requests\n[inj 08:10:24]   [PASS] embed_replace: B=512 norm_match=False: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 08:10:24]   [PASS] embed_replace: B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00\n[inj 08:10:24]   [PASS] embed_replace: B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.011464927999981, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.016354720999999017, \"errors\": 0}\n[inj 08:10:24]   [PASS] embed_replace: B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.63e-03 min cos=0.999997 over 64 requests\n[inj 08:10:24]   [PASS] embed_replace: B=64 norm_match=True: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 08:10:24]   [PASS] embed_replace: B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00\n[inj 08:10:24]   [PASS] embed_replace: B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017705860000205575, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.08336542499998245, \"errors\": 0}\n[inj 08:10:25]   [PASS] embed_replace: B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)  max rel=7.75e-03 min cos=0.999997 over 17 requests\n[inj 08:10:25]   [PASS] embed_replace: B=512 norm_match=True: every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 08:10:25]   [PASS] embed_replace: B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00\n[inj 08:10:25]   [PASS] embed_replace: B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.011093385000009448, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.010424441999987266, \"errors\": 0}\n[inj 08:10:25]   [PASS] mixed: B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)  max rel=5.32e-03 min cos=0.999997 over 32 requests\n[inj 08:10:25]   [PASS] mixed: B=64 even requests (embed replace): every other embedding row untouched  max|\u0394|=0.00e+00\n[inj 08:10:25]   [PASS] mixed: B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)  pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00\n[inj 08:10:25]   [PASS] mixed: B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched  min cos=0.99999 ratio\u2208[0.9997,1.0002] other=0.0e+00 embed=0.0e+00\n[inj 08:10:25]   [PASS] mixed: B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors  {\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017994579999935922, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.08080506499999274, \"errors\": 0}\n[inj 08:10:25] done: 36/36 checks pass\nINFO 09-04 08:10:25 [utils.py:615] [shutdown] Process manager: send sigterm to process EngineCore\n(EngineCore pid=309) INFO 09-04 08:10:25 [core.py:1329] [shutdown] EngineCore: trigger received signal=SIGTERM\n(EngineCore pid=309) INFO 09-04 08:10:25 [core.py:1465] [shutdown] EngineCore: start mode=abort timeout=0s\n(EngineCore pid=309) INFO 09-04 08:10:25 [core.py:1496] [shutdown] EngineCore: request processing complete; starting resource teardown\n(EngineCore pid=309) INFO 09-04 08:10:25 [core.py:1342] [shutdown] EngineCore: exiting busy loop\n\n--- stderr ---\n(EngineCore pid=309) \nLoading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]\n(EngineCore pid=309) \nLoading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.26it/s]\n(EngineCore pid=309) \nLoading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  2.51it/s]\n(EngineCore pid=309) \n(EngineCore pid=309) 2026-09-04 08:10:12,745 - INFO - autotuner.py:829 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=309) 2026-09-04 08:10:12,798 - INFO - autotuner.py:852 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=309) 2026-09-04 08:10:12,817 - INFO - autotuner.py:2269 - flashinfer.jit: [Autotuner]: Saved 0 configs to /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/d9c8bc8dbfa480c7d588d2d6027b562fe2b6cad85058e21f929e7a9d49dffeee/autotune_configs.json (0 new, 0 from previous config)\n(EngineCore pid=309) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/83 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):   5%|\u258d         | 4/83 [00:00<00:02, 31.85it/s]\nCapturing CUDA graphs (decode, FULL):  10%|\u2589         | 8/83 [00:00<00:02, 33.73it/s]\nCapturing CUDA graphs (decode, FULL):  14%|\u2588\u258d        | 12/83 [00:00<00:02, 31.52it/s]\nCapturing CUDA graphs (decode, FULL):  19%|\u2588\u2589        | 16/83 [00:00<00:02, 29.07it/s]\nCapturing CUDA graphs (decode, FULL):  23%|\u2588\u2588\u258e       | 19/83 [00:00<00:02, 28.73it/s]\nCapturing CUDA graphs (decode, FULL):  27%|\u2588\u2588\u258b       | 22/83 [00:00<00:02, 26.00it/s]\nCapturing CUDA graphs (decode, FULL):  30%|\u2588\u2588\u2588       | 25/83 [00:00<00:02, 25.53it/s]\nCapturing CUDA graphs (decode, FULL):  34%|\u2588\u2588\u2588\u258e      | 28/83 [00:01<00:02, 24.58it/s]\nCapturing CUDA graphs (decode, FULL):  39%|\u2588\u2588\u2588\u258a      | 32/83 [00:01<00:01, 26.26it/s]\nCapturing CUDA graphs (decode, FULL):  43%|\u2588\u2588\u2588\u2588\u258e     | 36/83 [00:01<00:01, 27.69it/s]\nCapturing CUDA graphs (decode, FULL):  47%|\u2588\u2588\u2588\u2588\u258b     | 39/83 [00:01<00:01, 26.87it/s]\nCapturing CUDA graphs (decode, FULL):  52%|\u2588\u2588\u2588\u2588\u2588\u258f    | 43/83 [00:01<00:01, 28.34it/s]\nCapturing CUDA graphs (decode, FULL):  55%|\u2588\u2588\u2588\u2588\u2588\u258c    | 46/83 [00:01<00:01, 27.95it/s]\nCapturing CUDA graphs (decode, FULL):  60%|\u2588\u2588\u2588\u2588\u2588\u2588    | 50/83 [00:01<00:01, 29.77it/s]\nCapturing CUDA graphs (decode, FULL):  65%|\u2588\u2588\u2588\u2588\u2588\u2588\u258c   | 54/83 [00:01<00:00, 30.70it/s]\nCapturing CUDA graphs (decode, FULL):  70%|\u2588\u2588\u2588\u2588\u2588\u2588\u2589   | 58/83 [00:02<00:00, 29.87it/s]\nCapturing CUDA graphs (decode, FULL):  75%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258d  | 62/83 [00:02<00:00, 31.08it/s]\nCapturing CUDA graphs (decode, FULL):  80%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2589  | 66/83 [00:02<00:00, 31.77it/s]\nCapturing CUDA graphs (decode, FULL):  84%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258d | 70/83 [00:02<00:00, 31.70it/s]\nCapturing CUDA graphs (decode, FULL):  89%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2589 | 74/83 [00:02<00:00, 31.40it/s]\nCapturing CUDA graphs (decode, FULL):  94%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258d| 78/83 [00:02<00:00, 26.97it/s]\nCapturing CUDA graphs (decode, FULL):  98%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258a| 81/83 [00:03<00:00,  8.37it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 83/83 [00:04<00:00, 19.03it/s]\n",
+ "versions": {
+  "vllm": "0.28.0",
+  "torch": "2.13.0",
+  "transformers": "5.16.1",
+  "vllm-lens": "1.1.0.post5",
+  "flashinfer-python": "0.6.16.post3",
+  "triton": "3.7.1"
+ },
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "engine": "graphs",
+  "chunked": false,
+  "gpu": "NVIDIA B200",
+  "versions": {
+   "vllm": "0.28.0",
+   "torch": "2.13.0+cu130",
+   "vllm_lens": "1.1.0.post5"
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "n_capture_sizes": 83,
+   "max_num_batched_tokens": 106496,
+   "max_num_seqs": 1024,
+   "num_layers": 28
+  },
+  "engine_up_s": 19.189107853999985,
+  "prompt_tokens": 96,
+  "marker": 10,
+  "layer": 1,
+  "hf_ref": true,
+  "cases": {
+   "karvonen_add": [
+    {
+     "batch": 64,
+     "coeff": 1.0,
+     "n_checked": 64,
+     "min_cos_delta_vs_v": 0.999988317489624,
+     "max_abs_ratio_minus_1": 0.00033205747604370117,
+     "ratios": [
+      0.9998849034309387,
+      1.0001612901687622,
+      0.9999141097068787,
+      1.0001659393310547,
+      0.9999188184738159,
+      1.0000269412994385,
+      0.9998236298561096,
+      0.9996679425239563
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 64,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 18432,
+      "hook_capture_s": 0.0017372300000033647,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.11903054900000143,
+      "errors": 0
+     },
+     "hf_cos": [
+      0.9999883770942688,
+      0.9999904632568359,
+      0.9999915957450867,
+      0.9999908208847046
+     ],
+     "hf_ratio": [
+      0.9983606934547424,
+      1.0002572536468506,
+      0.9999635219573975,
+      1.000169038772583
+     ]
+    },
+    {
+     "batch": 512,
+     "coeff": 1.0,
+     "n_checked": 17,
+     "min_cos_delta_vs_v": 0.9999896883964539,
+     "max_abs_ratio_minus_1": 0.00027871131896972656,
+     "ratios": [
+      0.9998849034309387,
+      1.0000540018081665,
+      1.0000842809677124,
+      0.9998084902763367,
+      0.9999114871025085,
+      1.0000104904174805,
+      0.9999757409095764,
+      0.9997212886810303
+     ],
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 512,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 4896,
+      "hook_capture_s": 0.005785484000028873,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.012897842999990417,
+      "errors": 0
+     }
+    }
+   ],
+   "karvonen_add_generation": [
+    {
+     "coeff": 1.0,
+     "clean_logprob_noise_vs_hf": 0.19097280502319336,
+     "steered_logprob_maxdiff_vs_hf": 0.1536555290222168,
+     "tol": 0.29645920753479005,
+     "greedy8_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_vllm": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy8_clean_hf": [
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ],
+      [
+       374,
+       264,
+       1985,
+       315,
+       279,
+       6500,
+       594,
+       13885
+      ]
+     ],
+     "greedy_all_equal": true,
+     "n_greedy_equal": 4,
+     "hf_greedy_error": null
+    }
+   ],
+   "layer_replace": [
+    {
+     "batch": 64,
+     "scale": 23.0849552154541,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999970197677612,
+     "max_other_row_abs_delta": 0.0,
+     "max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 2,
+      "vectorized_layer_steps": 2,
+      "rows_steered": 64,
+      "rows_replaced": 0,
+      "embed_apply_steps": 0,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 18432,
+      "hook_capture_s": 0.0016455319999977291,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.17930022100000542,
+      "errors": 0
+     }
+    }
+   ],
+   "embed_replace": [
+    {
+     "n_checked": 64,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.007633587786259542,
+     "min_cos_marker_row": 0.999997079372406,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.890625,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.40625,
+     "batch": 64,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 64,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 18432,
+      "hook_capture_s": 0.0015645360000178243,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.10097879400001375,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 17,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999971985816956,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.8671875,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.484375,
+     "batch": 512,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 512,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 4896,
+      "hook_capture_s": 0.011464927999981,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.016354720999999017,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 64,
+     "scale": 1.0,
+     "norm_match": true,
+     "max_rel_err_marker_row": 0.007633587786259542,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.890625,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.40625,
+     "batch": 64,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 64,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 18432,
+      "hook_capture_s": 0.0017705860000205575,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.08336542499998245,
+      "errors": 0
+     }
+    },
+    {
+     "n_checked": 17,
+     "scale": 1.0,
+     "norm_match": true,
+     "max_rel_err_marker_row": 0.007751937984496124,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.8671875,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.4921875,
+     "batch": 512,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 0,
+      "vectorized_layer_steps": 0,
+      "rows_steered": 0,
+      "rows_replaced": 512,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 4896,
+      "hook_capture_s": 0.011093385000009448,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.010424441999987266,
+      "errors": 0
+     }
+    }
+   ],
+   "mixed": [
+    {
+     "n_checked": 32,
+     "scale": 1.3797909021377563,
+     "norm_match": false,
+     "max_rel_err_marker_row": 0.005319148936170213,
+     "min_cos_marker_row": 0.9999971389770508,
+     "max_other_embed_row_abs_delta": 0.0,
+     "max_layer0_pre_marker_abs_delta": 0.0,
+     "min_layer0_marker_abs_delta": 1.890625,
+     "max_layerL_pre_marker_abs_delta": 0.0,
+     "min_layerL_marker_abs_delta": 2.40625,
+     "batch": 64,
+     "coeff": 1.0,
+     "add_min_cos": 0.999988317489624,
+     "add_max_abs_ratio_minus_1": 0.00033205747604370117,
+     "add_max_other_row_abs_delta": 0.0,
+     "add_max_embed_stream_abs_delta": 0.0,
+     "stats": {
+      "steps_fast_idle": 0,
+      "steps_planned": 2,
+      "steps_idle": 0,
+      "steer_layer_steps": 1,
+      "vectorized_layer_steps": 1,
+      "rows_steered": 32,
+      "rows_replaced": 32,
+      "embed_apply_steps": 2,
+      "embed_errors": 0,
+      "unsupported_layer_output": 0,
+      "rows_skipped_generated": 0,
+      "capture_layer_steps": 6,
+      "capture_rows": 18432,
+      "hook_capture_s": 0.0017994579999935922,
+      "readout_layer_steps": 0,
+      "readout_rows": 0,
+      "hook_readout_s": 0.0,
+      "early_exits": 0,
+      "retrieval_s": 0.08080506499999274,
+      "errors": 0
+     }
+    }
+   ]
+  },
+  "checks": [
+   {
+    "case": "probe",
+    "check": "embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)",
+    "ok": true,
+    "detail": "rel=0.00e+00"
+   },
+   {
+    "case": "probe",
+    "check": "clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)",
+    "ok": true,
+    "detail": "rel=3.42e-03 |h|_vllm=23.085 |h|_hf=23.163"
+   },
+   {
+    "case": "probe",
+    "check": "capture pass: no hook errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 3, \"capture_rows\": 288, \"hook_capture_s\": 0.002330295000007254, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.0033560500000078264, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0002] over 64 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017372300000033647, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.11903054900000143, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=64 coeff=1.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)",
+    "ok": true,
+    "detail": "cos=0.99999 ratio\u2208[0.9984,1.0003] (n=4)"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0001] over 17 requests"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 6.25e-02)"
+   },
+   {
+    "case": "karvonen_add",
+    "check": "B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.005785484000028873, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.012897842999990417, \"errors\": 0}"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=1.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))",
+    "ok": true,
+    "detail": "steered max|d|=0.1537, clean-prompt noise=0.1910, tol=0.2965"
+   },
+   {
+    "case": "karvonen_add_generation",
+    "check": "coeff=1.0: greedy 8-token steered continuation == HF-hooked reference (informational)",
+    "ok": true,
+    "detail": "equal"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: other rows (within the clean-vs-clean noise floor) and the embedding stream untouched",
+    "ok": true,
+    "detail": "max|\u0394| rows=0.00e+00 embed=0.00e+00"
+   },
+   {
+    "case": "layer_replace",
+    "check": "B=64: vectorised replace path, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0016455319999977291, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.17930022100000542, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0015645360000178243, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.10097879400001375, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.011464927999981, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.016354720999999017, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017705860000205575, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.08336542499998245, \"errors\": 0}"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00"
+   },
+   {
+    "case": "embed_replace",
+    "check": "B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 4896, \"hook_capture_s\": 0.011093385000009448, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.010424441999987266, \"errors\": 0}"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+    "ok": true,
+    "detail": "max rel=5.32e-03 min cos=0.999997 over 32 requests"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): every other embedding row untouched",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+    "ok": true,
+    "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched",
+    "ok": true,
+    "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0002] other=0.0e+00 embed=0.0e+00"
+   },
+   {
+    "case": "mixed",
+    "check": "B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors",
+    "ok": true,
+    "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0017994579999935922, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"retrieval_s\": 0.08080506499999274, \"errors\": 0}"
+   }
+  ],
+  "hidden_dim": 2048,
+  "embed_marker_norm": 1.3797909021377563,
+  "h_full_marker_norm_layer_L": 23.0849552154541,
+  "clean_vs_clean_noise": {
+   "64": 0.0,
+   "512": 0.0625
+  },
+  "all_pass": true
+ }
+}

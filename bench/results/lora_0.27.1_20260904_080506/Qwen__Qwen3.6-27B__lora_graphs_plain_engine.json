@@ -1,0 +1,507 @@
+{
+ "returncode": 0,
+ "elapsed_s": 303.5968301296234,
+ "log_tail": "g_captured_states_count', '_early_exit_supported', '_flush_host_blocks', '_merger', '_pop_activations', '_pop_readouts', '_prepare_vectors', '_refresh_aggregates', '_store', '_store_reads', '_wrap_model_forward', 'clear_captured_states', 'clear_readout_data', 'clear_readout_data_many', 'clear_readouts', 'clear_steering_data', 'clear_steering_data_many', 'get_captured_states', 'get_captured_states_many', 'get_readouts', 'get_readouts_many', 'install_hooks', 'lens_capabilities', 'lens_load_weights_ipc', 'lens_lora_compare_exact', 'lens_lora_layout', 'lens_lora_status', 'lens_merge_lora', 'lens_release_lora_base', 'lens_unmerge_lora', 'lens_weight_fingerprint', 'set_fast_capture', 'set_readout_block', 'set_readout_data', 'set_readout_data_many', 'set_steering_block', 'set_steering_data', 'set_steering_data_many', 'set_vectorized', 'steering_stats']\n(EngineCore pid=348) INFO 09-04 08:11:32 [registry.py:134] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.\n(EngineCore pid=348) INFO 09-04 08:11:32 [parallel_state.py:1640] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.15.160:45201 backend=nccl\n(EngineCore pid=348) INFO 09-04 08:11:32 [parallel_state.py:1977] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=348) INFO 09-04 08:11:34 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.\n(EngineCore pid=348) INFO 09-04 08:11:34 [gpu_model_runner.py:5308] Starting to load model /__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9...\n(EngineCore pid=348) INFO 09-04 08:11:35 [cuda.py:541] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention\n(EngineCore pid=348) INFO 09-04 08:11:35 [mm_encoder_attention.py:375] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.\n(EngineCore pid=348) INFO 09-04 08:11:35 [qwen_gdn_linear_attn.py:150] Using FlashInfer GDN prefill kernel (requested=auto, head_k_dim=128).\n(EngineCore pid=348) INFO 09-04 08:11:35 [cuda.py:422] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=348) INFO 09-04 08:11:35 [weight_utils.py:867] Filesystem type for checkpoints: 9P. Checkpoint size: 51.75 GiB. Available RAM: 1015.34 GiB.\n(EngineCore pid=348) INFO 09-04 08:11:35 [weight_utils.py:890] Auto-prefetch is disabled because the filesystem (9P) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.\n(EngineCore pid=348) INFO 09-04 08:11:47 [default_loader.py:430] Loading weights took 11.89 seconds\n(EngineCore pid=348) INFO 09-04 08:11:48 [gpu_model_runner.py:5405] Model loading took 50.22 GiB memory and 12.312277 seconds\n(EngineCore pid=348) INFO 09-04 08:11:48 [interface.py:911] Setting attention block size to 784 tokens to ensure that attention page size is >= mamba page size.\n(EngineCore pid=348) INFO 09-04 08:11:48 [interface.py:935] Padding mamba page size by 0.13% to ensure that mamba page size and attention page size are exactly equal.\n(EngineCore pid=348) INFO 09-04 08:12:00 [gpu_model_runner.py:6681] Profiling CUDA graph memory: FULL=11 (largest=1024)\n(EngineCore pid=348) INFO 09-04 08:12:02 [gpu_model_runner.py:6806] Estimated CUDA graph memory: 0.44 GiB total\n(EngineCore pid=348) INFO 09-04 08:12:02 [gpu_worker.py:563] Available KV cache memory: 73.41 GiB\n(EngineCore pid=348) INFO 09-04 08:12:02 [gpu_worker.py:578] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.8000 is equivalent to --gpu-memory-utilization=0.7975 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.8025. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.\n(EngineCore pid=348) INFO 09-04 08:12:02 [kv_cache_utils.py:2235] GPU KV cache size: 55,224 tokens\n(EngineCore pid=348) INFO 09-04 08:12:02 [kv_cache_utils.py:2236] Maximum concurrency for 144 tokens per request: 383.50x\n(EngineCore pid=348) INFO 09-04 08:12:02 [qwen_triton_warmup.py:270] Warming up Qwen Triton kernels for model_type=qwen3_5_text.\n(EngineCore pid=348) INFO 09-04 08:12:02 [kernel_warmup.py:256] Using FlashInfer autotune cache file: /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/1356e980ac087359e7e1cc8af7c2c1ebcc3e9b8d043acebe5b477f7b1842626b/autotune_configs.json\n(EngineCore pid=348) INFO 09-04 08:12:06 [gpu_model_runner.py:6867] Rank 0: Torch profiler disabled for CUDA graph capture\n(EngineCore pid=348) INFO 09-04 08:12:09 [gpu_model_runner.py:6913] Graph capturing finished in 3 secs, took 0.33 GiB\n(EngineCore pid=348) INFO 09-04 08:12:09 [gpu_worker.py:726] CUDA graph pool memory: 0.33 GiB (actual), 0.44 GiB (estimated), difference: 0.11 GiB (33.3%).\n(EngineCore pid=348) INFO 09-04 08:12:09 [gpu_worker.py:789] Free memory on device (177.63/178.35 GiB) on startup. Desired GPU memory utilization is (0.8, 142.68 GiB). Actual usage is 53.53 GiB for consumed memory (weights + non-torch), 15.74 GiB for peak activation, and 0.33 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=78318662861` (72.94 GiB) to fit into requested memory, or `--kv-cache-memory=115847800832` (107.89 GiB) to fully utilize gpu memory. Current kv cache memory in use is 73.41 GiB.\n(EngineCore pid=348) INFO 09-04 08:12:10 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(EngineCore pid=348) INFO 09-04 08:12:10 [core.py:355] init engine (profile, create kv cache, warmup model) took 22.68 s\n(EngineCore pid=348) WARNING 09-04 08:12:10 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=348) WARNING 09-04 08:12:10 [vllm.py:1247] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\n(EngineCore pid=348) INFO 09-04 08:12:10 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])\n(EngineCore pid=348) INFO 09-04 08:12:10 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant\nWARNING 09-04 08:12:10 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\nINFO 09-04 08:12:11 [hf.py:540] Detected the chat template content format to be 'openai'. You can set `--chat-template-content-format` to override this.\n[lora 08:12:11] engine up in 58s | {'enforce_eager': False, 'compilation_mode': 'NONE', 'cudagraph_mode': 'FULL_DECODE_ONLY', 'max_num_seqs': 1024, 'enable_lora': False, 'num_layers': 64, 'model_runner': 'v1'}\n[lora 08:12:11] layout: 304 vLLM params / 496 HF modules, 24.35B targeted params, 429M LoRA params\n[lora 08:13:33] adapters a0/a1 synthesised + saved in 81.8s (scaling 2.000)\n(EngineCore pid=348) WARNING 09-04 08:13:33 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.\n[lora 08:13:33] |h_marker| at layer 1 = 13.19; hidden 5120\n[lora 08:13:44] plain    B=  512 rep0:   6.33s (    3237 tok/s) | prefill+1tok  3.37s | decode step   75.9 ms\n[lora 08:13:54] plain    B=  512 rep1:   6.37s (    3215 tok/s) | prefill+1tok  3.11s | decode step   83.6 ms\n[lora 08:14:12] plain    B= 1024 rep0:  12.29s (    3334 tok/s) | prefill+1tok  6.57s | decode step  146.5 ms\n[lora 08:14:31] plain    B= 1024 rep1:  12.28s (    3335 tok/s) | prefill+1tok  6.02s | decode step  160.5 ms\n(EngineCore pid=348) INFO 09-04 08:14:51 [block_pool.py:792] Successfully reset prefix cache\n[lora 08:14:51] merged a0 (cpu mode) in 18.10s: 304 params, base copy 48.7 GB on cpu\n[lora 08:15:01] merged   B=  512 rep0:   6.40s (    3198 tok/s) | prefill+1tok  3.02s | decode step   86.8 ms\n[lora 08:15:10] merged   B=  512 rep1:   6.40s (    3201 tok/s) | prefill+1tok  3.08s | decode step   85.1 ms\n[lora 08:15:29] merged   B= 1024 rep0:  12.33s (    3323 tok/s) | prefill+1tok  6.59s | decode step  147.0 ms\n[lora 08:15:47] merged   B= 1024 rep1:  12.19s (    3360 tok/s) | prefill+1tok  6.07s | decode step  157.0 ms\n(EngineCore pid=348) INFO 09-04 08:15:49 [block_pool.py:792] Successfully reset prefix cache\n[lora 08:15:49] unmerge (copy) in 0.88s -> base restored exactly: True\n[lora 08:15:50] correctness after_unmerge_vs_before: argmax 16/16, token agreement 1.000, max|dlogprob| 0.0000\n(EngineCore pid=348) INFO 09-04 08:15:51 [block_pool.py:792] Successfully reset prefix cache\n[lora 08:15:51] publish a0 mode=cpu from dir: 1.373s (resolve 0.002 snapshot 0.000 apply 1.371)\n(EngineCore pid=348) INFO 09-04 08:15:53 [block_pool.py:792] Successfully reset prefix cache\n[lora 08:15:53] publish a1 mode=cpu from dir: 1.367s (resolve 0.002 snapshot 0.000 apply 1.365)\n(EngineCore pid=348) INFO 09-04 08:15:54 [block_pool.py:792] Successfully reset prefix cache\n[lora 08:15:54] publish a0 mode=cpu from dir: 1.361s (resolve 0.002 snapshot 0.000 apply 1.359)\n[lora 08:15:58] publish a1 mode=cpu pickled tensors (859 MB): rpc 3.357s (apply 1.326)\n[lora 08:15:59] unmerge (copy, release) after cpu mode: base exact True (max rel sumsq diff 0.00e+00)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584] Invocation of collective_rpc method failed\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584] Traceback (most recent call last):\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1574, in _invoke_utility_method\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     result = get_result()\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]              ^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1529, in <lambda>\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     and method(*self._convert_msgspec_args(method, args))\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 960, in collective_rpc\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return self.model_executor.collective_rpc(method, timeout, args, kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py\", line 92, in collective_rpc\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     result = run_method(self.driver_worker, method, args, kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/serial_utils.py\", line 510, in run_method\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return func(*args, **kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm_lens/_worker_ext.py\", line 2192, in lens_load_weights_ipc\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     loaded = self.model_runner.model.load_weights(iter(rebuilt))\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_5.py\", line 571, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return loader.load_weights(weights, mapper=self.hf_to_vllm_mapper)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/reload/torchao_decorator.py\", line 50, in patched_model_load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return original_load_weights(self, weights, *args, **kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 424, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     autoloaded_weights = set(self._load_module(\"\", self.module, weights))\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 358, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from self._load_module(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 331, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     loaded_params = module_load_weights(weights)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_5.py\", line 419, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return loader.load_weights(weights)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/reload/torchao_decorator.py\", line 50, in patched_model_load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return original_load_weights(self, weights, *args, **kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 424, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     autoloaded_weights = set(self._load_module(\"\", self.module, weights))\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 358, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from self._load_module(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 331, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     loaded_params = module_load_weights(weights)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_5.py\", line 283, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return loader.load_weights(weights, mapper=self.hf_to_vllm_mapper)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/model_loader/reload/torchao_decorator.py\", line 50, in patched_model_load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     return original_load_weights(self, weights, *args, **kwargs)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 424, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     autoloaded_weights = set(self._load_module(\"\", self.module, weights))\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 358, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from self._load_module(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 358, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from self._load_module(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 358, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from self._load_module(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   [Previous line repeated 1 more time]\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/models/utils.py\", line 337, in _load_module\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     yield from map(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/linear.py\", line 1011, in load_weights\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     param.weight_loader(param, loaded_weight, shard_id)\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/linear.py\", line 971, in weight_loader_v2\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     self._load_fused_module_from_checkpoint(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]   File \"/usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/linear.py\", line 926, in _load_fused_module_from_checkpoint\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]     loaded_weight_shard = loaded_weight.narrow(\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584]                           ^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=348) ERROR 09-04 08:15:59 [core.py:1584] RuntimeError: start (2048) + length (2048) exceeds dimension size (2048).\n[lora 08:15:59] option (b) IPC push failed: Exception('Call to collective_rpc method failed: start (2048) + length (2048) exceeds dimension size (2048).')\n[lora 08:15:59] done\nINFO 09-04 08:15:59 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore\n(EngineCore pid=348) INFO 09-04 08:15:59 [core.py:1332] [shutdown] EngineCore: trigger received signal=SIGTERM\n(EngineCore pid=348) INFO 09-04 08:15:59 [core.py:1468] [shutdown] EngineCore: start mode=abort timeout=0s\n(EngineCore pid=348) INFO 09-04 08:15:59 [core.py:1499] [shutdown] EngineCore: request processing complete; starting resource teardown\n(EngineCore pid=348) INFO 09-04 08:15:59 [core.py:1345] [shutdown] EngineCore: exiting busy loop\n\n--- stderr ---\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:   0% Completed | 0/15 [00:00<?, ?it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:   7% Completed | 1/15 [00:00<00:13,  1.00it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  13% Completed | 2/15 [00:02<00:14,  1.10s/it]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  20% Completed | 3/15 [00:02<00:10,  1.10it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  27% Completed | 4/15 [00:03<00:09,  1.14it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  33% Completed | 5/15 [00:04<00:08,  1.12it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  40% Completed | 6/15 [00:05<00:07,  1.14it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  47% Completed | 7/15 [00:06<00:06,  1.27it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  53% Completed | 8/15 [00:06<00:05,  1.22it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  60% Completed | 9/15 [00:07<00:04,  1.25it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  67% Completed | 10/15 [00:08<00:03,  1.29it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  73% Completed | 11/15 [00:09<00:03,  1.26it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  80% Completed | 12/15 [00:10<00:02,  1.27it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  87% Completed | 13/15 [00:10<00:01,  1.33it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards:  93% Completed | 14/15 [00:11<00:00,  1.22it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:11<00:00,  1.58it/s]\n(EngineCore pid=348) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:11<00:00,  1.27it/s]\n(EngineCore pid=348) \n(EngineCore pid=348) 2026-09-04 08:12:02,704 - INFO - autotuner.py:829 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=348) 2026-09-04 08:12:06,381 - INFO - autotuner.py:852 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=348) 2026-09-04 08:12:06,411 - INFO - autotuner.py:2269 - flashinfer.jit: [Autotuner]: Saved 0 configs to /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/1356e980ac087359e7e1cc8af7c2c1ebcc3e9b8d043acebe5b477f7b1842626b/autotune_configs.json (0 new, 0 from previous config)\n(EngineCore pid=348) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/11 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):   9%|\u2589         | 1/11 [00:00<00:01,  6.45it/s]\nCapturing CUDA graphs (decode, FULL):  18%|\u2588\u258a        | 2/11 [00:00<00:01,  7.44it/s]\nCapturing CUDA graphs (decode, FULL):  27%|\u2588\u2588\u258b       | 3/11 [00:00<00:01,  7.44it/s]\nCapturing CUDA graphs (decode, FULL):  36%|\u2588\u2588\u2588\u258b      | 4/11 [00:00<00:00,  8.06it/s]\nCapturing CUDA graphs (decode, FULL):  45%|\u2588\u2588\u2588\u2588\u258c     | 5/11 [00:00<00:00,  7.77it/s]\nCapturing CUDA graphs (decode, FULL):  55%|\u2588\u2588\u2588\u2588\u2588\u258d    | 6/11 [00:00<00:00,  7.22it/s]\nCapturing CUDA graphs (decode, FULL):  64%|\u2588\u2588\u2588\u2588\u2588\u2588\u258e   | 7/11 [00:01<00:00,  6.19it/s]\nCapturing CUDA graphs (decode, FULL):  73%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e  | 8/11 [00:01<00:00,  6.44it/s]\nCapturing CUDA graphs (decode, FULL):  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 9/11 [00:01<00:00,  6.05it/s]\nCapturing CUDA graphs (decode, FULL):  91%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 | 10/11 [00:01<00:00,  6.33it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  6.14it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  6.60it/s]\n",
+ "versions": {
+  "vllm": "0.27.1",
+  "torch": "2.13.0",
+  "transformers": "5.16.1",
+  "vllm-lens": "1.1.0.post5",
+  "flashinfer-python": "0.6.16.post3",
+  "triton": "3.7.1"
+ },
+ "result": {
+  "model": "Qwen/Qwen3.6-27B",
+  "engine": "graphs",
+  "stage": "plain_engine",
+  "versions": {
+   "vllm": "0.27.1",
+   "torch": "2.13.0+cu130",
+   "vllm_lens": "1.1.0.post5"
+  },
+  "gpu": "NVIDIA B200",
+  "engine_kwargs": {
+   "model": "Qwen/Qwen3.6-27B",
+   "tensor_parallel_size": 1,
+   "gpu_memory_utilization": 0.8,
+   "max_model_len": 144,
+   "enable_prefix_caching": false,
+   "max_num_seqs": 1024,
+   "max_num_batched_tokens": 106496,
+   "dtype": "bfloat16",
+   "seed": 0,
+   "attention_backend": "TRITON_ATTN",
+   "language_model_only": true,
+   "compilation_config": {
+    "cudagraph_capture_sizes": [
+     1,
+     2,
+     4,
+     8,
+     16,
+     32,
+     64,
+     128,
+     256,
+     512,
+     1024
+    ]
+   }
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "NONE",
+   "cudagraph_mode": "FULL_DECODE_ONLY",
+   "max_num_seqs": 1024,
+   "enable_lora": false,
+   "num_layers": 64,
+   "model_runner": "v1"
+  },
+  "engine_up_s": 58.26058095299999,
+  "prompt_tokens": 96,
+  "max_tokens": 40,
+  "rank": 64,
+  "rel_norm": 0.005,
+  "sizes": [
+   512,
+   1024
+  ],
+  "throughput": [
+   {
+    "condition": "plain",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 6.327309831999969,
+    "wall_1tok_s": 3.3664204739999377,
+    "decode_step_ms": 75.92023994871876,
+    "gen_tokens": 20480,
+    "tok_per_s": 3236.762628000876,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "plain",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 6.371078103999935,
+    "wall_1tok_s": 3.108863878999955,
+    "decode_step_ms": 83.64651858974307,
+    "gen_tokens": 20480,
+    "tok_per_s": 3214.5265943517634,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "plain",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 12.285693798000011,
+    "wall_1tok_s": 6.571784903999969,
+    "decode_step_ms": 146.51048446153953,
+    "gen_tokens": 40960,
+    "tok_per_s": 3333.9590480977054,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "plain",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 12.281819702000007,
+    "wall_1tok_s": 6.021377652999945,
+    "decode_step_ms": 160.52415510256571,
+    "gen_tokens": 40960,
+    "tok_per_s": 3335.010690095862,
+    "lora_status": {
+     "merged": false,
+     "n_modules": 0,
+     "n_params": 0,
+     "mode": "none",
+     "base_where": null,
+     "base_bytes": 0,
+     "publishes": 0,
+     "last_publish_s": 0.0,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "merged",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 6.404398047999962,
+    "wall_1tok_s": 3.0173191699999506,
+    "decode_step_ms": 86.84817635897464,
+    "gen_tokens": 20480,
+    "tok_per_s": 3197.8024861205695,
+    "lora_status": {
+     "merged": true,
+     "n_modules": 496,
+     "n_params": 304,
+     "mode": "cpu",
+     "base_where": "cpu",
+     "base_bytes": 48701112320,
+     "publishes": 1,
+     "last_publish_s": 18.09874289200002,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "merged",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 6.398868789999938,
+    "wall_1tok_s": 3.078104051000082,
+    "decode_step_ms": 85.14781382050913,
+    "gen_tokens": 20480,
+    "tok_per_s": 3200.565704989272,
+    "lora_status": {
+     "merged": true,
+     "n_modules": 496,
+     "n_params": 304,
+     "mode": "cpu",
+     "base_where": "cpu",
+     "base_bytes": 48701112320,
+     "publishes": 1,
+     "last_publish_s": 18.09874289200002,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "merged",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 12.326405559000023,
+    "wall_1tok_s": 6.592914024999914,
+    "decode_step_ms": 147.01260343590022,
+    "gen_tokens": 40960,
+    "tok_per_s": 3322.9476187479,
+    "lora_status": {
+     "merged": true,
+     "n_modules": 496,
+     "n_params": 304,
+     "mode": "cpu",
+     "base_where": "cpu",
+     "base_bytes": 48701112320,
+     "publishes": 1,
+     "last_publish_s": 18.09874289200002,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   },
+   {
+    "condition": "merged",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 12.19175347800001,
+    "wall_1tok_s": 6.068167631000051,
+    "decode_step_ms": 157.01502171794766,
+    "gen_tokens": 40960,
+    "tok_per_s": 3359.6479845095478,
+    "lora_status": {
+     "merged": true,
+     "n_modules": 496,
+     "n_params": 304,
+     "mode": "cpu",
+     "base_where": "cpu",
+     "base_bytes": 48701112320,
+     "publishes": 1,
+     "last_publish_s": 18.09874289200002,
+     "n_targets": 304,
+     "tp_size": 1
+    }
+   }
+  ],
+  "publish": [
+   {
+    "mode": "cpu",
+    "n_modules": 496,
+    "n_params": 304,
+    "n_rows": 3314176,
+    "scaling": 2.0,
+    "publish_s": 18.09874289200002,
+    "resolve_s": 0.0020929280000245853,
+    "snapshot_s": 16.609947411999997,
+    "apply_s": 1.486702551999997,
+    "base_bytes": 48701112320,
+    "base_where": "cpu",
+    "publishes": 1,
+    "source": "dir",
+    "adapter": "a0",
+    "phase": "throughput"
+   },
+   {
+    "mode": "cpu",
+    "n_modules": 496,
+    "n_params": 304,
+    "n_rows": 3314176,
+    "scaling": 2.0,
+    "publish_s": 1.3726855770000839,
+    "resolve_s": 0.0019382120000273062,
+    "snapshot_s": 1.951499996266648e-05,
+    "apply_s": 1.370727850000094,
+    "base_bytes": 48701112320,
+    "base_where": "cpu",
+    "publishes": 2,
+    "source": "dir",
+    "adapter": "a0",
+    "phase": "latency"
+   },
+   {
+    "mode": "cpu",
+    "n_modules": 496,
+    "n_params": 304,
+    "n_rows": 3314176,
+    "scaling": 2.0,
+    "publish_s": 1.366665194999996,
+    "resolve_s": 0.0016605750000735497,
+    "snapshot_s": 1.3878999993721663e-05,
+    "apply_s": 1.3649907409999287,
+    "base_bytes": 48701112320,
+    "base_where": "cpu",
+    "publishes": 3,
+    "source": "dir",
+    "adapter": "a1",
+    "phase": "latency"
+   },
+   {
+    "mode": "cpu",
+    "n_modules": 496,
+    "n_params": 304,
+    "n_rows": 3314176,
+    "scaling": 2.0,
+    "publish_s": 1.3609383609999668,
+    "resolve_s": 0.0015164999999797146,
+    "snapshot_s": 1.3189000014790508e-05,
+    "apply_s": 1.3594086719999723,
+    "base_bytes": 48701112320,
+    "base_where": "cpu",
+    "publishes": 4,
+    "source": "dir",
+    "adapter": "a0",
+    "phase": "latency"
+   },
+   {
+    "mode": "cpu",
+    "n_modules": 496,
+    "n_params": 304,
+    "n_rows": 3314176,
+    "scaling": 2.0,
+    "publish_s": 1.3270650890000297,
+    "resolve_s": 0.0012864740000395614,
+    "snapshot_s": 1.3715000022784807e-05,
+    "apply_s": 1.3257648999999674,
+    "base_bytes": 48701112320,
+    "base_where": "cpu",
+    "publishes": 5,
+    "rpc_s": 3.357153750000066,
+    "source": "pickled_tensors",
+    "adapter": "a1",
+    "phase": "latency"
+   }
+  ],
+  "correctness": {
+   "fingerprint_params": 304,
+   "unmerge_gpu_restores_base": {
+    "restored_params": 304,
+    "how": "copy",
+    "unmerge_s": 0.8792853769999738,
+    "base_bytes": 48701112320,
+    "equal": true,
+    "max_rel_sumsq_diff": 0.0
+   },
+   "after_unmerge_vs_before": {
+    "a": "plain",
+    "b": "plain_after_unmerge",
+    "n": 16,
+    "argmax_equal": 16,
+    "mean_token_agreement": 1.0,
+    "min_token_agreement": 1.0,
+    "max_abs_dlogprob_top20": 0.0,
+    "median_abs_dlogprob_top20": 0.0
+   },
+   "cross_stage_error": "FileNotFoundError(2, 'No such file or directory')",
+   "unmerge_after_cpu_mode": {
+    "restored_params": 304,
+    "how": "copy",
+    "unmerge_s": 0.911102296000081,
+    "base_bytes": 0,
+    "equal": true,
+    "max_rel_sumsq_diff": 0.0
+   }
+  },
+  "drift": {},
+  "ipc_push": {
+   "error": "Exception('Call to collective_rpc method failed: start (2048) + length (2048) exceeds dimension size (2048).')"
+  },
+  "stats": {
+   "warmup_plain": {
+    "steps_fast_idle": 0,
+    "steps_planned": 3,
+    "steps_idle": 0,
+    "steer_layer_steps": 2,
+    "vectorized_layer_steps": 2,
+    "rows_steered": 8,
+    "rows_replaced": 0,
+    "embed_apply_steps": 0,
+    "embed_errors": 0,
+    "unsupported_layer_output": 0,
+    "rows_skipped_generated": 2,
+    "capture_layer_steps": 1,
+    "capture_rows": 96,
+    "hook_capture_s": 0.0003458600000385559,
+    "readout_layer_steps": 0,
+    "readout_rows": 0,
+    "hook_readout_s": 0.0,
+    "early_exits": 0,
+    "retrieval_s": 0.004652210000017476,
+    "errors": 0
+   },
+   "plain": {
+    "steps_fast_idle": 0,
+    "steps_planned": 40,
+    "steps_idle": 0,
+    "steer_layer_steps": 40,
+    "vectorized_layer_steps": 40,
+    "rows_steered": 6144,
+    "rows_replaced": 0,
+    "embed_apply_steps": 0,
+    "embed_errors": 0,
+    "unsupported_layer_output": 0,
+    "rows_skipped_generated": 24,
+    "capture_layer_steps": 0,
+    "capture_rows": 0,
+    "hook_capture_s": 0.0,
+    "readout_layer_steps": 0,
+    "readout_rows": 0,
+    "hook_readout_s": 0.0,
+    "early_exits": 0,
+    "retrieval_s": 0.0,
+    "errors": 0
+   },
+   "warmup_merged": {
+    "steps_fast_idle": 0,
+    "steps_planned": 4,
+    "steps_idle": 0,
+    "steer_layer_steps": 4,
+    "vectorized_layer_steps": 4,
+    "rows_steered": 24,
+    "rows_replaced": 0,
+    "embed_apply_steps": 0,
+    "embed_errors": 0,
+    "unsupported_layer_output": 0,
+    "rows_skipped_generated": 2,
+    "capture_layer_steps": 0,
+    "capture_rows": 0,
+    "hook_capture_s": 0.0,
+    "readout_layer_steps": 0,
+    "readout_rows": 0,
+    "hook_readout_s": 0.0,
+    "early_exits": 0,
+    "retrieval_s": 0.0,
+    "errors": 0
+   },
+   "merged": {
+    "steps_fast_idle": 0,
+    "steps_planned": 40,
+    "steps_idle": 0,
+    "steer_layer_steps": 40,
+    "vectorized_layer_steps": 40,
+    "rows_steered": 6144,
+    "rows_replaced": 0,
+    "embed_apply_steps": 0,
+    "embed_errors": 0,
+    "unsupported_layer_output": 0,
+    "rows_skipped_generated": 31,
+    "capture_layer_steps": 0,
+    "capture_rows": 0,
+    "hook_capture_s": 0.0,
+    "readout_layer_steps": 0,
+    "readout_rows": 0,
+    "hook_readout_s": 0.0,
+    "early_exits": 0,
+    "retrieval_s": 0.0,
+    "errors": 0
+   }
+  },
+  "layout": {
+   "n_vllm_params": 304,
+   "n_hf_modules": 496,
+   "targeted_params": 24350556160,
+   "targeted_bytes_bf16": 48701112320,
+   "lora_params": 429162496,
+   "kinds": [
+    "merged_col",
+    "qkv",
+    "row"
+   ],
+   "example": {
+    "vllm_name": "language_model.model.layers.0.linear_attn.in_proj_qkvz",
+    "kind": "merged_col",
+    "shape": [
+     16384,
+     5120
+    ],
+    "dtype": "torch.bfloat16",
+    "subs": [
+     {
+      "hf_name": "language_model.model.layers.0.linear_attn.in_proj_qkv",
+      "out": 2048,
+      "in": 5120,
+      "rows": [
+       0,
+       2048
+      ],
+      "frob": 46.87070846557617
+     },
+     {
+      "hf_name": "language_model.model.layers.0.linear_attn.in_proj_z",
+      "out": 2048,
+      "in": 5120,
+      "rows": [
+       2048,
+       4096
+      ],
+      "frob": 51.981842041015625
+     }
+    ]
+   },
+   "synth_s": 81.77062617799999,
+   "scaling": 2.0
+  },
+  "merge_mode_throughput": "cpu",
+  "publish_payload_bytes": 858699367
+ }
+}

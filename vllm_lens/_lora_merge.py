@@ -63,6 +63,8 @@ class LinearTarget:
     param: torch.Tensor
     subs: list[SubSlice] = field(default_factory=list)
     kind: str = ""
+    output_sizes: list[int] | None = None
+    """Slice sizes of a ``merged_col_deferred`` layer (rows assigned from the adapter at merge time)."""
 
 
 def _mro_names(obj: Any) -> set[str]:
@@ -141,6 +143,16 @@ def discover_targets(model: torch.nn.Module, only: set[str] | None = None) -> li
                 total = sum(output_sizes)
                 subs.append(SubSlice(prefix + hf_subs[0], (0, total), (0, total), (0, in_size), total, in_size))
                 kind = "merged_col_single"
+            elif 1 < len(hf_subs) < len(output_sizes):
+                # Several HF modules over MORE vLLM slices (vLLM 0.19 Qwen3-Next without LoRA: in_proj_qkvz =
+                # [q|k|v|z] with HF modules in_proj_qkv + in_proj_z).  Which slices belong to which module is
+                # only known from the adapter's B row counts -> resolved at merge time (``_per_param``),
+                # all of the param's HF modules must then be present.  TP = 1 only.
+                if tp_size > 1:
+                    raise NotImplementedError(f"vllm-lens: {name}: deferred slice partition needs tensor_parallel_size=1")
+                for hf in hf_subs:
+                    subs.append(SubSlice(prefix + hf, (-1, -1), (-1, -1), (0, in_size), -1, in_size))
+                kind = "merged_col_deferred"
             else:
                 if len(hf_subs) != len(output_sizes):
                     raise ValueError(
@@ -167,7 +179,10 @@ def discover_targets(model: torch.nn.Module, only: set[str] | None = None) -> li
             continue
         if only is not None and name not in only and not any(s.hf_name in only for s in subs):
             continue
-        out.append(LinearTarget(name, w, subs, kind))
+        tgt = LinearTarget(name, w, subs, kind)
+        if kind == "merged_col_deferred":
+            tgt.output_sizes = [int(s) for s in base.output_sizes]
+        out.append(tgt)
     return out
 
 
@@ -177,11 +192,13 @@ def layout_summary(targets: list[LinearTarget], with_norms: bool = False) -> lis
     for t in targets:
         subs = []
         for s in t.subs:
-            d: dict[str, Any] = {"hf_name": s.hf_name, "out": s.out_full, "in": s.in_full, "rows": list(s.rows)}
-            if with_norms:
+            deferred = s.out_full < 0
+            d: dict[str, Any] = {"hf_name": s.hf_name, "out": None if deferred else s.out_full, "in": s.in_full, "rows": None if deferred else list(s.rows)}
+            if with_norms and not deferred:
                 d["frob"] = float(t.param[s.rows[0] : s.rows[1], :].float().norm())
             subs.append(d)
-        rows.append({"vllm_name": t.vllm_name, "kind": t.kind, "shape": list(t.param.shape), "dtype": str(t.param.dtype), "subs": subs})
+        rows.append({"vllm_name": t.vllm_name, "kind": t.kind, "shape": list(t.param.shape), "dtype": str(t.param.dtype), "subs": subs,
+                     **({"output_sizes": t.output_sizes} if t.output_sizes else {})})
     return rows
 
 
@@ -275,6 +292,10 @@ def resolve_adapter(
 
 def _check_shapes(m: str, ab: dict[str, torch.Tensor], s: SubSlice) -> None:
     A, B = ab["A"], ab["B"]
+    if s.out_full < 0:  # deferred partition: rows are assigned from B in _per_param
+        if A.shape[1] != s.in_full:
+            raise ValueError(f"vllm-lens: LoRA module {m!r}: A {tuple(A.shape)} does not match the served input size {s.in_full}")
+        return
     if A.shape[1] != s.in_full or B.shape[0] != s.out_full:
         raise ValueError(
             f"vllm-lens: LoRA module {m!r}: A {tuple(A.shape)} / B {tuple(B.shape)} do not match the served "
@@ -383,6 +404,33 @@ class LoRAMerger:
             for t, s in hits:
                 _check_shapes(m, modules[m], s)
                 per_param.setdefault(t.vllm_name, []).append((m, s))
+        for pname, hits in per_param.items():
+            t = self.by_name[pname]
+            if t.kind != "merged_col_deferred":
+                continue
+            # every HF module of the param must be present; assign contiguous slice groups in mapping order
+            present = {s.hf_name: m for m, s in hits}
+            missing = [s.hf_name for s in t.subs if s.hf_name not in present]
+            if missing:
+                raise ValueError(f"vllm-lens: {pname}: adapter must cover all of {[s.hf_name for s in t.subs]} (missing {missing})")
+            sizes = list(t.output_sizes or [])
+            row, si = 0, 0
+            resolved: list[tuple[str, SubSlice]] = []
+            for s in t.subs:
+                m = present[s.hf_name]
+                out = int(modules[m]["B"].shape[0])
+                acc, sj = 0, si
+                while sj < len(sizes) and acc < out:
+                    acc += sizes[sj]
+                    sj += 1
+                if acc != out:
+                    raise ValueError(f"vllm-lens: {pname}: LoRA module {m!r} has {out} output rows, which is not a run of "
+                                     f"output slices {sizes} starting at slice {si}")
+                resolved.append((m, SubSlice(s.hf_name, (row, row + out), (0, out), s.col_src, out, s.in_full)))
+                row, si = row + out, sj
+            if row != int(t.param.shape[0]):
+                raise ValueError(f"vllm-lens: {pname}: adapter modules cover {row} rows of a {int(t.param.shape[0])}-row weight")
+            per_param[pname] = resolved
         return per_param
 
     @torch.no_grad()

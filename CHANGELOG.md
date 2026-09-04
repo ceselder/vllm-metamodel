@@ -61,7 +61,12 @@ the README sections "Supported vLLM versions" and "LoRA merge-on-publish", raw J
   `lora_status(llm)`.  Only A/B cross the process boundary.  The worker resolves PEFT module
   names against vLLM's fused layout (`qkv_proj` = [q|k|v], `gate_up_proj` = [gate|up], TP row /
   column shards from vLLM's own layer attributes; TP > 1 untested, `VLLM_LENS_MERGE_ALLOW_TP=1`),
-  refuses partial or mis-shaped adapters loudly, and de-duplicates LoRA-wrapped linears.
+  refuses partial or mis-shaped adapters loudly, and de-duplicates LoRA-wrapped linears.  Two
+  Qwen3-Next layouts needed special handling: one HF module spanning several vLLM output slices
+  (`in_proj_qkv` = [q|k|v] on a LoRA-capable engine; `merged_col_single`) and several HF modules
+  over more slices (`in_proj_qkvz` = [q|k|v|z] with HF `in_proj_qkv` + `in_proj_z` on a plain
+  engine; the partition is resolved from the adapter's `B` row counts at merge time,
+  `merged_col_deferred`, TP = 1 only).
 - `keep_base`: `gpu` (bf16 copy of the targeted weights on the device — exact publishes, exact
   unmerge), `cpu` (pinned host copy), `none` (subtract the previous adapter; drifts one bf16
   rounding per publish — measured: rel. Frobenius 7.6e-3 after 20 publishes, comparable to a
@@ -76,11 +81,15 @@ the README sections "Supported vLLM versions" and "LoRA merge-on-publish", raw J
   basic per-request steering.
 - **Measured (Qwen3.6-27B, 1× B200, vLLM 0.19.0, CUDA graphs, one steering vector per request,
   rank-64 rsLoRA over all 496 linear modules = 24.35 B targeted parameters / 48.7 GB):** decode step
-  at B = 512 **141 ms with the adapter as a LoRA → 96 ms merged (−32 %)**, at B = 1,024 269 → 181 ms;
-  `generate()` of 40 tokens 9.91 → 6.74 s (B = 512) and 19.1 → 12.9 s (B = 1,024) — identical to the
-  no-adapter / plain-engine time.  Publish: 0.35–0.40 s per adapter with the base copy on the GPU
-  (from a PEFT directory; 1.05 s when A/B are shipped as pickled tensors, 0.86 GB), 1.25 s with the
-  copy pinned on the host (+13 s one-time pinning), 0.6–0.7 s in `none` mode; unmerge 0.02 s (copy).
+  at B = 512 **115 ms with the adapter as a LoRA → 82 ms merged (−29 %; 81 ms with no adapter, 79 ms on a
+  plain engine)**, at B = 1,024 269 → 181 ms (−32 %, earlier container); `generate()` of 40 tokens
+  8.99 → 6.21 s (B = 512) and 19.1 → 12.9 s (B = 1,024) — the no-adapter / plain-engine time.  Publish:
+  0.35–0.55 s per adapter with the base copy on the GPU (from a PEFT directory, container-dependent;
+  1.0–2.7 s when A/B are shipped as pickled tensors, 0.9 GB), 1.25 s with the copy pinned on the host
+  (+13 s one-time pinning), 0.6–0.9 s in `none` mode; unmerge 0.02 s (copy).  On the 27B the two engine
+  configurations (LoRA-capable vs plain) already differ by up to 0.22 nats in first-token log-probs with
+  the SAME base weights, so the merge-vs-LoRA-path difference (0.20) is within the engine noise floor
+  (the adapter's own effect: 0.25).
   On vLLM 0.27.1 the same merge runs at the plain-engine speed too (6.40 vs 6.33 s at B = 512), but
   its GDN-state pool needs `gpu_memory_utilization ≥ 0.78` at `max_num_seqs=1024`, so the base copy
   goes to pinned host memory (1.37 s per publish) — and vLLM 0.27.1's own LoRA path crashes the

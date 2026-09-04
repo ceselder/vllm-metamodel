@@ -28,6 +28,9 @@ on:
 jobs:
   checks:
     name: Checks
+    # upstream's lint/type job needs private git dependencies (sifter, hpc-containers) that the
+    # fork cannot fetch; the fork's own CI is cpu-tests.yaml
+    if: github.repository == 'UKGovernmentBEIS/vllm-lens'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -38,7 +38,7 @@ pip install git+https://github.com/ceselder/vllm-metamodels
 - **Reading generated positions**: stock eager generate + capture **13.5 s** → graph-mode generate + early-exit re-encode readout **9.35 s (1.45×)** at batch 512 × 40 tokens.
 
 **RL rollouts with a LoRA policy (Qwen3.6-27B, vLLM 0.19, B = 512, one steering vector per request, CUDA graphs)**
-- **LoRA merge-on-publish** (`merge_lora`): the rank-64 adapter served by vLLM's LoRA kernels costs **141 ms per decode step; merged into the weights it is 96 ms (−32 %)** — one `generate()` of 40 tokens **9.9 s → 6.7 s**, i.e. exactly the no-adapter speed. Publishing the next adapter takes **0.35–0.40 s** (base copy on the GPU) or 1.25 s (pinned host copy); merging + unmerging the 24 B targeted parameters is 0.02 s.
+- **LoRA merge-on-publish** (`merge_lora`): the rank-64 adapter served by vLLM's LoRA kernels costs **115 ms per decode step; merged into the weights it is 82 ms (−29 %, = the no-adapter speed)** — one `generate()` of 40 tokens **9.0 s → 6.2 s** (B = 1,024: 19.1 → 12.9 s). Publishing the next adapter takes **0.35–0.55 s** (base copy on the GPU) or 1.25 s (pinned host copy); unmerging the 24 B targeted parameters is 0.02 s.
 
 **vLLM versions (same B200, same prompts)**
 - Tested end to end on **vLLM 0.16.0, 0.19.0, 0.27.1 and 0.28.0**. Plain vLLM 0.27.1 generates **5 % faster** than 0.19.0 on the 27B (4,253 vs 4,063 tok/s at B = 1,024; the 1.7B gains 13–47 % by 0.28), but the hook-compatible engine (compile off, decode graphs) is **10 % slower** on 0.27.1 than on 0.19.0 (3,524 vs 3,882 tok/s with steering), so for steered rollouts 0.19 is still the faster pin — see [Supported vLLM versions](#supported-vllm-versions).
@@ -175,9 +175,11 @@ lora_status(llm)   # {"merged": ..., "mode": "gpu", "base_bytes": ..., "publishe
 - Fidelity: serving `round_bf16(W0 + ΔW)` instead of `W0 x + B(A x)` is the same approximation as
   any bf16 `merge_and_unload`: the rounding is of the order of bf16's spacing (0.78 % of |W|), so a
   small adapter (0.5 %-relative in the benchmark) is reproduced with an SNR of ~2 per element and
-  the merged model differs from the LoRA path by a few tenths of a nat on some tokens (table
-  below); the trainer's HF model with the adapter unmerged is the reference policy. Merged weights
-  are deterministic: the plain and the LoRA-capable engine give bit-identical outputs from them.
+  the merged model differs from the LoRA path by up to 0.2 nats in first-token log-probs (table
+  below) — on the 27B that is within the noise between vLLM's LoRA-capable and plain engine
+  configurations *with identical weights* (0.22), and below the adapter's own effect (0.25); the
+  trainer's HF model with the adapter unmerged is the reference policy. The merge itself is
+  deterministic (bit-identical merged weights on both engines; on the 1.7B, identical outputs).
 - Compared with pushing full merged matrices (the EasyNLA / TRL colocate pattern, `model.load_weights`
   over CUDA-IPC handles): that moves the whole 48 GB per publish and cannot target a LoRA-capable
   engine (vLLM wraps the linears; `load_weights` no longer finds `qkv_proj.weight`). The fork
@@ -186,15 +188,25 @@ lora_status(llm)   # {"merged": ..., "mode": "gpu", "base_bytes": ..., "publishe
 <!-- LORA:BEGIN -->
 | model | vLLM | B | rank-64 LoRA on every request | LoRA-capable engine, no adapter | merged (same engine) | plain engine | **merged, plain engine** | `generate()` 40 tokens: LoRA → merged |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| Qwen3-1.7B | 0.19.0 | 512 | 9.2 ms | 7.3 ms (-21%) | 7.6 ms (-18%) | 7.0 ms (-25%) | **7.1 ms (-23%)** | 0.93 s → 0.54 s |
+| Qwen3.6-27B | 0.19.0 | 512 | 115.3 ms | 81.2 ms (-30%) | 80.0 ms (-31%) | 78.7 ms (-32%) | **82.3 ms (-29%)** | 8.99 s → 6.21 s |
+| Qwen3.6-27B | 0.19.0 | 1,024 | 268.6 ms | 183.1 ms (-32%) | 184.6 ms (-31%) | 179.4 ms (-33%) | **181.5 ms (-32%)** | 19.10 s → 12.93 s |
+| Qwen3-1.7B | 0.19.0 | 512 | 9.5 ms | 7.3 ms (-23%) | 7.6 ms (-20%) | 7.3 ms (-23%) | **7.1 ms (-25%)** | 0.93 s → 0.54 s |
 | Qwen3-1.7B | 0.19.0 | 1,024 | 17.9 ms | 14.1 ms (-21%) | 14.1 ms (-21%) | 14.6 ms (-18%) | **16.5 ms (-8%)** | 1.71 s → 1.08 s |
-| Qwen3-1.7B | 0.27.1 | 512 | 9.4 ms | 6.1 ms (-35%) | 5.2 ms (-45%) | 5.9 ms (-37%) | **6.2 ms (-34%)** | 0.85 s → 0.49 s |
-| Qwen3-1.7B | 0.27.1 | 1,024 | 15.1 ms | 0.2 ms (-99%) | 9.8 ms (-35%) | 10.8 ms (-29%) | **10.7 ms (-29%)** | 1.54 s → 0.90 s |
+| Qwen3.6-27B | 0.27.1 | 512 | — | 83.8 ms | — | 82.5 ms | **86.7 ms** | — → 6.40 s |
+| Qwen3.6-27B | 0.27.1 | 1,024 | — | 157.1 ms | — | 160.5 ms | **157.0 ms** | — → 12.19 s |
+| Qwen3-1.7B | 0.27.1 | 512 | 9.5 ms | 6.1 ms (-36%) | 6.0 ms (-37%) | 6.1 ms (-36%) | **6.2 ms (-34%)** | 0.85 s → 0.49 s |
+| Qwen3-1.7B | 0.27.1 | 1,024 | 15.1 ms | 9.6 ms (-37%) | 9.8 ms (-35%) | 11.1 ms (-27%) | **10.7 ms (-29%)** | 1.54 s → 0.90 s |
 
 Publish latency (replace the served adapter by the next one; the 27B has ~24 B LoRA-targeted parameters = 48 GB bf16, ~0.7 GB of A/B):
 
 | model | vLLM | `keep_base` | adapter source | worker time | RPC total | base copy |
 |---|---|---|---|---:|---:|---:|
+| Qwen3.6-27B | 0.19.0 | gpu | dir | 0.535 s | — | 48.7 GB (gpu) |
+| Qwen3.6-27B | 0.19.0 | gpu | pickled_tensors | 0.514 s | 2.663 s | 48.7 GB (gpu) |
+| Qwen3.6-27B | 0.19.0 | none | dir | 0.934 s | — | 0.0 GB (—) |
+| Qwen3.6-27B | 0.19.0 | none | pickled_tensors | 0.906 s | 2.258 s | 0.0 GB (—) |
+| Qwen3.6-27B | 0.19.0 | cpu | dir | 1.244 s | — | 48.7 GB (cpu) |
+| Qwen3.6-27B | 0.19.0 | cpu | pickled_tensors | 1.189 s | 3.091 s | 48.7 GB (cpu) |
 | Qwen3-1.7B | 0.19.0 | gpu | dir | 0.061 s | — | 2.8 GB (gpu) |
 | Qwen3-1.7B | 0.19.0 | gpu | pickled_tensors | 0.042 s | 0.233 s | 2.8 GB (gpu) |
 | Qwen3-1.7B | 0.19.0 | cpu | dir | 0.105 s | — | 2.8 GB (cpu) |
@@ -214,6 +226,14 @@ Correctness (16 prompts, greedy 16 tokens, first-token top-20 log-probs):
 
 | model | vLLM | comparison | argmax equal | token agreement | max abs Δ log-prob | median |
 |---|---|---|---:|---:|---:|---:|
+| Qwen3.6-27B | 0.19.0 | after_unmerge_vs_before | 16/16 | 0.961 | 0.000 | 0.000 |
+| Qwen3.6-27B | 0.19.0 | lora_vs_merged | 16/16 | 0.551 | 0.197 | 0.123 |
+| Qwen3.6-27B | 0.19.0 | nolora_vs_lora_control | 16/16 | 0.652 | 0.250 | 0.130 |
+| Qwen3.6-27B | 0.19.0 | plain engine: after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
+| Qwen3.6-27B | 0.19.0 | plain engine: merged_plain_vs_merged_lora_engine | 16/16 | 0.645 | 0.161 | 0.104 |
+| Qwen3.6-27B | 0.19.0 | plain engine: merged_plain_vs_lora_path | 16/16 | 0.586 | 0.284 | 0.124 |
+| Qwen3.6-27B | 0.19.0 | plain engine: plain_vs_nolora_lora_engine | 16/16 | 0.852 | 0.221 | 0.123 |
+| Qwen3.6-27B | 0.19.0 | `keep_base="none"`, 20 publishes, vs exact merge — weights: max 25.1 bf16 spacings, rel-Frobenius 7.1e-03; base after subtract-unmerge rel-F 7.1e-03 | 16/16 | 0.559 | 0.356 | 0.165 |
 | Qwen3-1.7B | 0.19.0 | after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
 | Qwen3-1.7B | 0.19.0 | lora_vs_merged | 16/16 | 0.996 | 0.230 | 0.131 |
 | Qwen3-1.7B | 0.19.0 | nolora_vs_lora_control | 16/16 | 0.992 | 0.325 | 0.191 |
@@ -222,6 +242,7 @@ Correctness (16 prompts, greedy 16 tokens, first-token top-20 log-probs):
 | Qwen3-1.7B | 0.19.0 | plain engine: merged_plain_vs_lora_path | 16/16 | 0.996 | 0.230 | 0.131 |
 | Qwen3-1.7B | 0.19.0 | plain engine: plain_vs_nolora_lora_engine | 16/16 | 1.000 | 0.000 | 0.000 |
 | Qwen3-1.7B | 0.19.0 | `keep_base="none"`, 20 publishes, vs exact merge — weights: max 19.3 bf16 spacings, rel-Frobenius 7.6e-03; base after subtract-unmerge rel-F 7.6e-03 | 16/16 | 0.988 | 0.255 | 0.196 |
+| Qwen3.6-27B | 0.27.1 | plain engine: after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
 | Qwen3-1.7B | 0.27.1 | after_unmerge_vs_before | 16/16 | 1.000 | 0.000 | 0.000 |
 | Qwen3-1.7B | 0.27.1 | lora_vs_merged | 16/16 | 0.992 | 0.239 | 0.131 |
 | Qwen3-1.7B | 0.27.1 | nolora_vs_lora_control | 16/16 | 0.984 | 0.243 | 0.155 |

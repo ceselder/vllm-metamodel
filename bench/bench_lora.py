@@ -193,6 +193,20 @@ def main() -> None:
 
     # ---------------- adapter synthesis from the served model's own layout ----------------
     layout = rpc("lens_lora_layout", True)
+    result["layout_engine"] = [{"vllm_name": t["vllm_name"], "kind": t["kind"], "shape": t["shape"], "subs": [s["hf_name"] for s in t["subs"]]} for t in layout]
+    if not lora_engine and os.path.exists(a.ref):
+        # the plain engine fuses in_proj_qkvz = [q|k|v|z] (HF: in_proj_qkv + in_proj_z, split known only from the
+        # adapter); use the LoRA engine's layout (saved by stage 1) so BOTH stages synthesise the SAME adapter
+        try:
+            with open(a.ref) as f:
+                ref_layout = json.load(f).get("layout_full")
+            if ref_layout:
+                layout = ref_layout
+                log(f"using the LoRA-engine stage's layout for adapter synthesis ({len(layout)} params)")
+        except Exception as e:  # noqa: BLE001
+            log(f"could not reuse the LoRA-engine layout: {e!r}")
+    if any(s.get("out") is None for t in layout for s in t["subs"]):
+        raise SystemExit("layout has deferred slices (out=None) and no LoRA-engine layout to synthesise from; run the lora_engine stage first")
     if a.exclude_modules:
         excl = tuple(x.strip() for x in a.exclude_modules.split(",") if x.strip())
         for t in layout:
@@ -201,6 +215,7 @@ def main() -> None:
         log(f"excluding modules ending in {excl}: {len(layout)} vLLM params remain")
     result["exclude_modules"] = a.exclude_modules
     result["layout_all"] = [{"vllm_name": t["vllm_name"], "kind": t["kind"], "shape": t["shape"], "subs": [s["hf_name"] for s in t["subs"]]} for t in layout]
+    result["layout_from_ref"] = layout is not None and not lora_engine and os.path.exists(a.ref)
     n_hf = sum(len(t["subs"]) for t in layout)
     targeted_params = sum(math.prod(t["shape"]) for t in layout)
     lora_params = sum(a.rank * (s["in"] + s["out"]) for t in layout for s in t["subs"])
@@ -335,6 +350,7 @@ def main() -> None:
         result["correctness"]["lora_vs_merged"] = compare(ref["lora"], ref["merged"])
         result["correctness"]["nolora_vs_lora_control"] = compare(ref["nolora"], ref["lora"])
         ref["layout_names"] = sorted(t["vllm_name"] for t in layout)
+        ref["layout_full"] = layout
         with open(a.ref, "w") as f:
             json.dump(ref, f)
     else:

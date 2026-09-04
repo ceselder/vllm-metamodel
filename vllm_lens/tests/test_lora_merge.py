@@ -409,3 +409,43 @@ def test_single_hf_module_spanning_several_output_slices_is_merged_over_all_rows
     merger.unmerge()
     for name, t in targets.items():
         assert torch.equal(t.param, w0[name])
+
+
+def test_two_hf_modules_over_four_output_slices_are_partitioned_from_the_adapter():
+    """vLLM 0.19 Qwen3-Next WITHOUT LoRA: in_proj_qkvz = MergedColumnParallelLinear([k, k, v, z]) with HF modules
+    in_proj_qkv (rows k+k+v) and in_proj_z (rows z); the split is only known from the adapter's B shapes."""
+
+    class Inner3(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.in_proj_qkvz = MergedColumnParallelLinear(H, [8, 8, 16, 16])
+
+    class M(torch.nn.Module):
+        packed_modules_mapping = {"in_proj_qkvz": ["in_proj_qkv", "in_proj_z"]}
+
+        def __init__(self):
+            super().__init__()
+            self.model = torch.nn.Module()
+            self.model.layers = torch.nn.ModuleList([Inner3()])
+
+    torch.manual_seed(9)
+    model = M()
+    t = LM.discover_targets(model)[0]
+    assert t.kind == "merged_col_deferred" and [s.hf_name.rsplit(".", 1)[1] for s in t.subs] == ["in_proj_qkv", "in_proj_z"] and t.output_sizes == [8, 8, 16, 16]
+    summary = LM.layout_summary([t], with_norms=True)
+    assert summary[0]["subs"][0]["out"] is None and summary[0]["output_sizes"] == [8, 8, 16, 16]
+    w0 = t.param.detach().clone()
+    mods = {"model.layers.0.in_proj_qkv": {"A": torch.randn(R, H), "B": torch.randn(32, R) * 0.1},
+            "model.layers.0.in_proj_z": {"A": torch.randn(R, H), "B": torch.randn(16, R) * 0.1}}
+    merger = LM.LoRAMerger(model)
+    merger.merge(mods, 1.0, keep_base="gpu")
+    exp_qkv = (w0[:32].float() + mods["model.layers.0.in_proj_qkv"]["B"].float() @ mods["model.layers.0.in_proj_qkv"]["A"].float()).to(torch.bfloat16)
+    exp_z = (w0[32:].float() + mods["model.layers.0.in_proj_z"]["B"].float() @ mods["model.layers.0.in_proj_z"]["A"].float()).to(torch.bfloat16)
+    assert torch.equal(t.param[:32], exp_qkv) and torch.equal(t.param[32:], exp_z)
+    merger.unmerge()
+    assert torch.equal(t.param, w0)
+    with pytest.raises(ValueError, match="must cover all"):
+        merger.merge({"model.layers.0.in_proj_z": mods["model.layers.0.in_proj_z"]}, 1.0)
+    bad = {"model.layers.0.in_proj_qkv": {"A": torch.randn(R, H), "B": torch.randn(20, R)}, "model.layers.0.in_proj_z": {"A": torch.randn(R, H), "B": torch.randn(28, R)}}
+    with pytest.raises(ValueError, match="not a run of output slices"):
+        merger.merge(bad, 1.0)

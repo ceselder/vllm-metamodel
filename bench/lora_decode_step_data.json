@@ -1,0 +1,120 @@
+{
+ "decode_step_ms": {
+  "Qwen/Qwen3.6-27B": {
+   "512": {
+    "versions": [
+     "0.19.0",
+     "0.27.1"
+    ],
+    "series": {
+     "LoRA-capable engine, no adapter": [
+      81.22784797435746,
+      83.75293264102532
+     ],
+     "rank-64 LoRA on every request": [
+      115.34338523076771,
+      null
+     ],
+     "adapter merged into the weights (LoRA-capable engine)": [
+      80.03945738461373,
+      null
+     ],
+     "plain engine (enable_lora=False)": [
+      78.65030897435716,
+      82.52425520512855
+     ],
+     "adapter merged, plain engine": [
+      82.2932202051287,
+      86.70640051282018
+     ]
+    }
+   },
+   "1024": {
+    "versions": [
+     "0.19.0",
+     "0.27.1"
+    ],
+    "series": {
+     "LoRA-capable engine, no adapter": [
+      183.1026732564093,
+      157.07106805128217
+     ],
+     "rank-64 LoRA on every request": [
+      268.5572390256408,
+      null
+     ],
+     "adapter merged into the weights (LoRA-capable engine)": [
+      184.60515843589775,
+      null
+     ],
+     "plain engine (enable_lora=False)": [
+      179.35605510256326,
+      160.52415510256571
+     ],
+     "adapter merged, plain engine": [
+      181.53507856409772,
+      157.01502171794766
+     ]
+    }
+   }
+  },
+  "Qwen/Qwen3-1.7B": {
+   "512": {
+    "versions": [
+     "0.19.0",
+     "0.27.1"
+    ],
+    "series": {
+     "LoRA-capable engine, no adapter": [
+      7.290912487179413,
+      6.103357538461223
+     ],
+     "rank-64 LoRA on every request": [
+      9.463589871795072,
+      9.480149256410332
+     ],
+     "adapter merged into the weights (LoRA-capable engine)": [
+      7.606374692307747,
+      6.017098538461523
+     ],
+     "plain engine (enable_lora=False)": [
+      7.253425333333443,
+      6.063068435896668
+     ],
+     "adapter merged, plain engine": [
+      7.094194435897186,
+      6.2353983589746464
+     ]
+    }
+   },
+   "1024": {
+    "versions": [
+     "0.19.0",
+     "0.27.1"
+    ],
+    "series": {
+     "LoRA-capable engine, no adapter": [
+      14.10472251282048,
+      9.55493
+     ],
+     "rank-64 LoRA on every request": [
+      17.935079487179596,
+      15.110796051281921
+     ],
+     "adapter merged into the weights (LoRA-capable engine)": [
+      14.084741461538478,
+      9.802850282051022
+     ],
+     "plain engine (enable_lora=False)": [
+      14.635173487179669,
+      11.07792928205133
+     ],
+     "adapter merged, plain engine": [
+      16.450203051282237,
+      10.713259769230579
+     ]
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "publish_s": {
+  "Qwen/Qwen3.6-27B": {
+   "versions": [
+    "0.19.0",
+    "0.27.1"
+   ],
+   "series": {
+    "merge, base copy on GPU (exact)": [
+     0.5300113549999423,
+     null
+    ],
+    "merge, base copy pinned on host (exact)": [
+     1.244169028999977,
+     1.366665194999996
+    ],
+    "merge, no base copy (subtract previous; drifts)": [
+     0.9344424959999742,
+     null
+    ],
+    "merge, A/B shipped as pickled tensors (RPC total)": [
+     2.663290668000002,
+     null
+    ]
+   }
+  },
+  "Qwen/Qwen3-1.7B": {
+   "versions": [
+    "0.19.0",
+    "0.27.1"
+   ],
+   "series": {
+    "merge, base copy on GPU (exact)": [
+     0.06003976900001362,
+     0.04571999399999527
+    ],
+    "merge, base copy pinned on host (exact)": [
+     0.10450159900000244,
+     0.09888549000000069
+    ],
+    "merge, no base copy (subtract previous; drifts)": [
+     0.09809499600000038,
+     0.09429770599999188
+    ],
+    "merge, A/B shipped as pickled tensors (RPC total)": [
+     0.2116614700000241,
+     0.1755097209999974
+    ],
+    "EasyNLA-style: full merged matrices over CUDA IPC + load_weights": [
+     0.27860798100007855,
+     0.07132475900013446
+    ]
+   }
+  }
+ }
+}

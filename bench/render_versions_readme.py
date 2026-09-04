@@ -162,7 +162,9 @@ def lora_block(lora: dict) -> str:
     for ver in sorted(lora, key=_vkey):
         for model in sorted(lora[ver], key=lambda m: ("27B" not in m, m)):
             le, pe = lora[ver][model].get("lora_engine", {}), lora[ver][model].get("plain_engine", {})
-            corr = {**le.get("correctness", {}), **{f"plain engine: {k}": v for k, v in pe.get("correctness", {}).items()}}
+            same_layout = le.get("layout", {}).get("n_vllm_params") == pe.get("layout", {}).get("n_vllm_params")
+            pe_corr = {k: v for k, v in pe.get("correctness", {}).items() if same_layout or not k.startswith(("merged_plain_vs", "plain_vs_nolora"))}
+            corr = {**le.get("correctness", {}), **{f"plain engine: {k}": v for k, v in pe_corr.items()}}
             for k, v in corr.items():
                 if isinstance(v, dict) and "argmax_equal" in v:
                     out.append(f"| {model.split('/')[-1]} | {ver} | {k} | {v['argmax_equal']}/{v['n']} | {v['mean_token_agreement']:.3f} | {v['max_abs_dlogprob_top20']:.3f} | {v['median_abs_dlogprob_top20']:.3f} |")

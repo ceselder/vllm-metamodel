@@ -129,9 +129,12 @@ def plot_versions(vm: list[dict], out: Path) -> None:
 
 
 def load_lora(dirs: list[str]) -> dict:
-    """{vllm: {model: {stage: result}}} (latest dir per version)."""
+    """{vllm: {model: {stage: result}}}.  Runs of the same (version, model, stage) are merged: the newest
+    run wins field by field (layout, correctness, ...), while throughput rows for (condition, batch) pairs,
+    publish entries for (mode, source) pairs, and drift / ipc_push blocks the newest run does not have are
+    kept from older runs (e.g. a B = 1,024 measurement or the cpu-mode publish from an earlier session)."""
     out: dict = {}
-    for d in sorted(dirs):
+    for d in sorted(dirs):  # oldest -> newest
         m = re.search(r"lora_([\d.]+)_", Path(d).name)
         if not m:
             continue
@@ -139,9 +142,23 @@ def load_lora(dirs: list[str]) -> dict:
         for f in glob.glob(f"{d}/*.json"):
             j = json.loads(Path(f).read_text())
             res = j.get("result")
-            if not res:
+            if not res or not res.get("throughput"):
                 continue
-            out.setdefault(ver, {}).setdefault(res["model"], {})[res["stage"]] = res
+            slot = out.setdefault(ver, {}).setdefault(res["model"], {})
+            prev = slot.get(res["stage"])
+            if prev is None:
+                slot[res["stage"]] = res
+                continue
+            merged = dict(res)
+            have = {(r["condition"], int(r["batch"])) for r in res["throughput"]}
+            merged["throughput"] = list(res["throughput"]) + [r for r in prev.get("throughput", []) if (r["condition"], int(r["batch"])) not in have]
+            have_p = {(p_.get("mode"), p_.get("source"), p_.get("phase")) for p_ in res.get("publish", [])}
+            merged["publish"] = list(res.get("publish", [])) + [p_ for p_ in prev.get("publish", []) if (p_.get("mode"), p_.get("source"), p_.get("phase")) not in have_p]
+            for key in ("drift", "ipc_push"):
+                if not res.get(key) or "error" in res.get(key, {}) or "skipped" in res.get(key, {}):
+                    if prev.get(key):
+                        merged[key] = prev[key]
+            slot[res["stage"]] = merged
     return out
 
 
@@ -179,8 +196,11 @@ def plot_lora(lora: dict, out: Path) -> None:
             ax.set_title(f"{model.split('/')[-1]}, B = {B:,}", loc="left", fontsize=11, color=INK)
             ax.set_xlabel("vLLM version")
             lo, me = series.get("rank-64 LoRA on every request", []), series.get("adapter merged, plain engine", [])
-            if B == 512 and lo and me and lo[-1] and me[-1]:
-                claims.append(f"{model.split('/')[-1]}: LoRA {lo[-1]:.1f} ms -> merged {me[-1]:.1f} ms per decode step at B=512 ({100*(lo[-1]-me[-1])/lo[-1]:.0f}% less, vLLM {groups[-1]})")
+            if B == 512:
+                for gi in range(len(groups) - 1, -1, -1):  # newest version with both measurements
+                    if gi < len(lo) and gi < len(me) and lo[gi] and me[gi]:
+                        claims.append(f"{model.split('/')[-1]}: LoRA {lo[gi]:.1f} ms -> merged {me[gi]:.1f} ms per decode step at B=512 ({100*(lo[gi]-me[gi])/lo[gi]:.0f}% less, vLLM {groups[gi]})")
+                        break
     _legend_below(fig, axes[-1][0], ncol=3)
     fig.suptitle("Merging the LoRA into the weights removes the LoRA kernels from every decode step\n" + " · ".join(claims), fontsize=10.5, color=INK, x=0.01, ha="left")
     fig.text(0.01, -0.06 / len(models), "decode step = (wall for 40 new tokens - wall for 1 token) / 39; one steering vector per request; CUDA graphs (FULL_DECODE_ONLY); rank 64, rsLoRA alpha 16, ||sBA||/||W|| = 0.5% per module",
@@ -192,15 +212,15 @@ def plot_lora(lora: dict, out: Path) -> None:
     fig, axes = plt.subplots(1, len(models), figsize=(6.2 * len(models), 4.3), squeeze=False)
     data = {"publish_s": {}}
     for ax, model in zip(axes[0], models):
-        groups = [v for v in versions if model in lora[v] and "lora_engine" in lora[v][model]]
+        groups = [v for v in versions if model in lora[v]]
         series: dict[str, list[float | None]] = {}
         labels = {("gpu", "dir"): "merge, base copy on GPU (exact)", ("cpu", "dir"): "merge, base copy pinned on host (exact)",
                   ("none", "dir"): "merge, no base copy (subtract previous; drifts)", ("gpu", "pickled_tensors"): "merge, A/B shipped as pickled tensors (RPC total)"}
         for (mode, src), label in labels.items():
             vals = []
             for v in groups:
-                res = lora[v][model]["lora_engine"]
-                ps = [p.get("rpc_s") or p["publish_s"] for p in res.get("publish", []) if p.get("mode") == mode and p.get("source") == src and p.get("phase") == "latency" and p.get("adapter") in ("a1",)]
+                pubs = [p for st in ("lora_engine", "plain_engine") for p in lora[v][model].get(st, {}).get("publish", [])]
+                ps = [p.get("rpc_s") or p["publish_s"] for p in pubs if p.get("mode") == mode and p.get("source") == src and p.get("phase") == "latency" and p.get("adapter") in ("a1",)]
                 vals.append(min(ps) if ps else None)
             if any(x is not None for x in vals):
                 series[label] = vals

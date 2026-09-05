@@ -1,0 +1,349 @@
+{
+ "returncode": 0,
+ "elapsed_s": 85.78974556922913,
+ "log_tail": "mode': None, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': [], 'splitting_ops': None, 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': None, 'compile_ranges_endpoints': None, 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': None, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': None, 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': None, 'pass_config': {}, 'max_cudagraph_capture_size': 1024, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': None, 'static_all_moe_layers': []}, 'attention_backend': 'TRITON_ATTN', 'model': 'Qwen/Qwen3-1.7B'}\nWARNING 09-05 01:36:03 [envs.py:1744] Unknown vLLM environment variable detected: VLLM_LENS_CUDA_GRAPHS\nINFO 09-05 01:36:13 [model.py:549] Resolved architecture: Qwen3ForCausalLM\nINFO 09-05 01:36:13 [model.py:1678] Using max model len 184\nINFO 09-05 01:36:13 [scheduler.py:238] Chunked prefill is enabled with max_num_batched_tokens=147456.\nINFO 09-05 01:36:13 [vllm.py:790] Asynchronous scheduling is enabled.\nWARNING 09-05 01:36:13 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\nINFO 09-05 01:36:13 [compilation.py:290] Enabled custom fusions: norm_quant, act_quant\n(EngineCore pid=48) INFO 09-05 01:36:15 [core.py:105] Initializing a V1 LLM engine (v0.19.0) with config: model='Qwen/Qwen3-1.7B', speculative_config=None, tokenizer='Qwen/Qwen3-1.7B', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=184, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=Qwen/Qwen3-1.7B, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [147456], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_DECODE_ONLY: (2, 0)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256, 272, 288, 304, 320, 336, 352, 368, 384, 400, 416, 432, 448, 464, 480, 496, 512, 528, 544, 560, 576, 592, 608, 624, 640, 656, 672, 688, 704, 720, 736, 752, 768, 784, 800, 816, 832, 848, 864, 880, 896, 912, 928, 944, 960, 976, 992, 1008, 1024], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 1024, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}\n(EngineCore pid=48) INFO 09-05 01:36:15 [worker_base.py:269] Injected <class 'vllm_lens._worker_ext.HiddenStatesExtension'> into <class 'vllm.v1.worker.gpu_worker.Worker'> for extended collective_rpc calls ['_by_external', '_check_layer', '_cuda_graphs_active', '_debug_captured_states_count', '_early_exit_supported', '_flush_host_blocks', '_merger', '_op_dispatch', '_pop_activations', '_pop_readouts', '_prepare_vectors', '_refresh_aggregates', '_store', '_store_reads', '_wrap_model_forward', 'clear_captured_states', 'clear_readout_data', 'clear_readout_data_many', 'clear_readouts', 'clear_steering_data', 'clear_steering_data_many', 'get_captured_states', 'get_captured_states_many', 'get_captured_states_shm', 'get_readouts', 'get_readouts_many', 'install_hooks', 'lens_capabilities', 'lens_load_weights_ipc', 'lens_lora_compare_exact', 'lens_lora_layout', 'lens_lora_status', 'lens_merge_lora', 'lens_release_lora_base', 'lens_unmerge_lora', 'lens_weight_fingerprint', 'set_fast_capture', 'set_readout_block', 'set_readout_data', 'set_readout_data_many', 'set_steering_block', 'set_steering_data', 'set_steering_data_many', 'set_vectorized', 'steering_stats']\n(EngineCore pid=48) INFO 09-05 01:36:15 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.7.70:62324 backend=nccl\n(EngineCore pid=48) INFO 09-05 01:36:15 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=48) INFO 09-05 01:36:16 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen3-1.7B...\n(EngineCore pid=48) INFO 09-05 01:36:17 [cuda.py:274] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=48) INFO 09-05 01:36:31 [weight_utils.py:581] Time spent downloading weights for Qwen/Qwen3-1.7B: 14.111066 seconds\n(EngineCore pid=48) INFO 09-05 01:36:32 [default_loader.py:384] Loading weights took 0.33 seconds\n(EngineCore pid=48) INFO 09-05 01:36:32 [gpu_model_runner.py:4820] Model loading took 3.22 GiB memory and 15.027391 seconds\n(EngineCore pid=48) INFO 09-05 01:36:38 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=1024\n(EngineCore pid=48) INFO 09-05 01:36:38 [gpu_model_runner.py:5876] Profiling CUDA graph memory: FULL=83 (largest=1024)\n(EngineCore pid=48) INFO 09-05 01:36:40 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.17 GiB total\n(EngineCore pid=48) INFO 09-05 01:36:41 [gpu_worker.py:436] Available KV cache memory: 140.83 GiB\n(EngineCore pid=48) INFO 09-05 01:36:41 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.8500 to 0.8509 to maintain the same effective KV cache size.\n(EngineCore pid=48) INFO 09-05 01:36:41 [kv_cache_utils.py:1319] GPU KV cache size: 1,318,528 tokens\n(EngineCore pid=48) INFO 09-05 01:36:41 [kv_cache_utils.py:1324] Maximum concurrency for 184 tokens per request: 6867.33x\n(EngineCore pid=48) INFO 09-05 01:36:47 [gpu_model_runner.py:6046] Graph capturing finished in 6 secs, took 0.18 GiB\n(EngineCore pid=48) INFO 09-05 01:36:47 [gpu_worker.py:597] CUDA graph pool memory: 0.18 GiB (actual), 0.17 GiB (estimated), difference: 0.01 GiB (6.6%).\n(EngineCore pid=48) INFO 09-05 01:36:47 [core.py:283] init engine (profile, create kv cache, warmup model) took 14.80 seconds\n(EngineCore pid=48) WARNING 09-05 01:36:48 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=48) WARNING 09-05 01:36:48 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\nWARNING 09-05 01:36:48 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n[shm 01:36:48] engine up 46s vllm=0.19.0 vllm-lens=1.1.0.post6\n[shm 01:36:49] capture pickle    B=  512 rep0: wall   0.88s  worker retrieval  0.22s  0.24 GB  ok=True\n[shm 01:36:50] capture pickle    B=  512 rep1: wall   0.80s  worker retrieval  0.24s  0.24 GB  ok=True\n[shm 01:36:51] capture pickle    B=  512 rep2: wall   0.79s  worker retrieval  0.25s  0.24 GB  ok=True\n[shm 01:36:53] capture pickle    B= 1024 rep0: wall   1.56s  worker retrieval  0.47s  0.49 GB  ok=True\n[shm 01:36:54] capture pickle    B= 1024 rep1: wall   1.40s  worker retrieval  0.46s  0.49 GB  ok=True\n[shm 01:36:55] capture pickle    B= 1024 rep2: wall   1.43s  worker retrieval  0.48s  0.49 GB  ok=True\n[shm 01:36:56] capture shm_copy  B=  512 rep0: wall   0.62s  worker retrieval  0.26s  0.24 GB  ok=True\n[shm 01:36:57] capture shm_copy  B=  512 rep1: wall   0.51s  worker retrieval  0.16s  0.24 GB  ok=True\n[shm 01:36:57] capture shm_copy  B=  512 rep2: wall   0.53s  worker retrieval  0.17s  0.24 GB  ok=True\n[shm 01:36:58] capture shm_copy  B= 1024 rep0: wall   1.02s  worker retrieval  0.42s  0.49 GB  ok=True\n[shm 01:36:59] capture shm_copy  B= 1024 rep1: wall   0.99s  worker retrieval  0.39s  0.49 GB  ok=True\n[shm 01:37:00] capture shm_copy  B= 1024 rep2: wall   0.92s  worker retrieval  0.33s  0.49 GB  ok=True\n[shm 01:37:00] capture shm_view  B=  512 rep0: wall   0.47s  worker retrieval  0.16s  0.24 GB  ok=True\n[shm 01:37:01] capture shm_view  B=  512 rep1: wall   0.47s  worker retrieval  0.16s  0.24 GB  ok=True\n[shm 01:37:01] capture shm_view  B=  512 rep2: wall   0.47s  worker retrieval  0.18s  0.24 GB  ok=True\n[shm 01:37:02] capture shm_view  B= 1024 rep0: wall   0.82s  worker retrieval  0.31s  0.49 GB  ok=True\n[shm 01:37:03] capture shm_view  B= 1024 rep1: wall   0.81s  worker retrieval  0.29s  0.49 GB  ok=True\n[shm 01:37:04] capture shm_view  B= 1024 rep2: wall   1.25s  worker retrieval  0.31s  0.49 GB  ok=True\n[shm 01:37:04] set_steering_block pickle n=  512: min    6.3 ms median    7.6 ms (2.1 MB)\n[shm 01:37:04] set_steering_block shm    n=  512: min    6.0 ms median    7.2 ms (2.1 MB)\n[shm 01:37:05] set_steering_block pickle n= 1024: min   10.3 ms median   11.7 ms (4.2 MB)\n[shm 01:37:05] set_steering_block shm    n= 1024: min   11.0 ms median   12.5 ms (4.2 MB)\n[shm 01:37:05] steer gen pickle B=  512 rep0: wall   0.55s\n[shm 01:37:06] steer gen pickle B=  512 rep1: wall   0.54s\n[shm 01:37:06] steer gen pickle B=  512 rep2: wall   0.54s\n[shm 01:37:07] steer gen pickle B= 1024 rep0: wall   0.95s\n[shm 01:37:08] steer gen pickle B= 1024 rep1: wall   1.00s\n[shm 01:37:09] steer gen pickle B= 1024 rep2: wall   0.98s\n[shm 01:37:10] steer gen shm    B=  512 rep0: wall   0.60s\n[shm 01:37:11] steer gen shm    B=  512 rep1: wall   0.55s\n[shm 01:37:11] steer gen shm    B=  512 rep2: wall   0.55s\n[shm 01:37:12] steer gen shm    B= 1024 rep0: wall   0.98s\n[shm 01:37:13] steer gen shm    B= 1024 rep1: wall   1.02s\n[shm 01:37:14] steer gen shm    B= 1024 rep2: wall   1.02s\n[shm 01:37:14] done\n(EngineCore pid=48) INFO 09-05 01:37:14 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=48) INFO 09-05 01:37:14 [core.py:1233] Shutdown complete\n\n--- stderr ---\n5.20it/s]\nCapturing CUDA graphs (decode, FULL):  78%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258a  | 65/83 [00:02<00:00, 26.51it/s]\nCapturing CUDA graphs (decode, FULL):  83%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e | 69/83 [00:02<00:00, 28.09it/s]\nCapturing CUDA graphs (decode, FULL):  88%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258a | 73/83 [00:02<00:00, 26.92it/s]\nCapturing CUDA graphs (decode, FULL):  93%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e| 77/83 [00:02<00:00, 28.40it/s]\nCapturing CUDA graphs (decode, FULL):  98%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258a| 81/83 [00:03<00:00,  8.23it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 83/83 [00:04<00:00, 18.05it/s]\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_509f62007a'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_9019206813'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_a531141573'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_5e0b50e3fd'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_1c81381db8'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_7501838a9a'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_d3f3ee4b77'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_c6e3108ec7'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_2077fea19c'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_c56fd2b6a5'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_3bfdc7b456'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_cap_48_cde61f9d0a'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_026ed4f8e1'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_74ef21b438'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_d220414478'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_f7940896a8'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_c089bbe513'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_ecef49e25c'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_e601229a48'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_769e6554e4'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_8886057d51'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_c323ee1132'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_569844f528'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_c382c7ff5c'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_db18b5be8f'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_61977269f7'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_04a0ab383f'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_466ca2bf22'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_b025176bbf'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_40499c6857'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_23f7d1ce2b'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_bench_4_e6dabd04f5'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_820b3b957c'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_eb197bc2d1'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_f3468a217b'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_ee5f3fda0f'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_9b1cb8f8f7'\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.12/multiprocessing/resource_tracker.py\", line 264, in main\n    cache[rtype].remove(name)\nKeyError: '/vllm_lens_steer_4_2d244cc602'\n",
+ "versions": {
+  "vllm": "0.19.0",
+  "torch": "2.10.0+cu128",
+  "transformers": "5.15.0",
+  "vllm-lens": "1.1.0.post6",
+  "flashinfer-python": "0.6.6",
+  "triton": "3.6.0"
+ },
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "layer": 18,
+  "gpu": "NVIDIA B200",
+  "engine_up_s": 46.133496154999996,
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128",
+   "vllm_lens": "1.1.0.post6"
+  },
+  "sizes": [
+   512,
+   1024
+  ],
+  "capture": [
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.8802473829999968,
+    "retrieval_s": 0.22383555299999358,
+    "hook_capture_s": 0.11309504600001219,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.7998371280000001,
+    "retrieval_s": 0.24134628399999514,
+    "hook_capture_s": 0.11022664999999421,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 2,
+    "wall_s": 0.7873408630000043,
+    "retrieval_s": 0.24723328999999694,
+    "hook_capture_s": 0.14257603399999397,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 1.5567581709999985,
+    "retrieval_s": 0.4707107449999981,
+    "hook_capture_s": 0.24737124200000693,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 1.3996487430000002,
+    "retrieval_s": 0.4595635840000014,
+    "hook_capture_s": 0.21104880500000434,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 2,
+    "wall_s": 1.4330896789999983,
+    "retrieval_s": 0.482929998000003,
+    "hook_capture_s": 0.24548965799999678,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.6176921390000132,
+    "retrieval_s": 0.2613914840000007,
+    "hook_capture_s": 0.13458552900000598,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.5120432359999967,
+    "retrieval_s": 0.16337988499999767,
+    "hook_capture_s": 0.12361015000000464,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 512,
+    "rep": 2,
+    "wall_s": 0.5265984309999965,
+    "retrieval_s": 0.1668801830000035,
+    "hook_capture_s": 0.09524425899998334,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 1.0191142150000019,
+    "retrieval_s": 0.4226261390000019,
+    "hook_capture_s": 0.21413193700000477,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 0.9885733800000054,
+    "retrieval_s": 0.3893974089999972,
+    "hook_capture_s": 0.22019042200000172,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_copy",
+    "batch": 1024,
+    "rep": 2,
+    "wall_s": 0.9153546219999953,
+    "retrieval_s": 0.3288030060000011,
+    "hook_capture_s": 0.20868146799999465,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.4666542069999906,
+    "retrieval_s": 0.16386649999999747,
+    "hook_capture_s": 0.12109996000000933,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.46673337400000037,
+    "retrieval_s": 0.16471236600000339,
+    "hook_capture_s": 0.1319188209999993,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 512,
+    "rep": 2,
+    "wall_s": 0.46991177000001016,
+    "retrieval_s": 0.17592988500000217,
+    "hook_capture_s": 0.11611024899998768,
+    "bytes": 242823168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 0.818639454999996,
+    "retrieval_s": 0.3068258769999943,
+    "hook_capture_s": 0.2096133430000009,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 0.814210296000013,
+    "retrieval_s": 0.29394154099999525,
+    "hook_capture_s": 0.22647529099999986,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   },
+   {
+    "transport": "shm_view",
+    "batch": 1024,
+    "rep": 2,
+    "wall_s": 1.2541104969999992,
+    "retrieval_s": 0.3083387860000073,
+    "hook_capture_s": 0.21643709500001762,
+    "bytes": 486535168,
+    "shapes_ok": true,
+    "sample_norm": 522.8626098632812
+   }
+  ],
+  "vectors": [
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.5538326430000069,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.5417183510000001,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "rep": 2,
+    "wall_s": 0.5404116229999971,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 0.9517191639999965,
+    "gen_tokens": 40960
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 0.9991910720000021,
+    "gen_tokens": 40960
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "rep": 2,
+    "wall_s": 0.9791628279999998,
+    "gen_tokens": 40960
+   },
+   {
+    "transport": "shm",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.6036042570000006,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "shm",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.5459789049999983,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "shm",
+    "batch": 512,
+    "rep": 2,
+    "wall_s": 0.5525254789999963,
+    "gen_tokens": 20480
+   },
+   {
+    "transport": "shm",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 0.9765318390000033,
+    "gen_tokens": 40960
+   },
+   {
+    "transport": "shm",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 1.0178478179999928,
+    "gen_tokens": 40960
+   },
+   {
+    "transport": "shm",
+    "batch": 1024,
+    "rep": 2,
+    "wall_s": 1.0242929650000008,
+    "gen_tokens": 40960
+   }
+  ],
+  "rpc": [
+   {
+    "transport": "pickle",
+    "batch": 512,
+    "bytes": 2097152,
+    "rpc_s_min": 0.0062786410000086335,
+    "rpc_s_median": 0.007623772000002305,
+    "n": 10
+   },
+   {
+    "transport": "shm",
+    "batch": 512,
+    "bytes": 2097152,
+    "rpc_s_min": 0.006029553000004739,
+    "rpc_s_median": 0.007166189000002987,
+    "n": 10
+   },
+   {
+    "transport": "pickle",
+    "batch": 1024,
+    "bytes": 4194304,
+    "rpc_s_min": 0.010326374000001692,
+    "rpc_s_median": 0.011725245999997469,
+    "n": 10
+   },
+   {
+    "transport": "shm",
+    "batch": 1024,
+    "bytes": 4194304,
+    "rpc_s_min": 0.010989320999996721,
+    "rpc_s_median": 0.012452998000000548,
+    "n": 10
+   }
+  ],
+  "hidden_dim": 2048
+ }
+}

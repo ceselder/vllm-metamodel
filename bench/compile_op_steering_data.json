@@ -1,0 +1,228 @@
+{
+ "sources": [
+  "bench/results/compile_0.19.0_20260905_012859",
+  "bench/results/compile_0.27.1_20260905_013628"
+ ],
+ "versions": {
+  "0.19.0": {
+   "Qwen/Qwen3.6-27B": {
+    "steer3d_wall_s": {
+     "hooks_graphs": {
+      "B=512": 6.260043873000029,
+      "B=1024": 11.793048150000004
+     },
+     "compile_op": {
+      "B=512": 5.802838842000028,
+      "B=1024": 10.982559374999937
+     }
+    },
+    "nosteer_wall_s": {
+     "hooks_graphs": {
+      "B=512": 6.1729332099999965,
+      "B=1024": 11.461544586999992
+     },
+     "compile_op": {
+      "B=512": 5.868012825000051,
+      "B=1024": 11.031097415999966
+     },
+     "plain": {
+      "B=512": 5.775542940999912,
+      "B=1024": 10.841913224000109
+     }
+    },
+    "compile_probe": {
+     "cos_delta_vs_v": 0.9999943971633911,
+     "norm_ratio": 1.0000168085098267,
+     "max_other_row_abs_delta": 0.0,
+     "ok": true
+    },
+    "compile_stats_steer3d": {
+     "rows_steered": 3072,
+     "op_calls": 1495,
+     "steps_planned": 23,
+     "errors": 0
+    },
+    "resolved": {
+     "graphs": "NONE",
+     "compile": "VLLM_COMPILE",
+     "plain": "VLLM_COMPILE"
+    },
+    "engine_up_s": {
+     "graphs": 305.646330987,
+     "compile": 778.219967177,
+     "plain": 302.9582298550001
+    },
+    "injection_compile": {
+     "n_checks": 37,
+     "n_pass": 37,
+     "n_unresolvable": 0,
+     "failed": []
+    }
+   },
+   "Qwen/Qwen3-1.7B": {
+    "steer3d_wall_s": {
+     "hooks_graphs": {
+      "B=512": 0.6373869920000033,
+      "B=1024": 1.0510102599999982
+     },
+     "compile_op": {
+      "B=512": 0.5779479379999941,
+      "B=1024": 1.003226460999997
+     }
+    },
+    "nosteer_wall_s": {
+     "hooks_graphs": {
+      "B=512": 0.6027713820000002,
+      "B=1024": 1.068487196999996
+     },
+     "compile_op": {
+      "B=512": 0.5633145490000118,
+      "B=1024": 0.9999701710000011
+     },
+     "plain": {
+      "B=512": 0.5183957970000108,
+      "B=1024": 0.9494960529999901
+     }
+    },
+    "compile_probe": {
+     "cos_delta_vs_v": 0.9999921917915344,
+     "norm_ratio": 1.0001012086868286,
+     "max_other_row_abs_delta": 0.0,
+     "ok": true
+    },
+    "compile_stats_steer3d": {
+     "rows_steered": 3072,
+     "op_calls": 435,
+     "steps_planned": 15,
+     "errors": 0
+    },
+    "resolved": {
+     "graphs": "NONE",
+     "compile": "VLLM_COMPILE",
+     "plain": "VLLM_COMPILE"
+    },
+    "engine_up_s": {
+     "graphs": 50.06476011000001,
+     "compile": 83.140528552,
+     "plain": 28.704802495000024
+    },
+    "injection_compile": {
+     "n_checks": 53,
+     "n_pass": 51,
+     "n_unresolvable": 2,
+     "failed": []
+    }
+   }
+  },
+  "0.27.1": {
+   "Qwen/Qwen3.6-27B": {
+    "steer3d_wall_s": {
+     "hooks_graphs": {
+      "B=512": 6.118586522000015,
+      "B=1024": 11.633095748000017
+     },
+     "compile_op": {
+      "B=512": 5.170361274000015,
+      "B=1024": 9.981420045999926
+     }
+    },
+    "nosteer_wall_s": {
+     "hooks_graphs": {
+      "B=512": 6.072938136000005,
+      "B=1024": 11.52909176
+     },
+     "compile_op": {
+      "B=512": 5.126742134999972,
+      "B=1024": 9.840659919000018
+     },
+     "plain": {
+      "B=512": 5.0905363580000085,
+      "B=1024": 9.777963519999957
+     }
+    },
+    "compile_probe": {
+     "cos_delta_vs_v": 0.9999944567680359,
+     "norm_ratio": 0.999958872795105,
+     "max_other_row_abs_delta": 0.0,
+     "ok": true
+    },
+    "compile_stats_steer3d": {
+     "rows_steered": 3072,
+     "op_calls": 1300,
+     "steps_planned": 20,
+     "errors": 0
+    },
+    "resolved": {
+     "graphs": "NONE",
+     "compile": "VLLM_COMPILE",
+     "plain": "VLLM_COMPILE"
+    },
+    "engine_up_s": {
+     "graphs": 124.95389239599999,
+     "compile": 248.37543018099998,
+     "plain": 133.37311818499995
+    },
+    "injection_compile": {
+     "n_checks": 37,
+     "n_pass": 37,
+     "n_unresolvable": 0,
+     "failed": []
+    }
+   },
+   "Qwen/Qwen3-1.7B": {
+    "steer3d_wall_s": {
+     "hooks_graphs": {
+      "B=512": 0.5431406640000063,
+      "B=1024": 1.0523378829999928
+     },
+     "compile_op": {
+      "B=512": 0.5441858290000141,
+      "B=1024": 0.9795769140000061
+     }
+    },
+    "nosteer_wall_s": {
+     "hooks_graphs": {
+      "B=512": 0.5608224409999991,
+      "B=1024": 0.9706539310000011
+     },
+     "compile_op": {
+      "B=512": 0.5163102550000076,
+      "B=1024": 0.9831800229999885
+     },
+     "plain": {
+      "B=512": 0.47829587000001084,
+      "B=1024": 0.7947228190000146
+     }
+    },
+    "compile_probe": {
+     "cos_delta_vs_v": 0.9999921321868896,
+     "norm_ratio": 1.000102162361145,
+     "max_other_row_abs_delta": 0.0,
+     "ok": true
+    },
+    "compile_stats_steer3d": {
+     "rows_steered": 3072,
+     "op_calls": 464,
+     "steps_planned": 16,
+     "errors": 0
+    },
+    "resolved": {
+     "graphs": "NONE",
+     "compile": "VLLM_COMPILE",
+     "plain": "VLLM_COMPILE"
+    },
+    "engine_up_s": {
+     "graphs": 89.470993452,
+     "compile": 81.08639027100001,
+     "plain": 52.92804638299998
+    },
+    "injection_compile": {
+     "n_checks": 53,
+     "n_pass": 49,
+     "n_unresolvable": 4,
+     "failed": []
+    }
+   }
+  }
+ }
+}

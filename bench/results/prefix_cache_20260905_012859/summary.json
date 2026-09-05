@@ -1,0 +1,1663 @@
+{
+ "runs": {
+  "Qwen__Qwen3-1.7B__pc_hazard_unsalted": {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "unsalted": true,
+   "steering_effect_median_max_dlogprob": 0.13667726516723633,
+   "cache_counters": {
+    "start": {
+     "queries": 0,
+     "hits": 0
+    },
+    "after_plain": {
+     "queries": 3072,
+     "hits": 2560
+    },
+    "before_plain_after_steered_then_plain@70": {
+     "queries": 4624,
+     "hits": 4000
+    },
+    "after_steered_then_plain@70": {
+     "queries": 6160,
+     "hits": 5280
+    },
+    "before_plain_after_steered_then_plain@90": {
+     "queries": 6928,
+     "hits": 5840
+    },
+    "after_steered_then_plain@90": {
+     "queries": 8464,
+     "hits": 7120
+    },
+    "before_payload": {
+     "queries": 15376,
+     "hits": 12800
+    },
+    "after_payload": {
+     "queries": 15376,
+     "hits": 12800
+    },
+    "end": {
+     "queries": 16920,
+     "hits": 14112
+    }
+   },
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "cases": {
+    "plain": {
+     "d_cold": 0.0,
+     "d_warm": 0.0,
+     "floor": 0.0,
+     "tol": 0.02,
+     "greedy_equal_warm": true,
+     "floor_b_1token_recompute": 0.07612800598144531,
+     "tol_b": 0.38064002990722656
+    },
+    "steered_then_plain@70": {
+     "marker 70 (shareable block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.247039794921875,
+      "mean_dlogprob": 0.247039794921875,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": true
+    },
+    "plain_then_steered@70": {
+     "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "steered_then_plain@90": {
+     "marker 90 (last block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@90": {
+     "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "mixed": {
+     "first call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "second call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "payload_groups": {
+     "first call (identical rows may share steered blocks within the batch)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_first_call": 64,
+     "second call (steered blocks of every group cached)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_two_calls": 128,
+     "plain rows afterwards (payload-salted blocks not readable by plain rows)": {
+      "max_dlogprob": 0.247039794921875,
+      "mean_dlogprob": 0.247039794921875,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "last_token_marker": {
+     "first call": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "second call (identical payload tags: must NOT share -> marker recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "plain prompt-B rows afterwards (no leak)": {
+      "max_dlogprob": 0.07612800598144531,
+      "mean_dlogprob": 0.07612800598144531,
+      "greedy_equal": 4,
+      "n": 4,
+      "tol": 0.38064002990722656
+     }
+    },
+    "steer_capture": {
+     "rel": 0.0
+    }
+   }
+  },
+  "Qwen__Qwen3-1.7B__pc_test_eager": {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "eager",
+   "unsalted": false,
+   "steering_effect_median_max_dlogprob": 0.13667726516723633,
+   "cache_counters": {
+    "start": {
+     "queries": 0,
+     "hits": 0
+    },
+    "after_plain": {
+     "queries": 3072,
+     "hits": 2560
+    },
+    "before_plain_after_steered_then_plain@70": {
+     "queries": 10768,
+     "hits": 8032
+    },
+    "after_steered_then_plain@70": {
+     "queries": 12304,
+     "hits": 9296
+    },
+    "before_plain_after_steered_then_plain@90": {
+     "queries": 25360,
+     "hits": 18992
+    },
+    "after_steered_then_plain@90": {
+     "queries": 26896,
+     "hits": 20272
+    },
+    "before_payload": {
+     "queries": 46096,
+     "hits": 36192
+    },
+    "after_payload": {
+     "queries": 58384,
+     "hits": 46240
+    },
+    "end": {
+     "queries": 63800,
+     "hits": 50736
+    }
+   },
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "cases": {
+    "plain": {
+     "d_cold": 0.0,
+     "d_warm": 0.0,
+     "floor": 0.0,
+     "tol": 0.02,
+     "greedy_equal_warm": true,
+     "floor_b_1token_recompute": 0.07612800598144531,
+     "tol_b": 0.38064002990722656
+    },
+    "steered_then_plain@70": {
+     "marker 70 (shareable block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@70": {
+     "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "steered_then_plain@90": {
+     "marker 90 (last block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@90": {
+     "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "mixed": {
+     "first call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "second call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "payload_groups": {
+     "first call (identical rows may share steered blocks within the batch)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_first_call": 8,
+     "second call (steered blocks of every group cached)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_two_calls": 8,
+     "plain rows afterwards (payload-salted blocks not readable by plain rows)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "last_token_marker": {
+     "first call": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "second call (identical payload tags: must NOT share -> marker recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "plain prompt-B rows afterwards (no leak)": {
+      "max_dlogprob": 0.07612800598144531,
+      "mean_dlogprob": 0.07612800598144531,
+      "greedy_equal": 4,
+      "n": 4,
+      "tol": 0.38064002990722656
+     }
+    },
+    "early_exit": {
+     "readout_max_abs_diff": 3.725290298461914e-09,
+     "early_exits": 2,
+     "refused": 0,
+     "plain rows AFTER early-exit rows (no garbage-KV reuse)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "steer_capture": {
+     "rel": 0.0
+    }
+   }
+  },
+  "Qwen__Qwen3-1.7B__pc_test_graphs": {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "unsalted": false,
+   "steering_effect_median_max_dlogprob": 0.13667726516723633,
+   "cache_counters": {
+    "start": {
+     "queries": 0,
+     "hits": 0
+    },
+    "after_plain": {
+     "queries": 3072,
+     "hits": 2560
+    },
+    "before_plain_after_steered_then_plain@70": {
+     "queries": 10768,
+     "hits": 8032
+    },
+    "after_steered_then_plain@70": {
+     "queries": 12304,
+     "hits": 9296
+    },
+    "before_plain_after_steered_then_plain@90": {
+     "queries": 25360,
+     "hits": 18992
+    },
+    "after_steered_then_plain@90": {
+     "queries": 26896,
+     "hits": 20272
+    },
+    "before_payload": {
+     "queries": 46096,
+     "hits": 36192
+    },
+    "after_payload": {
+     "queries": 58384,
+     "hits": 46240
+    },
+    "end": {
+     "queries": 63800,
+     "hits": 50736
+    }
+   },
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "cases": {
+    "plain": {
+     "d_cold": 0.0,
+     "d_warm": 0.0,
+     "floor": 0.0,
+     "tol": 0.02,
+     "greedy_equal_warm": true,
+     "floor_b_1token_recompute": 0.07612800598144531,
+     "tol_b": 0.38064002990722656
+    },
+    "steered_then_plain@70": {
+     "marker 70 (shareable block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@70": {
+     "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "steered_then_plain@90": {
+     "marker 90 (last block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@90": {
+     "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "mixed": {
+     "first call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "second call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "payload_groups": {
+     "first call (identical rows may share steered blocks within the batch)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_first_call": 8,
+     "second call (steered blocks of every group cached)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_two_calls": 8,
+     "plain rows afterwards (payload-salted blocks not readable by plain rows)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "last_token_marker": {
+     "first call": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "second call (identical payload tags: must NOT share -> marker recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.38064002990722656
+     },
+     "plain prompt-B rows afterwards (no leak)": {
+      "max_dlogprob": 0.07612800598144531,
+      "mean_dlogprob": 0.07612800598144531,
+      "greedy_equal": 4,
+      "n": 4,
+      "tol": 0.38064002990722656
+     }
+    },
+    "early_exit": {
+     "readout_max_abs_diff": 3.725290298461914e-09,
+     "early_exits": 2,
+     "refused": 0,
+     "plain rows AFTER early-exit rows (no garbage-KV reuse)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "steer_capture": {
+     "rel": 0.0
+    }
+   }
+  },
+  "Qwen__Qwen3-1.7B__readout_off": {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "unsalted": null,
+   "steering_effect_median_max_dlogprob": null,
+   "cache_counters": null,
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128"
+   },
+   "cases": null
+  },
+  "Qwen__Qwen3-1.7B__readout_on": {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "graphs",
+   "unsalted": null,
+   "steering_effect_median_max_dlogprob": null,
+   "cache_counters": null,
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128"
+   },
+   "cases": null
+  },
+  "Qwen__Qwen3.6-27B__pc_test_graphs": {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "unsalted": false,
+   "steering_effect_median_max_dlogprob": 0.5048408508300781,
+   "cache_counters": {
+    "start": {
+     "queries": 0,
+     "hits": 0
+    },
+    "after_plain": {
+     "queries": 3072,
+     "hits": 0
+    },
+    "before_plain_after_steered_then_plain@70": {
+     "queries": 10768,
+     "hits": 0
+    },
+    "after_steered_then_plain@70": {
+     "queries": 12304,
+     "hits": 0
+    },
+    "before_plain_after_steered_then_plain@90": {
+     "queries": 25360,
+     "hits": 0
+    },
+    "after_steered_then_plain@90": {
+     "queries": 26896,
+     "hits": 0
+    },
+    "before_payload": {
+     "queries": 46096,
+     "hits": 0
+    },
+    "after_payload": {
+     "queries": 58384,
+     "hits": 0
+    },
+    "end": {
+     "queries": 63800,
+     "hits": 0
+    }
+   },
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "cases": {
+    "plain": {
+     "d_cold": 0.0,
+     "d_warm": 0.0,
+     "floor": 0.0,
+     "tol": 0.02,
+     "greedy_equal_warm": true,
+     "floor_b_1token_recompute": 0.0,
+     "tol_b": 0.02
+    },
+    "steered_then_plain@70": {
+     "marker 70 (shareable block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@70": {
+     "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "steered_then_plain@90": {
+     "marker 90 (last block): steered rows into an empty cache": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "leak_observed": false
+    },
+    "plain_then_steered@90": {
+     "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "mixed": {
+     "first call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "second call: interleaved steered / plain rows": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     }
+    },
+    "payload_groups": {
+     "first call (identical rows may share steered blocks within the batch)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_first_call": 64,
+     "second call (steered blocks of every group cached)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 64,
+      "n": 64,
+      "tol": 0.02
+     },
+     "rows_steered_two_calls": 128,
+     "plain rows afterwards (payload-salted blocks not readable by plain rows)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "last_token_marker": {
+     "first call": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "second call (identical payload tags: must NOT share -> marker recomputed)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 16,
+      "n": 16,
+      "tol": 0.02
+     },
+     "plain prompt-B rows afterwards (no leak)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 4,
+      "n": 4,
+      "tol": 0.02
+     }
+    },
+    "early_exit": {
+     "readout_max_abs_diff": 1.862645149230957e-09,
+     "early_exits": 2,
+     "refused": 0,
+     "plain rows AFTER early-exit rows (no garbage-KV reuse)": {
+      "max_dlogprob": 0.0,
+      "mean_dlogprob": 0.0,
+      "greedy_equal": 8,
+      "n": 8,
+      "tol": 0.02
+     }
+    },
+    "steer_capture": {
+     "rel": 0.0
+    }
+   }
+  },
+  "Qwen__Qwen3.6-27B__readout_off": {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "unsalted": null,
+   "steering_effect_median_max_dlogprob": null,
+   "cache_counters": null,
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128"
+   },
+   "cases": null
+  },
+  "Qwen__Qwen3.6-27B__readout_on": {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "graphs",
+   "unsalted": null,
+   "steering_effect_median_max_dlogprob": null,
+   "cache_counters": null,
+   "versions": {
+    "vllm": "0.19.0",
+    "torch": "2.10.0+cu128"
+   },
+   "cases": null
+  }
+ },
+ "checks": [
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain",
+   "check": "plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.137",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain",
+   "check": "prefix cache is being used (hit counter rose on the warm call)",
+   "ok": true,
+   "detail": "queries 0->3072 hits 0->2560",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain",
+   "check": "steering effect >> tolerance (the contamination checks below are meaningful)",
+   "ok": true,
+   "detail": "median steered-vs-clean max|\u0394| 0.137 vs tol 2.00e-02",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain",
+   "check": "prompt B plain rows (1-token recompute after a full-prompt hit) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob|=7.61e-02 -> tolerance 3.81e-01",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": false,
+   "detail": "max|\u0394|=2.47e-01 mean=2.47e-01 tol=2.00e-02; greedy-8 equal 16/16",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 4000->5280 (blocks before the salted one are shared by causality)",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 5840->7120 (blocks before the salted one are shared by causality)",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "mixed",
+   "check": "first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "mixed",
+   "check": "second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "payload_groups",
+   "check": "first call (identical rows may share steered blocks within the batch): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "payload_groups",
+   "check": "second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "payload_groups",
+   "check": "steered blocks shared between identical rows: rows_steered over both calls < 128 (hits rose), no salt misses",
+   "ok": false,
+   "detail": "rows_steered first call=64 both calls=128 (128 requests) hits 12800->12800 kv_salt_miss=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "payload_groups",
+   "check": "plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": false,
+   "detail": "max|\u0394|=2.47e-01 mean=2.47e-01 tol=2.00e-02; greedy-8 equal 8/8",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "last_token_marker",
+   "check": "first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "last_token_marker",
+   "check": "second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "last_token_marker",
+   "check": "marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32",
+   "ok": true,
+   "detail": "rows_steered=32 kv_salt_miss=0",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "last_token_marker",
+   "check": "plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=7.61e-02 mean=7.61e-02 tol=3.81e-01; greedy-8 equal 4/4",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "early_exit",
+   "check": "early exit is available with prefix caching enabled (salted from token 0)",
+   "ok": true,
+   "detail": "early_exit=False reason=enable_prefix_caching=True and the scheduler process does not run the vllm-lens block-hash salt patch (skipped layers would leave reusable garbage KV blocks) kv_salt_active=False",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_hazard_unsalted",
+   "case": "steer_capture",
+   "check": "captured steered marker row == no-cache reference (rel <= 1e-3)",
+   "ok": true,
+   "detail": "rel=0.00e+00",
+   "hazard_mode": true
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain",
+   "check": "plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.137"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain",
+   "check": "prefix cache is being used (hit counter rose on the warm call)",
+   "ok": true,
+   "detail": "queries 0->3072 hits 0->2560"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain",
+   "check": "steering effect >> tolerance (the contamination checks below are meaningful)",
+   "ok": true,
+   "detail": "median steered-vs-clean max|\u0394| 0.137 vs tol 2.00e-02"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain",
+   "check": "prompt B plain rows (1-token recompute after a full-prompt hit) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob|=7.61e-02 -> tolerance 3.81e-01"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 8032->9296 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 18992->20272 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "mixed",
+   "check": "first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "mixed",
+   "check": "second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "payload_groups",
+   "check": "first call (identical rows may share steered blocks within the batch): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "payload_groups",
+   "check": "second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "payload_groups",
+   "check": "steered blocks shared between identical rows: rows_steered over both calls < 128 (hits rose), no salt misses",
+   "ok": true,
+   "detail": "rows_steered first call=8 both calls=8 (128 requests) hits 36192->46240 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "payload_groups",
+   "check": "plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "last_token_marker",
+   "check": "first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "last_token_marker",
+   "check": "second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "last_token_marker",
+   "check": "marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32",
+   "ok": true,
+   "detail": "rows_steered=32 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "last_token_marker",
+   "check": "plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=7.61e-02 mean=7.61e-02 tol=3.81e-01; greedy-8 equal 4/4"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "early_exit",
+   "check": "early exit is available with prefix caching enabled (salted from token 0)",
+   "ok": true,
+   "detail": "early_exit=True reason=ok kv_salt_active=True"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "early_exit",
+   "check": "readout values under early exit == no-cache reference (|\u0394cos| <= 1e-3) and the pass exited early",
+   "ok": true,
+   "detail": "max|\u0394|=3.73e-09 early_exits=2 refused_unsalted=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "early_exit",
+   "check": "plain rows AFTER early-exit rows (no garbage-KV reuse): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_eager",
+   "case": "steer_capture",
+   "check": "captured steered marker row == no-cache reference (rel <= 1e-3)",
+   "ok": true,
+   "detail": "rel=0.00e+00"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain",
+   "check": "plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.137"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain",
+   "check": "prefix cache is being used (hit counter rose on the warm call)",
+   "ok": true,
+   "detail": "queries 0->3072 hits 0->2560"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain",
+   "check": "steering effect >> tolerance (the contamination checks below are meaningful)",
+   "ok": true,
+   "detail": "median steered-vs-clean max|\u0394| 0.137 vs tol 2.00e-02"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain",
+   "check": "prompt B plain rows (1-token recompute after a full-prompt hit) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob|=7.61e-02 -> tolerance 3.81e-01"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 8032->9296 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": true,
+   "detail": "hits 18992->20272 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "mixed",
+   "check": "first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "mixed",
+   "check": "second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "first call (identical rows may share steered blocks within the batch): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "steered blocks shared between identical rows: rows_steered over both calls < 128 (hits rose), no salt misses",
+   "ok": true,
+   "detail": "rows_steered first call=8 both calls=8 (128 requests) hits 36192->46240 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=3.81e-01; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32",
+   "ok": true,
+   "detail": "rows_steered=32 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=7.61e-02 mean=7.61e-02 tol=3.81e-01; greedy-8 equal 4/4"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "early exit is available with prefix caching enabled (salted from token 0)",
+   "ok": true,
+   "detail": "early_exit=True reason=ok kv_salt_active=True"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "readout values under early exit == no-cache reference (|\u0394cos| <= 1e-3) and the pass exited early",
+   "ok": true,
+   "detail": "max|\u0394|=3.73e-09 early_exits=2 refused_unsalted=0"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "plain rows AFTER early-exit rows (no garbage-KV reuse): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3-1.7B__pc_test_graphs",
+   "case": "steer_capture",
+   "check": "captured steered marker row == no-cache reference (rel <= 1e-3)",
+   "ok": true,
+   "detail": "rel=0.00e+00"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain",
+   "check": "plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.505"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain",
+   "check": "prefix cache is being used (hit counter rose on the warm call)",
+   "ok": false,
+   "detail": "queries 0->3072 hits 0->0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain",
+   "check": "steering effect >> tolerance (the contamination checks below are meaningful)",
+   "ok": true,
+   "detail": "median steered-vs-clean max|\u0394| 0.505 vs tol 2.00e-02"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain",
+   "check": "prompt B plain rows (1-token recompute after a full-prompt hit) match the no-cache reference (kernel-path floor)",
+   "ok": true,
+   "detail": "max|\u0394 top-20 logprob|=0.00e+00 -> tolerance 2.00e-02"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@70",
+   "check": "marker 70 (shareable block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": false,
+   "detail": "hits 0->0 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain_then_steered@70",
+   "check": "marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): steered rows into an empty cache: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=0 errors=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steered_then_plain@90",
+   "check": "marker 90 (last block): plain rows reused the steered rows' UNSALTED prefix blocks (hits rose)",
+   "ok": false,
+   "detail": "hits 0->0 (blocks before the salted one are shared by causality)"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "plain_then_steered@90",
+   "check": "marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses",
+   "ok": true,
+   "detail": "rows_steered=64 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "mixed",
+   "check": "first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "mixed",
+   "check": "second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "first call (identical rows may share steered blocks within the batch): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "steered blocks shared between identical rows: rows_steered over both calls < 128 (hits rose), no salt misses",
+   "ok": false,
+   "detail": "rows_steered first call=64 both calls=128 (128 requests) hits 0->0 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "payload_groups",
+   "check": "plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32",
+   "ok": true,
+   "detail": "rows_steered=32 kv_salt_miss=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "last_token_marker",
+   "check": "plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 4/4"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "early exit is available with prefix caching enabled (salted from token 0)",
+   "ok": true,
+   "detail": "early_exit=True reason=ok kv_salt_active=True"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "readout values under early exit == no-cache reference (|\u0394cos| <= 1e-3) and the pass exited early",
+   "ok": true,
+   "detail": "max|\u0394|=1.86e-09 early_exits=2 refused_unsalted=0"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "early_exit",
+   "check": "plain rows AFTER early-exit rows (no garbage-KV reuse): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 8/8"
+  },
+  {
+   "run": "Qwen__Qwen3.6-27B__pc_test_graphs",
+   "case": "steer_capture",
+   "check": "captured steered marker row == no-cache reference (rel <= 1e-3)",
+   "ok": true,
+   "detail": "rel=0.00e+00"
+  }
+ ],
+ "n_checks": 118,
+ "n_pass": 111,
+ "all_pass": false
+}

@@ -41,3 +41,9 @@ bench/results/*
 !bench/results/lora_*/
 !bench/results/injection_20260904_080711/
 !bench/results/injection_20260904_080715/
+!bench/results/prefix_cache_20260905_011006/
+!bench/results/prefix_cache_20260905_012859/
+!bench/results/compile_0.19.0_20260905_012859/
+!bench/results/compile_0.27.1_20260905_013628/
+!bench/results/shm_20260905_013547/
+!bench/results/shm_20260905_015102/

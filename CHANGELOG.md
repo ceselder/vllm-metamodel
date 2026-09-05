@@ -92,7 +92,11 @@ exactness asserts (`bench/test_prefix_cache.py`, `bench/test_injection_modes.py 
   B = 1,024 **1.051 s (hook engine) → 1.003 s (compile + op hooks, −4.6 %)**, plain vLLM 0.949 s;
   probes cos(Δ, v) = 0.99999, magnitude ratio 1.0001, other rows untouched; injection matrix on the
   compile engine 51/53 (2 unresolvable at this scale, 0 failures); `op_calls` = layers + 1 per prefill
-  pass, 0 inside decode graphs.  Qwen3.6-27B / vLLM 0.19: COMPILE27B_019.  **vLLM 0.27.1 (where compile
+  pass, 0 inside decode graphs.  Qwen3.6-27B / vLLM 0.19: steered `generate()` at B = 1,024 **11.79 s
+  (hook engine) → 10.98 s (−7 %)**, B = 512 6.26 → 5.80 s (−7 %); plain vLLM 10.84 / 5.78 s, so steering
+  costs +1.3 % instead of +8.8 %; injection matrix on the 27B compile engine 37/37; but the compiled
+  27B engine took 778 s to start on 0.19 (torch.compile of 64 layers; 306 s for the hook engine) --
+  a one-time cost where vLLM's compile cache persists, paid on every ephemeral container.  **vLLM 0.27.1 (where compile
   is worth the most): Qwen3.6-27B steered `generate()` at B = 1,024 11.63 s (hook engine) → 9.98 s
   (−14 %), B = 512 6.12 → 5.17 s (−16 %); plain vLLM 9.78 / 5.09 s, i.e. steering now costs +2 %
   instead of +19 %**; injection matrix on the 27B compile engine 37/37; Qwen3-1.7B 1.052 → 0.980 s

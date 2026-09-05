@@ -1,0 +1,13 @@
+{
+ "returncode": 2,
+ "elapsed_s": 0.19358110427856445,
+ "log_tail": "\n--- stderr ---\nusage: bench_readout.py [-h] --model MODEL --stage {hf,vllm}\n                        [--engine {eager,graphs}] --out OUT [--ref REF]\n                        --layer LAYER [--n-texts N_TEXTS] [--min-len MIN_LEN]\n                        [--max-len MAX_LEN] [--last-k LAST_K] [--sizes SIZES]\n                        [--gen-sizes GEN_SIZES] [--gen-tokens GEN_TOKENS]\n                        [--hf-batch HF_BATCH] [--repeats REPEATS]\n                        [--conditions CONDITIONS] [--gpu-mem GPU_MEM]\n                        [--attention-backend ATTENTION_BACKEND]\n                        [--language-model-only] [--enable-lora]\n                        [--prefix-caching] [--seed SEED]\nbench_readout.py: error: unrecognized arguments: --prompt-tokens 96\n",
+ "versions": {
+  "vllm": "0.19.0",
+  "torch": "2.10.0+cu128",
+  "transformers": "5.15.0",
+  "vllm-lens": "1.1.0.post6",
+  "flashinfer-python": "0.6.6",
+  "triton": "3.6.0"
+ }
+}

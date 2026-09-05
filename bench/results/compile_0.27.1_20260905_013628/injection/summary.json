@@ -1,0 +1,1236 @@
+{
+ "rows": [
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 64,
+   "coeff": 1.0,
+   "n_checked": 64,
+   "min_cos_delta_vs_v": 0.9999892711639404,
+   "max_abs_ratio_minus_1": 0.0003191232681274414,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0,
+   "hf_cos": 0.999989926815033,
+   "hf_ratio": 1.0007935762405396
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 512,
+   "coeff": 1.0,
+   "n_checked": 17,
+   "min_cos_delta_vs_v": 0.9999898672103882,
+   "max_abs_ratio_minus_1": 0.0003529787063598633,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 64,
+   "coeff": 4.0,
+   "n_checked": 64,
+   "min_cos_delta_vs_v": 0.9999936819076538,
+   "max_abs_ratio_minus_1": 0.0002827644348144531,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0,
+   "hf_cos": 0.999994158744812,
+   "hf_ratio": 1.0005487203598022
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 512,
+   "coeff": 4.0,
+   "n_checked": 17,
+   "min_cos_delta_vs_v": 0.9999938011169434,
+   "max_abs_ratio_minus_1": 0.00019562244415283203,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add_generation",
+   "coeff": 1.0,
+   "clean_logprob_noise_vs_hf": 0.16487503051757812,
+   "steered_logprob_maxdiff_vs_hf": 0.18953180313110352,
+   "greedy_all_equal": true,
+   "n_greedy_equal": 4
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "karvonen_add_generation",
+   "coeff": 4.0,
+   "clean_logprob_noise_vs_hf": 0.16487503051757812,
+   "steered_logprob_maxdiff_vs_hf": 0.15120506286621094,
+   "greedy_all_equal": true,
+   "n_greedy_equal": 4
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "layer_replace",
+   "batch": 64,
+   "scale": 23.134790420532227,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0,
+   "max_rel_err_marker_row": 0.007633587786259542,
+   "min_cos_marker_row": 0.9999970197677612
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 1.3797909021377563,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.007633587786259542,
+   "min_cos_marker_row": 0.999997079372406,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 1.890625
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 512,
+   "norm_match": false,
+   "scale": 1.3797909021377563,
+   "n_checked": 17,
+   "max_rel_err_marker_row": 0.007751937984496124,
+   "min_cos_marker_row": 0.9999971985816956,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 1.8671875
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 64,
+   "norm_match": true,
+   "scale": 1.0,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.007633587786259542,
+   "min_cos_marker_row": 0.9999971389770508,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 1.890625
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 512,
+   "norm_match": true,
+   "scale": 1.0,
+   "n_checked": 17,
+   "max_rel_err_marker_row": 0.007751937984496124,
+   "min_cos_marker_row": 0.9999971389770508,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 1.8671875
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "mixed",
+   "batch": 64,
+   "coeff": 1.0,
+   "norm_match": false,
+   "scale": 1.3797909021377563,
+   "n_checked": 32,
+   "max_rel_err_marker_row": 0.005319148936170213,
+   "min_cos_marker_row": 0.9999971389770508,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 1.890625,
+   "add_min_cos": 0.9999894499778748,
+   "add_max_abs_ratio_minus_1": 0.0003191232681274414
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/nosteer",
+   "batch": 512,
+   "wall_s": 0.49846643999995877,
+   "tok_per_s": 41086.0157406017,
+   "hook_passes": 4,
+   "decode_step_ms": 6.776492087500685,
+   "decode_step_spread": 0.2962584031791482,
+   "decode_step_min_ms": 6.76809057500094,
+   "wall_2T_s": 0.7691900629999964,
+   "prefill_plus_overhead_s": 0.22774281699992116,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 0.49846643999995877,
+     "wall_2T_s": 0.8096779779999679
+    },
+    {
+     "wall_s": 0.5382822339999507,
+     "wall_2T_s": 0.7691900629999964
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/nosteer",
+   "batch": 1024,
+   "wall_s": 0.9637269329999754,
+   "tok_per_s": 42501.66577009117,
+   "hook_passes": 6,
+   "decode_step_ms": 15.795031224999434,
+   "decode_step_spread": 0.10949470915031871,
+   "decode_step_min_ms": 15.007153000000528,
+   "wall_2T_s": 1.5640130529999965,
+   "prefill_plus_overhead_s": 0.36344081299995423,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 0.9637269329999754,
+     "wall_2T_s": 1.630117628999983
+    },
+    {
+     "wall_s": 0.9668012510000494,
+     "wall_2T_s": 1.5640130529999965
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/karvonen_add",
+   "batch": 512,
+   "wall_s": 0.5251443880000011,
+   "tok_per_s": 38998.79817434126,
+   "hook_passes": 4,
+   "decode_step_ms": 7.368770574998962,
+   "decode_step_spread": 0.03628297926745625,
+   "decode_step_min_ms": 7.235090099999297,
+   "wall_2T_s": 0.814547991999973,
+   "prefill_plus_overhead_s": 0.23574078400002918,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 0.5415294630000176,
+     "wall_2T_s": 0.8416275049999626
+    },
+    {
+     "wall_s": 0.5251443880000011,
+     "wall_2T_s": 0.814547991999973
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/karvonen_add",
+   "batch": 1024,
+   "wall_s": 1.0441451279999683,
+   "tok_per_s": 39228.26329559931,
+   "hook_passes": 5,
+   "decode_step_ms": 15.537509062500021,
+   "decode_step_spread": 0.14424763428839654,
+   "decode_step_min_ms": 15.985354850000986,
+   "wall_2T_s": 1.6835593220000078,
+   "prefill_plus_overhead_s": 0.40473093399992877,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 1.10688393800001,
+     "wall_2T_s": 1.6835593220000078
+    },
+    {
+     "wall_s": 1.0441451279999683,
+     "wall_2T_s": 1.7104704689999721
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/embed_replace",
+   "batch": 512,
+   "wall_s": 0.5497284200000081,
+   "tok_per_s": 37254.75935917539,
+   "hook_passes": 3,
+   "decode_step_ms": 11.664836499999609,
+   "decode_step_spread": 1.134972894819511,
+   "decode_step_min_ms": 6.664684974998636,
+   "wall_2T_s": 0.8163158189999535,
+   "prefill_plus_overhead_s": 0.28314102100006266,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 0.5497284200000081,
+     "wall_2T_s": 1.2811073450000094
+    },
+    {
+     "wall_s": 0.6145078239999862,
+     "wall_2T_s": 0.8163158189999535
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "case": "throughput/embed_replace",
+   "batch": 1024,
+   "wall_s": 1.565284800000029,
+   "tok_per_s": 26167.761930607925,
+   "hook_passes": 4,
+   "decode_step_ms": 1.0749953999997786,
+   "decode_step_spread": 0.47062103707777847,
+   "decode_step_min_ms": 0.82203767499891,
+   "wall_2T_s": 1.5981663069999854,
+   "prefill_plus_overhead_s": 1.5324032930000726,
+   "T": 40,
+   "repeats": [
+    {
+     "wall_s": 1.565284800000029,
+     "wall_2T_s": 1.5981663069999854
+    },
+    {
+     "wall_s": 1.6132741229999965,
+     "wall_2T_s": 1.6663922480000224
+    }
+   ]
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 64,
+   "coeff": 1.0,
+   "n_checked": 64,
+   "min_cos_delta_vs_v": 0.9999883770942688,
+   "max_abs_ratio_minus_1": 0.0001875162124633789,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 512,
+   "coeff": 1.0,
+   "n_checked": 17,
+   "min_cos_delta_vs_v": 0.9999890923500061,
+   "max_abs_ratio_minus_1": 0.00018990039825439453,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 64,
+   "coeff": 4.0,
+   "n_checked": 64,
+   "min_cos_delta_vs_v": 0.9999935626983643,
+   "max_abs_ratio_minus_1": 0.00027108192443847656,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "karvonen_add",
+   "batch": 512,
+   "coeff": 4.0,
+   "n_checked": 17,
+   "min_cos_delta_vs_v": 0.9999935626983643,
+   "max_abs_ratio_minus_1": 0.0001779794692993164,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "layer_replace",
+   "batch": 64,
+   "scale": 13.189894676208496,
+   "max_other_row_abs_delta": 0.0,
+   "max_embed_stream_abs_delta": 0.0,
+   "max_rel_err_marker_row": 0.00625,
+   "min_cos_marker_row": 0.999997615814209
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 64,
+   "norm_match": false,
+   "scale": 0.9689575433731079,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.0070921985815602835,
+   "min_cos_marker_row": 0.9999974966049194,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 5.9375
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 512,
+   "norm_match": false,
+   "scale": 0.9689575433731079,
+   "n_checked": 17,
+   "max_rel_err_marker_row": 0.005319148936170213,
+   "min_cos_marker_row": 0.9999977350234985,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 19.6875
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 64,
+   "norm_match": true,
+   "scale": 1.0,
+   "n_checked": 64,
+   "max_rel_err_marker_row": 0.005319148936170213,
+   "min_cos_marker_row": 0.9999974966049194,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 5.9375
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "embed_replace",
+   "batch": 512,
+   "norm_match": true,
+   "scale": 1.0,
+   "n_checked": 17,
+   "max_rel_err_marker_row": 0.005319148936170213,
+   "min_cos_marker_row": 0.9999976754188538,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 19.6875
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "case": "mixed",
+   "batch": 64,
+   "coeff": 1.0,
+   "norm_match": false,
+   "scale": 0.9689575433731079,
+   "n_checked": 32,
+   "max_rel_err_marker_row": 0.005208333333333333,
+   "min_cos_marker_row": 0.9999974966049194,
+   "max_other_embed_row_abs_delta": 0.0,
+   "max_layer0_pre_marker_abs_delta": 0.0,
+   "max_layerL_pre_marker_abs_delta": 0.0,
+   "min_layer0_marker_abs_delta": 11.8125,
+   "add_min_cos": 0.9999883770942688,
+   "add_max_abs_ratio_minus_1": 0.00015783309936523438
+  }
+ ],
+ "checks": [
+  {
+   "case": "probe",
+   "check": "embedding stream capture (layer -1) == HF embedding row at the marker (rel<1e-2)",
+   "ok": true,
+   "detail": "rel=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "probe",
+   "check": "clean layer-L residual stream vs HF (engine-vs-HF kernel noise, informational, rel<5e-2)",
+   "ok": true,
+   "detail": "rel=3.42e-03 |h|_vllm=23.135 |h|_hf=23.163",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 3, \"capture_rows\": 288, \"hook_capture_s\": 0.04635008999997581, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 29, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.0016037130000086108, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9997,1.0003] over 64 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.002378236000083689, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.06552161400003342, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)",
+   "ok": true,
+   "detail": "cos=0.99999 ratio\u2208[1.0005,1.0008] (n=4)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0004] over 17 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 3, \"vectorized_layer_steps\": 3, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.023257017999981144, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 87, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.014412700999969275, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add_generation",
+   "check": "coeff=1.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))",
+   "ok": true,
+   "detail": "steered max|d|=0.1895, clean-prompt noise=0.1649, tol=0.2573",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add_generation",
+   "check": "coeff=1.0: greedy 8-token steered continuation == HF-hooked reference (informational)",
+   "ok": true,
+   "detail": "equal",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0003] over 64 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.001971546000049784, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.06368248699999413, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: delta == HF mxf/inject.py delta (cos\u22650.999, norm ratio within 1%)",
+   "ok": true,
+   "detail": "cos=0.99999 ratio\u2208[1.0003,1.0005] (n=4)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0002] over 17 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 3, \"vectorized_layer_steps\": 3, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.028180077000058645, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 87, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.016946993000033217, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add_generation",
+   "check": "coeff=4.0: steered next-token top-20 log-probs within the vLLM-vs-HF noise floor (max|d| \u2264 max(0.05, 1.5\u00b7clean noise + 0.01))",
+   "ok": true,
+   "detail": "steered max|d|=0.1512, clean-prompt noise=0.1649, tol=0.2573",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add_generation",
+   "check": "coeff=4.0: greedy 8-token steered continuation == HF-hooked reference (informational)",
+   "ok": true,
+   "detail": "equal",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.63e-03 min cos=0.999997",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: other rows (within the clean-vs-clean noise floor) and the embedding stream untouched",
+   "ok": true,
+   "detail": "max|\u0394| rows=0.00e+00 embed=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: vectorised replace path, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0021642499999643405, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.051918643999954384, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0024421249999591055, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.050742701000046964, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.008930146000011518, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 87, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.01733404399999472, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.63e-03 min cos=0.999997 over 64 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0027052579998780857, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.06349817900002108, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.75e-03 min cos=0.999997 over 17 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.867e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 3, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 3, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.008143143999916447, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 87, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.015280810999968253, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=5.32e-03 min cos=0.999997 over 32 requests",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.891e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0003] other=0.0e+00 embed=0.0e+00",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0023617360000116605, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 58, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.05517679899998029, \"errors\": 0}",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: embed-replace decode-step time vs no-steering -- NOT RESOLVABLE at this scale (control's repeat spread of wall_2T-wall_T = 30% > 10%; informational)",
+   "ok": null,
+   "detail": "11.66 ms vs 6.78 ms per decode step (+72.1%); wall 40 tok 0.55s vs 0.50s (+10.3%, +0.051s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: karvonen-add (norm_match) decode-step time vs no-steering -- NOT RESOLVABLE at this scale (control's repeat spread of wall_2T-wall_T = 30% > 10%; informational)",
+   "ok": null,
+   "detail": "7.37 ms vs 6.78 ms per decode step (+8.7%); wall 40 tok 0.53s vs 0.50s (+5.4%, +0.027s per call = shipping 512 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: CUDA graphs engage with embed-replace requests (hooks ran in <= 10 of 41 forward passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=3 add=4 nosteer=4",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=512: no regression of the steering path vs bench/results_summary.json: steer/no-steer wall ratio <= max(recorded, 1) + 10% (container-independent)",
+   "ok": true,
+   "detail": "steer/no-steer wall now 1.054 vs recorded 0.797 (fork_graphs/ceiling_graphs), gate <= 1.100; absolute (different Modal instance): karvonen 0.53s vs recorded 0.84s (-37.5%), no-steering 0.50s vs recorded ceiling 1.05s (-52.7%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: embed-replace decode-step time vs no-steering -- NOT RESOLVABLE at this scale (control's repeat spread of wall_2T-wall_T = 11% > 10%; informational)",
+   "ok": null,
+   "detail": "1.07 ms vs 15.80 ms per decode step (-93.2%); wall 40 tok 1.57s vs 0.96s (+62.4%, +0.602s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: karvonen-add (norm_match) decode-step time vs no-steering -- NOT RESOLVABLE at this scale (control's repeat spread of wall_2T-wall_T = 11% > 10%; informational)",
+   "ok": null,
+   "detail": "15.54 ms vs 15.80 ms per decode step (-1.6%); wall 40 tok 1.04s vs 0.96s (+8.3%, +0.080s per call = shipping 1024 vectors + prefill hook)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: CUDA graphs engage with embed-replace requests (hooks ran in <= 10 of 41 forward passes; eager would be ~41)",
+   "ok": true,
+   "detail": "hook passes: embed=4 add=5 nosteer=6",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "throughput",
+   "check": "B=1024: no regression of the steering path vs bench/results_summary.json: steer/no-steer wall ratio <= max(recorded, 1) + 10% (container-independent)",
+   "ok": true,
+   "detail": "steer/no-steer wall now 1.083 vs recorded 1.038 (fork_graphs/ceiling_graphs), gate <= 1.138; absolute (different Modal instance): karvonen 1.04s vs recorded 1.63s (-36.1%), no-steering 0.96s vs recorded ceiling 1.57s (-38.8%)",
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile"
+  },
+  {
+   "case": "probe",
+   "check": "capture pass: no hook errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 1, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 3, \"capture_rows\": 288, \"hook_capture_s\": 0.0023428780001495397, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 65, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.003174394000097891, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0002] over 64 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.005621493000035116, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.12012446799997178, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9999,1.0002] over 17 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=1.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 4, \"steps_idle\": 0, \"steer_layer_steps\": 4, \"vectorized_layer_steps\": 4, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.034524764999787294, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 260, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.07075323800006572, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9999,1.0003] over 64 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=64 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.0061849380001604, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.299964679000027, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: injected delta == coeff\u00b7\u2016h_full\u2016\u00b7unit(v) per request (cos\u22650.999, ratio within 1%)",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9999,1.0002] over 17 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: rows other than the marker untouched at layer L (within the clean-vs-clean noise floor)",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00 (clean-vs-clean noise floor 0.00e+00)",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "karvonen_add",
+   "check": "B=512 coeff=4.0: hook errors == 0, every steered layer-step vectorised",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 4, \"steps_idle\": 0, \"steer_layer_steps\": 4, \"vectorized_layer_steps\": 4, \"rows_steered\": 512, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.03604625600030431, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 260, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.07977603200004069, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: FULL residual stream at layer L marker == scale\u00b7v (both fused halves rewritten; bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=6.25e-03 min cos=0.999998",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: other rows (within the clean-vs-clean noise floor) and the embedding stream untouched",
+   "ok": true,
+   "detail": "max|\u0394| rows=0.00e+00 embed=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "layer_replace",
+   "check": "B=64: vectorised replace path, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 2, \"vectorized_layer_steps\": 2, \"rows_steered\": 64, \"rows_replaced\": 0, \"embed_apply_steps\": 0, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.00493665500005136, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.259657256999958, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=7.09e-03 min cos=0.999997 over 64 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22655.938e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.010518635999915205, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.112091716000009, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=5.32e-03 min cos=0.999998 over 17 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.969e+01",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=False: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 4, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 4, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.06673642699968241, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 260, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.030536734000065735, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=5.32e-03 min cos=0.999997 over 64 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22655.938e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=64 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 64, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.009786921000227267, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.27841798800000106, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: embedding-stream marker row == scale\u00b7\u2016e\u2016\u00b7v/\u2016v\u2016 per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=5.32e-03 min cos=0.999998 over 17 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.969e+01",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "embed_replace",
+   "check": "B=512 norm_match=True: rows_replaced == B, embed passes \u2265 1, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 4, \"steps_idle\": 0, \"steer_layer_steps\": 0, \"vectorized_layer_steps\": 0, \"rows_steered\": 0, \"rows_replaced\": 512, \"embed_apply_steps\": 4, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 9, \"capture_rows\": 4896, \"hook_capture_s\": 0.07059780999986742, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 260, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.06802446300002885, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): embedding-stream marker row == scale\u00b7v per request (bf16 rel<1e-2, cos>0.9999)",
+   "ok": true,
+   "detail": "max rel=5.21e-03 min cos=0.999997 over 32 requests",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): every other embedding row untouched",
+   "ok": true,
+   "detail": "max|\u0394|=0.00e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 even requests (embed replace): downstream layers differ from clean only causally (positions < marker within the clean-vs-clean noise floor at layers 0 and L; marker row changed)",
+   "ok": true,
+   "detail": "pre-marker max|\u0394| L0=0.00e+00 LL=0.00e+00; marker |\u0394| L0\u22651.181e+01",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64 odd requests (karvonen add): delta == coeff\u00b7\u2016h\u2016\u00b7unit(v), embedding stream untouched, other rows untouched",
+   "ok": true,
+   "detail": "min cos=0.99999 ratio\u2208[0.9998,1.0001] other=0.0e+00 embed=0.0e+00",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  },
+  {
+   "case": "mixed",
+   "check": "B=64: rows_replaced == B/2, rows_steered == B/2, vectorised, no errors",
+   "ok": true,
+   "detail": "{\"steps_fast_idle\": 0, \"steps_planned\": 2, \"steps_idle\": 0, \"steer_layer_steps\": 1, \"vectorized_layer_steps\": 1, \"rows_steered\": 32, \"rows_replaced\": 32, \"embed_apply_steps\": 2, \"embed_errors\": 0, \"unsupported_layer_output\": 0, \"rows_skipped_generated\": 0, \"capture_layer_steps\": 6, \"capture_rows\": 18432, \"hook_capture_s\": 0.005452642000250307, \"readout_layer_steps\": 0, \"readout_rows\": 0, \"hook_readout_s\": 0.0, \"early_exits\": 0, \"op_calls\": 130, \"early_exit_refused_unsalted\": 0, \"kv_salt_miss\": 0, \"kv_unsalted_steered\": 0, \"retrieval_s\": 0.28052049899997655, \"errors\": 0}",
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile"
+  }
+ ],
+ "n_pass": 86,
+ "n_fail": 0,
+ "n_info": 4,
+ "n_gated": 86,
+ "n_checks": 90,
+ "all_pass": true,
+ "runs": [
+  {
+   "model": "Qwen/Qwen3-1.7B",
+   "engine": "compile",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "throughput_only": false,
+   "source": null,
+   "versions": {
+    "vllm": "0.27.1",
+    "torch": "2.13.0+cu130",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "VLLM_COMPILE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 28
+   },
+   "engine_up_s": 84.31050858599997,
+   "hf_ref": true,
+   "hidden_dim": 2048,
+   "embed_marker_norm": 1.3797909021377563,
+   "h_full_marker_norm_layer_L": 23.134790420532227
+  },
+  {
+   "model": "Qwen/Qwen3.6-27B",
+   "engine": "compile",
+   "chunked": false,
+   "gpu": "NVIDIA B200",
+   "throughput_only": false,
+   "source": null,
+   "versions": {
+    "vllm": "0.27.1",
+    "torch": "2.13.0+cu130",
+    "vllm_lens": "1.1.0.post6"
+   },
+   "resolved_config": {
+    "enforce_eager": false,
+    "compilation_mode": "VLLM_COMPILE",
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "n_capture_sizes": 83,
+    "max_num_batched_tokens": 106496,
+    "max_num_seqs": 1024,
+    "num_layers": 64
+   },
+   "engine_up_s": 244.75472886900002,
+   "hf_ref": false,
+   "hidden_dim": 5120,
+   "embed_marker_norm": 0.9689575433731079,
+   "h_full_marker_norm_layer_L": 13.189894676208496
+  }
+ ]
+}

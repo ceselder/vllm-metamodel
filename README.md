@@ -45,7 +45,7 @@ pip install git+https://github.com/ceselder/vllm-metamodels
 
 **post7: prefix caching, torch.compile, shared memory (1× B200, vLLM 0.19 unless noted)**
 - **Prefix caching with steering** (`enable_prefix_caching=True` is now safe *and* useful: steered KV blocks are salted from the marker's predecessor, the shared template prefix is reused): Qwen3-1.7B steered `generate()` at B = 1,024 **0.96 s → 0.89 s (−7 %)**, bit-exact vs the no-cache engine (30/30 checks). **Qwen3.6-27B: no gain** — vLLM cannot cache the GatedDeltaNet state of Qwen3-Next models, so it reports 0 prefix hits (correctness holds). Early exit is now allowed with prefix caching (27B early-exit readout 4.62 s either way).
-- **torch.compile stays on** (`VLLM_LENS_COMPILE=1`: hooks run as an opaque custom op inside the compiled graph): Qwen3-1.7B B = 1,024 steered `generate()` **1.05 s → 1.00 s (−4.6 %)** vs the compile-off hook engine (plain vLLM 0.95 s); exactness probes cos 0.99999 / ratio 1.0001. **Qwen3.6-27B on vLLM 0.27.1, B = 1,024: 11.63 s → 9.98 s (−14 %), within 2 % of plain vLLM (9.78 s)**; on 0.19 COMPILE27B_README.
+- **torch.compile stays on** (`VLLM_LENS_COMPILE=1`: hooks run as an opaque custom op inside the compiled graph): Qwen3-1.7B B = 1,024 steered `generate()` **1.05 s → 1.00 s (−4.6 %)** vs the compile-off hook engine (plain vLLM 0.95 s); exactness probes cos 0.99999 / ratio 1.0001. **Qwen3.6-27B on vLLM 0.27.1, B = 1,024: 11.63 s → 9.98 s (−14 %), within 2 % of plain vLLM (9.78 s)**; on 0.19 11.79 → 10.98 s (−7 %, plain 10.84 s). The compiled 27B engine starts slowly on 0.19 (778 s vs 306 s) — one-time where vLLM's compile cache persists.
 - **Shared-memory transport** (`VLLM_LENS_SHM=1|view`): all-position capture of 1,024 texts on the 1.7B **1.40 s → 0.92 s (copy-out) / 0.81 s (zero-copy views)**; on the 27B (1.22 GB) **8.20 s → 7.07 s (−14 %)** with the persistent arena. Vector blocks gain nothing (left on the pickled path).
 
 **Correctness features (not speedups)**
@@ -788,7 +788,10 @@ VLLM_LENS_CUDA_GRAPHS=1 VLLM_LENS_COMPILE=1 python my_rollouts.py   # capabiliti
 | 0.27.1 | Qwen3.6-27B | 512 | 6.119 s | **5.170 s (−16 %)** | 5.091 s |
 | 0.27.1 | Qwen3-1.7B | 1,024 | 1.052 s | **0.980 s (−7 %)** | 0.795 s |
 | 0.27.1 | Qwen3-1.7B | 512 | 0.543 s | 0.544 s (0 %) | 0.478 s |
-COMPILE_TABLE_ROWS_019_27B
+| 0.19.0 | Qwen3.6-27B | 1,024 | 11.793 s | **10.983 s (−7 %)** | 10.842 s |
+| 0.19.0 | Qwen3.6-27B | 512 | 6.260 s | **5.803 s (−7 %)** | 5.776 s |
+
+Start-up: the compiled 27B engine took 778 s on vLLM 0.19 (306 s for the hook engine; 248 vs 125 s on 0.27.1) — torch.compile of the 64-layer stack, cached by vLLM where `~/.cache/vllm` persists, paid on every ephemeral container.
 
 Exactness on the compile engine: steering probes cos(Δ, v) = 0.99999, magnitude ratio 1.0001, other
 rows untouched; the injection matrix (`bench/test_injection_modes.py --engine compile`, Karvonen add

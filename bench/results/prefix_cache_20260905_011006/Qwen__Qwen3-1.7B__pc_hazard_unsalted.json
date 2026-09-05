@@ -1,0 +1,375 @@
+{
+ "returncode": 0,
+ "elapsed_s": 24.248831033706665,
+ "log_tail": "enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 128, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}\n(EngineCore pid=419) INFO 09-05 01:12:02 [worker_base.py:269] Injected <class 'vllm_lens._worker_ext.HiddenStatesExtension'> into <class 'vllm.v1.worker.gpu_worker.Worker'> for extended collective_rpc calls ['_by_external', '_check_layer', '_cuda_graphs_active', '_debug_captured_states_count', '_early_exit_supported', '_flush_host_blocks', '_merger', '_pop_activations', '_pop_readouts', '_prepare_vectors', '_refresh_aggregates', '_store', '_store_reads', '_wrap_model_forward', 'clear_captured_states', 'clear_readout_data', 'clear_readout_data_many', 'clear_readouts', 'clear_steering_data', 'clear_steering_data_many', 'get_captured_states', 'get_captured_states_many', 'get_readouts', 'get_readouts_many', 'install_hooks', 'lens_capabilities', 'lens_load_weights_ipc', 'lens_lora_compare_exact', 'lens_lora_layout', 'lens_lora_status', 'lens_merge_lora', 'lens_release_lora_base', 'lens_unmerge_lora', 'lens_weight_fingerprint', 'set_fast_capture', 'set_readout_block', 'set_readout_data', 'set_readout_data_many', 'set_steering_block', 'set_steering_data', 'set_steering_data_many', 'set_vectorized', 'steering_stats']\n(EngineCore pid=419) INFO 09-05 01:12:02 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.1.136:52510 backend=nccl\n(EngineCore pid=419) INFO 09-05 01:12:02 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=419) INFO 09-05 01:12:03 [gpu_model_runner.py:4735] Starting to load model Qwen/Qwen3-1.7B...\n(EngineCore pid=419) INFO 09-05 01:12:03 [cuda.py:274] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=419) INFO 09-05 01:12:04 [default_loader.py:384] Loading weights took 0.41 seconds\n(EngineCore pid=419) INFO 09-05 01:12:05 [gpu_model_runner.py:4820] Model loading took 3.22 GiB memory and 1.062455 seconds\n(EngineCore pid=419) INFO 09-05 01:12:06 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=128\n(EngineCore pid=419) INFO 09-05 01:12:06 [gpu_model_runner.py:5876] Profiling CUDA graph memory: FULL=19 (largest=128)\n(EngineCore pid=419) INFO 09-05 01:12:08 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.06 GiB total\n(EngineCore pid=419) INFO 09-05 01:12:08 [gpu_worker.py:436] Available KV cache memory: 147.48 GiB\n(EngineCore pid=419) INFO 09-05 01:12:08 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.8500 to 0.8504 to maintain the same effective KV cache size.\n(EngineCore pid=419) INFO 09-05 01:12:08 [kv_cache_utils.py:1319] GPU KV cache size: 1,380,752 tokens\n(EngineCore pid=419) INFO 09-05 01:12:08 [kv_cache_utils.py:1324] Maximum concurrency for 113 tokens per request: 10787.12x\n(EngineCore pid=419) INFO 09-05 01:12:10 [gpu_model_runner.py:6046] Graph capturing finished in 2 secs, took 0.06 GiB\n(EngineCore pid=419) INFO 09-05 01:12:10 [gpu_worker.py:597] CUDA graph pool memory: 0.06 GiB (actual), 0.06 GiB (estimated), difference: 0.0 GiB (0.0%).\n(EngineCore pid=419) INFO 09-05 01:12:10 [core.py:283] init engine (profile, create kv cache, warmup model) took 5.22 seconds\n(EngineCore pid=419) WARNING 09-05 01:12:11 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=419) WARNING 09-05 01:12:11 [vllm.py:859] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.\nWARNING 09-05 01:12:11 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308] Invocation of lens_kv_salt_active method failed\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308] Traceback (most recent call last):\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1298, in _invoke_utility_method\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]     result = get_result()\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]              ^^^^^^^^^^^^\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]   File \"/usr/local/lib/python3.12/site-packages/vllm/v1/engine/core.py\", line 1258, in <lambda>\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]     get_result = lambda: (method := getattr(self, method_name)) and method(\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308]                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^\n(EngineCore pid=419) ERROR 09-05 01:12:11 [core.py:1308] AttributeError: 'EngineCoreProc' object has no attribute 'lens_kv_salt_active'\n[pc 01:12:11] engine up 13s vllm=0.19.0 vllm-lens=1.1.0.post6 prefix_caching=True caps={'multi_stream': False, 'prompt_only': False, 'num_layers': 28, 'hooks_installed': False, 'fast_capture': True, 'readout': True, 'early_exit': False, 'early_exit_reason': 'hooks not installed', 'model_runner': 'v1', 'lora_merge': True, 'prefix_caching': True, 'kv_salt_worker': False, 'kv_salt_active': False}\n[pc 01:12:11]   [PASS] plain: plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)  max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.137\n[pc 01:12:11]   [PASS] plain: prefix cache is being used (hit counter rose on the warm call)  queries 0->3072 hits 0->2560\n[pc 01:12:11]   [FAIL] plain: steering effect >> tolerance (the contamination checks below are meaningful)  median steered-vs-clean max|\u0394| 0.137 vs tol 2.00e-02\n(EngineCore pid=419) INFO 09-05 01:12:11 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:12]   [PASS] steered_then_plain@70: marker 70 (shareable block): steered rows (template prefix cached, steered blocks recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [PASS] steered_then_plain@70: marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors  rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0\n[pc 01:12:12]   [PASS] steered_then_plain@70: marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16\n(EngineCore pid=419) INFO 09-05 01:12:12 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:12]   [PASS] plain_then_steered@70: marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [PASS] plain_then_steered@70: marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses  rows_steered=64 kv_salt_miss=0\n(EngineCore pid=419) INFO 09-05 01:12:12 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:12]   [PASS] steered_then_plain@90: marker 90 (last block): steered rows (template prefix cached, steered blocks recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [PASS] steered_then_plain@90: marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors  rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0\n[pc 01:12:12]   [PASS] steered_then_plain@90: marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16\n(EngineCore pid=419) INFO 09-05 01:12:12 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:12]   [PASS] plain_then_steered@90: marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [PASS] plain_then_steered@90: marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses  rows_steered=64 kv_salt_miss=0\n[pc 01:12:12]   [PASS] mixed: first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [PASS] mixed: second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n(EngineCore pid=419) INFO 09-05 01:12:12 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:12]   [PASS] payload_groups: first call (groups share steered blocks only across scheduler steps): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [FAIL] payload_groups: second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=3.40e-01 mean=1.80e-01 tol=2.00e-02; greedy-8 equal 64/64\n[pc 01:12:12]   [FAIL] payload_groups: second call reused the groups' steered blocks: rows_steered over both calls < 128 (hits rose), no salt misses  rows_steered over both calls=64 (128 requests; 64 = only the first call steered) hits 11520->11520 kv_salt_miss=0\n[pc 01:12:12]   [FAIL] payload_groups: plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=2.47e-01 mean=2.47e-01 tol=2.00e-02; greedy-8 equal 8/8\n(EngineCore pid=419) INFO 09-05 01:12:12 [block_pool.py:472] Successfully reset prefix cache\n[pc 01:12:13]   [PASS] last_token_marker: first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16\n[pc 01:12:13]   [FAIL] last_token_marker: second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=2.32e+00 mean=1.28e+00 tol=2.00e-02; greedy-8 equal 4/16\n[pc 01:12:13]   [FAIL] last_token_marker: marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32  rows_steered=16 kv_salt_miss=0\n[pc 01:12:13]   [FAIL] last_token_marker: plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)  max|\u0394|=7.61e-02 mean=7.61e-02 tol=2.00e-02; greedy-8 equal 4/4\n[pc 01:12:13]   [PASS] early_exit: early exit is available with prefix caching enabled (salted from token 0)  early_exit=False reason=hooks not installed kv_salt_active=False\n[pc 01:12:13]   [PASS] steer_capture: captured steered marker row == no-cache reference (rel <= 1e-3)  rel=0.00e+00\n[pc 01:12:13] UNSALTED run: steered -> plain leak at marker 70 observed = False\n[pc 01:12:13] 18/25 checks pass -- SOME FAILED\n(EngineCore pid=419) INFO 09-05 01:12:13 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=419) INFO 09-05 01:12:13 [core.py:1233] Shutdown complete\n\n--- stderr ---\n(EngineCore pid=419) \nLoading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]\n(EngineCore pid=419) \nLoading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  2.44it/s]\n(EngineCore pid=419) \nLoading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  4.88it/s]\n(EngineCore pid=419) \n(EngineCore pid=419) 2026-09-05 01:12:09,007 - INFO - autotuner.py:262 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=419) 2026-09-05 01:12:09,078 - INFO - autotuner.py:268 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=419) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/19 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):  21%|\u2588\u2588        | 4/19 [00:00<00:00, 38.95it/s]\nCapturing CUDA graphs (decode, FULL):  42%|\u2588\u2588\u2588\u2588\u258f     | 8/19 [00:00<00:00, 37.32it/s]\nCapturing CUDA graphs (decode, FULL):  68%|\u2588\u2588\u2588\u2588\u2588\u2588\u258a   | 13/19 [00:00<00:00, 41.29it/s]\nCapturing CUDA graphs (decode, FULL):  95%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258d| 18/19 [00:00<00:00, 27.36it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 19/19 [00:00<00:00, 30.48it/s]\nvllm-lens: enable_prefix_caching=True but the scheduler process does not run the vllm-lens block-hash salt patch (VLLM_LENS_KV_SALT=0, or plugins not loaded there). Hooked requests skip READING the prefix cache, but their steered / early-exit blocks are still WRITTEN and a plain request with the same prompt may read steered KV. Disable prefix caching or enable the patch.\n(EngineCore pid=419) vllm-lens: steered request 35-8cbc66f2 has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 123-8de6243f has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 189-97797eeb has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 277-8b2509f0 has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 341-ad23d5ef has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 469-b1958e02 has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 609-b8e26726 has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n(EngineCore pid=419) vllm-lens: steered request 645-a4d1caac has no KV salt while prefix caching is enabled: its steered blocks are reusable by other requests (plugin fallback path)\n",
+ "versions": {
+  "vllm": "0.19.0",
+  "torch": "2.10.0+cu128",
+  "transformers": "5.15.0",
+  "vllm-lens": "1.1.0.post6",
+  "flashinfer-python": "0.6.6",
+  "triton": "3.6.0"
+ },
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "engine": "graphs",
+  "unsalted": true,
+  "gpu": "NVIDIA B200",
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128",
+   "vllm_lens": "1.1.0.post6"
+  },
+  "capabilities": {
+   "multi_stream": false,
+   "prompt_only": false,
+   "num_layers": 28,
+   "hooks_installed": false,
+   "fast_capture": true,
+   "readout": true,
+   "early_exit": false,
+   "early_exit_reason": "hooks not installed",
+   "model_runner": "v1",
+   "lora_merge": true,
+   "prefix_caching": true,
+   "kv_salt_worker": false,
+   "kv_salt_active": false
+  },
+  "engine_up_s": 12.574631076999992,
+  "prompt_tokens": 96,
+  "prompt_tokens_b": 97,
+  "marker": 90,
+  "marker_b": 96,
+  "marker_p": 70,
+  "layer": 1,
+  "readout_layer": 14,
+  "hidden_dim": 2048,
+  "hnorm": 20.457569122314453,
+  "block_size": 16,
+  "cases": {
+   "plain": {
+    "d_cold": 0.0,
+    "d_warm": 0.0,
+    "floor": 0.0,
+    "tol": 0.02,
+    "greedy_equal_warm": true
+   },
+   "steered_then_plain@70": {
+    "marker 70 (shareable block): steered rows (template prefix cached, steered blocks recomputed)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    },
+    "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 16,
+     "n": 16
+    },
+    "leak_observed": false
+   },
+   "plain_then_steered@70": {
+    "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    }
+   },
+   "steered_then_plain@90": {
+    "marker 90 (last block): steered rows (template prefix cached, steered blocks recomputed)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    },
+    "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 16,
+     "n": 16
+    },
+    "leak_observed": false
+   },
+   "plain_then_steered@90": {
+    "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    }
+   },
+   "mixed": {
+    "first call: interleaved steered / plain rows": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    },
+    "second call: interleaved steered / plain rows": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    }
+   },
+   "payload_groups": {
+    "first call (groups share steered blocks only across scheduler steps)": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 64,
+     "n": 64
+    },
+    "second call (steered blocks of every group cached)": {
+     "max_dlogprob": 0.3400139808654785,
+     "mean_dlogprob": 0.17961180210113525,
+     "greedy_equal": 64,
+     "n": 64
+    },
+    "rows_steered_two_calls": 64,
+    "plain rows afterwards (payload-salted blocks not readable by plain rows)": {
+     "max_dlogprob": 0.247039794921875,
+     "mean_dlogprob": 0.247039794921875,
+     "greedy_equal": 8,
+     "n": 8
+    }
+   },
+   "last_token_marker": {
+    "first call": {
+     "max_dlogprob": 0.0,
+     "mean_dlogprob": 0.0,
+     "greedy_equal": 16,
+     "n": 16
+    },
+    "second call (identical payload tags: must NOT share -> marker recomputed)": {
+     "max_dlogprob": 2.3199286460876465,
+     "mean_dlogprob": 1.2827175855636597,
+     "greedy_equal": 4,
+     "n": 16
+    },
+    "plain prompt-B rows afterwards (no leak)": {
+     "max_dlogprob": 0.07612800598144531,
+     "mean_dlogprob": 0.07612800598144531,
+     "greedy_equal": 4,
+     "n": 4
+    }
+   },
+   "steer_capture": {
+    "rel": 0.0
+   }
+  },
+  "checks": [
+   {
+    "case": "plain",
+    "check": "plain rows (cold and warm cache) match the no-cache reference (kernel-path floor)",
+    "ok": true,
+    "detail": "max|\u0394 top-20 logprob| cold=0.00e+00 warm=0.00e+00 -> tolerance 2.00e-02; steering effect (median) 0.137",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain",
+    "check": "prefix cache is being used (hit counter rose on the warm call)",
+    "ok": true,
+    "detail": "queries 0->3072 hits 0->2560",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain",
+    "check": "steering effect >> tolerance (the contamination checks below are meaningful)",
+    "ok": false,
+    "detail": "median steered-vs-clean max|\u0394| 0.137 vs tol 2.00e-02",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@70",
+    "check": "marker 70 (shareable block): steered rows (template prefix cached, steered blocks recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@70",
+    "check": "marker 70 (shareable block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+    "ok": true,
+    "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@70",
+    "check": "marker 70 (shareable block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain_then_steered@70",
+    "check": "marker 70 (shareable block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain_then_steered@70",
+    "check": "marker 70 (shareable block): marker recomputed for every row (rows_steered == B), no salt misses",
+    "ok": true,
+    "detail": "rows_steered=64 kv_salt_miss=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@90",
+    "check": "marker 90 (last block): steered rows (template prefix cached, steered blocks recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@90",
+    "check": "marker 90 (last block): every steered row steered exactly once (rows_steered == B), no salt misses, no errors",
+    "ok": true,
+    "detail": "rows_steered=64 kv_salt_miss=0 kv_unsalted=64 errors=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "steered_then_plain@90",
+    "check": "marker 90 (last block): plain rows AFTER 64 steered rows (no steered -> plain leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain_then_steered@90",
+    "check": "marker 90 (last block): steered rows with the plain prompt cached (marker must be recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "plain_then_steered@90",
+    "check": "marker 90 (last block): marker recomputed for every row (rows_steered == B), no salt misses",
+    "ok": true,
+    "detail": "rows_steered=64 kv_salt_miss=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "mixed",
+    "check": "first call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "mixed",
+    "check": "second call: interleaved steered / plain rows: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "payload_groups",
+    "check": "first call (groups share steered blocks only across scheduler steps): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "payload_groups",
+    "check": "second call (steered blocks of every group cached): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": false,
+    "detail": "max|\u0394|=3.40e-01 mean=1.80e-01 tol=2.00e-02; greedy-8 equal 64/64",
+    "hazard_mode": true
+   },
+   {
+    "case": "payload_groups",
+    "check": "second call reused the groups' steered blocks: rows_steered over both calls < 128 (hits rose), no salt misses",
+    "ok": false,
+    "detail": "rows_steered over both calls=64 (128 requests; 64 = only the first call steered) hits 11520->11520 kv_salt_miss=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "payload_groups",
+    "check": "plain rows afterwards (payload-salted blocks not readable by plain rows): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": false,
+    "detail": "max|\u0394|=2.47e-01 mean=2.47e-01 tol=2.00e-02; greedy-8 equal 8/8",
+    "hazard_mode": true
+   },
+   {
+    "case": "last_token_marker",
+    "check": "first call: every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": true,
+    "detail": "max|\u0394|=0.00e+00 mean=0.00e+00 tol=2.00e-02; greedy-8 equal 16/16",
+    "hazard_mode": true
+   },
+   {
+    "case": "last_token_marker",
+    "check": "second call (identical payload tags: must NOT share -> marker recomputed): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": false,
+    "detail": "max|\u0394|=2.32e+00 mean=1.28e+00 tol=2.00e-02; greedy-8 equal 4/16",
+    "hazard_mode": true
+   },
+   {
+    "case": "last_token_marker",
+    "check": "marker recomputed on every call (nonce fallback for last-token markers): rows_steered == 32",
+    "ok": false,
+    "detail": "rows_steered=16 kv_salt_miss=0",
+    "hazard_mode": true
+   },
+   {
+    "case": "last_token_marker",
+    "check": "plain prompt-B rows afterwards (no leak): every row matches its no-cache reference (max|\u0394 top-20 logprob| <= tol)",
+    "ok": false,
+    "detail": "max|\u0394|=7.61e-02 mean=7.61e-02 tol=2.00e-02; greedy-8 equal 4/4",
+    "hazard_mode": true
+   },
+   {
+    "case": "early_exit",
+    "check": "early exit is available with prefix caching enabled (salted from token 0)",
+    "ok": true,
+    "detail": "early_exit=False reason=hooks not installed kv_salt_active=False",
+    "hazard_mode": true
+   },
+   {
+    "case": "steer_capture",
+    "check": "captured steered marker row == no-cache reference (rel <= 1e-3)",
+    "ok": true,
+    "detail": "rel=0.00e+00",
+    "hazard_mode": true
+   }
+  ],
+  "cache_counters": {
+   "start": {
+    "queries": 0,
+    "hits": 0
+   },
+   "after_plain": {
+    "queries": 3072,
+    "hits": 2560
+   },
+   "after_steered_then_plain@70": {
+    "queries": 4800,
+    "hits": 3920
+   },
+   "after_steered_then_plain@90": {
+    "queries": 7296,
+    "hits": 5840
+   },
+   "before_payload": {
+    "queries": 14208,
+    "hits": 11520
+   },
+   "after_payload": {
+    "queries": 14208,
+    "hits": 11520
+   },
+   "end": {
+    "queries": 15752,
+    "hits": 12832
+   }
+  },
+  "steering_effect_median_max_dlogprob": 0.13667726516723633,
+  "hazard_reproduced": false,
+  "n_checks": 25,
+  "n_pass": 18,
+  "all_pass": false
+ }
+}

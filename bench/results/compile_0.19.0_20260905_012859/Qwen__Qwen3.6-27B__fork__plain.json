@@ -1,0 +1,148 @@
+{
+ "returncode": 0,
+ "elapsed_s": 368.0351572036743,
+ "log_tail": "lityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False), seed=0, served_model_name=/__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'splitting_ops': ['vllm::unified_attention', 'vllm::unified_attention_with_output', 'vllm::unified_mla_attention', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::gdn_attention_core', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_images_per_batch': 0, 'compile_sizes': [], 'compile_ranges_endpoints': [106496], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False}, 'max_cudagraph_capture_size': 1024, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': True, 'static_all_moe_layers': []}\n(EngineCore pid=658) [ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.\n(EngineCore pid=658) [ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /usr/local/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.\n(EngineCore pid=658) INFO 09-05 01:51:56 [registry.py:126] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.\n(EngineCore pid=658) INFO 09-05 01:51:56 [parallel_state.py:1400] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.31.20:49324 backend=nccl\n(EngineCore pid=658) INFO 09-05 01:51:56 [parallel_state.py:1716] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=658) INFO 09-05 01:51:58 [gpu_model_runner.py:4735] Starting to load model /__modal/volumes/vo-D3v00EkeL2JubQqD67iN9F/hf_cache/hub/models--Qwen--Qwen3.6-27B/snapshots/6a9e13bd6fc8f0983b9b99948120bc37f49c13e9...\n(EngineCore pid=658) INFO 09-05 01:51:58 [cuda.py:390] Using backend AttentionBackendEnum.FLASH_ATTN for vit attention\n(EngineCore pid=658) INFO 09-05 01:51:58 [mm_encoder_attention.py:230] Using AttentionBackendEnum.FLASH_ATTN for MMEncoderAttention.\n(EngineCore pid=658) INFO 09-05 01:51:58 [gdn_linear_attn.py:147] Using Triton/FLA GDN prefill kernel\n(EngineCore pid=658) INFO 09-05 01:51:59 [cuda.py:274] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=658) INFO 09-05 01:52:15 [default_loader.py:384] Loading weights took 14.26 seconds\n(EngineCore pid=658) INFO 09-05 01:52:16 [gpu_model_runner.py:4820] Model loading took 50.22 GiB memory and 17.105039 seconds\n(EngineCore pid=658) INFO 09-05 01:53:45 [backends.py:1051] Using cache directory: /root/.cache/vllm/torch_compile_cache/bfcecd8669/rank_0_0/backbone for vLLM's torch.compile\n(EngineCore pid=658) INFO 09-05 01:53:45 [backends.py:1111] Dynamo bytecode transform time: 88.67 s\n(EngineCore pid=658) INFO 09-05 01:53:54 [backends.py:372] Cache the graph of compile range (1, 106496) for later use\n(EngineCore pid=658) INFO 09-05 01:56:07 [backends.py:390] Compiling a graph for compile range (1, 106496) takes 142.09 s\n(EngineCore pid=658) INFO 09-05 01:56:11 [decorators.py:640] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/8de0188bf9229440e046b37f49422c66bc950fdeb7de47768f36050e4e306c28/rank_0_0/model\n(EngineCore pid=658) INFO 09-05 01:56:11 [monitor.py:48] torch.compile took 235.45 s in total\n(EngineCore pid=658) INFO 09-05 01:56:20 [monitor.py:76] Initial profiling/warmup run took 8.91 s\n(EngineCore pid=658) INFO 09-05 01:56:21 [kv_cache_utils.py:829] Overriding num_gpu_blocks=0 with num_gpu_blocks_override=1024\n(EngineCore pid=658) INFO 09-05 01:56:21 [gpu_model_runner.py:5876] Profiling CUDA graph memory: PIECEWISE=11 (largest=1024), FULL=11 (largest=1024)\n(EngineCore pid=658) INFO 09-05 01:56:23 [gpu_model_runner.py:5955] Estimated CUDA graph memory: 0.39 GiB total\n(EngineCore pid=658) INFO 09-05 01:56:24 [gpu_worker.py:436] Available KV cache memory: 82.01 GiB\n(EngineCore pid=658) INFO 09-05 01:56:24 [gpu_worker.py:470] In v0.19, CUDA graph memory profiling will be enabled by default (VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1), which more accurately accounts for CUDA graph memory during KV cache allocation. To try it now, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1 and increase --gpu-memory-utilization from 0.8500 to 0.8522 to maintain the same effective KV cache size.\n(EngineCore pid=658) INFO 09-05 01:56:24 [kv_cache_utils.py:1319] GPU KV cache size: 61,632 tokens\n(EngineCore pid=658) INFO 09-05 01:56:24 [kv_cache_utils.py:1324] Maximum concurrency for 144 tokens per request: 428.25x\n(EngineCore pid=658) INFO 09-05 01:56:31 [gpu_model_runner.py:6046] Graph capturing finished in 7 secs, took 0.39 GiB\n(EngineCore pid=658) INFO 09-05 01:56:31 [gpu_worker.py:597] CUDA graph pool memory: 0.39 GiB (actual), 0.39 GiB (estimated), difference: 0.0 GiB (0.0%).\n(EngineCore pid=658) INFO 09-05 01:56:31 [core.py:283] init engine (profile, create kv cache, warmup model) took 255.60 seconds\n(EngineCore pid=658) WARNING 09-05 01:56:32 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=658) INFO 09-05 01:56:32 [vllm.py:790] Asynchronous scheduling is enabled.\nWARNING 09-05 01:56:32 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n[bench 01:56:32] engine up in 303s | resolved {'enforce_eager': False, 'compilation_mode': 'VLLM_COMPILE', 'cudagraph_mode': 'FULL_AND_PIECEWISE', 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'num_layers': 64, 'enable_prefix_caching': False}\n[bench 01:56:40] nosteer       B=  512 rep0:    5.93s      3453 tok/s    86.3 seq/s\n[bench 01:56:46] nosteer       B=  512 rep1:    5.78s      3546 tok/s    88.6 seq/s\n[bench 01:56:56] nosteer       B= 1024 rep0:   10.89s      3760 tok/s    94.0 seq/s\n[bench 01:57:07] nosteer       B= 1024 rep1:   10.84s      3778 tok/s    94.4 seq/s\n[bench 01:57:07] plain engine done\n(EngineCore pid=658) INFO 09-05 01:57:07 [core.py:1210] Shutdown initiated (timeout=0)\n(EngineCore pid=658) INFO 09-05 01:57:07 [core.py:1233] Shutdown complete\n\n--- stderr ---\n[transformers] `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.\n(EngineCore pid=658) [transformers] `Qwen2VLImageProcessorFast` is deprecated. The `Fast` suffix for image processors has been removed; use `Qwen2VLImageProcessor` instead.\n(EngineCore pid=658) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.cudart module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.runtime module instead.\n(EngineCore pid=658) <frozen importlib._bootstrap_external>:1301: FutureWarning: The cuda.nvrtc module is deprecated and will be removed in a future release, please switch to use the cuda.bindings.nvrtc module instead.\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:   0% Completed | 0/15 [00:00<?, ?it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:   7% Completed | 1/15 [00:00<00:11,  1.21it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  13% Completed | 2/15 [00:01<00:12,  1.07it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  20% Completed | 3/15 [00:02<00:11,  1.02it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  27% Completed | 4/15 [00:03<00:11,  1.02s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  33% Completed | 5/15 [00:05<00:10,  1.06s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  40% Completed | 6/15 [00:06<00:09,  1.07s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  47% Completed | 7/15 [00:07<00:08,  1.02s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  53% Completed | 8/15 [00:08<00:07,  1.00s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  60% Completed | 9/15 [00:09<00:06,  1.01s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  67% Completed | 10/15 [00:10<00:05,  1.01s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  73% Completed | 11/15 [00:11<00:04,  1.00s/it]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  80% Completed | 12/15 [00:12<00:02,  1.02it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  87% Completed | 13/15 [00:12<00:01,  1.06it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards:  93% Completed | 14/15 [00:13<00:00,  1.04it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:14<00:00,  1.29it/s]\n(EngineCore pid=658) \nLoading safetensors checkpoint shards: 100% Completed | 15/15 [00:14<00:00,  1.05it/s]\n(EngineCore pid=658) \n(EngineCore pid=658) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (16) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=658)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=658) /usr/local/lib/python3.12/site-packages/vllm/model_executor/layers/fla/ops/utils.py:113: UserWarning: Input tensor shape suggests potential format mismatch: seq_len (32) < num_heads (48). This may indicate the inputs were passed in head-first format [B, H, T, ...] when head_first=False was specified. Please verify your input tensor format matches the expected shape [B, T, H, ...].\n(EngineCore pid=658)   return fn(*contiguous_args, **contiguous_kwargs)\n(EngineCore pid=658) 2026-09-05 01:56:24,590 - INFO - autotuner.py:262 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=658) 2026-09-05 01:56:24,635 - INFO - autotuner.py:268 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=658) \nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/11 [00:00<?, ?it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):   9%|\u2589         | 1/11 [00:00<00:02,  4.83it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  18%|\u2588\u258a        | 2/11 [00:00<00:01,  6.86it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  27%|\u2588\u2588\u258b       | 3/11 [00:00<00:01,  7.59it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  36%|\u2588\u2588\u2588\u258b      | 4/11 [00:00<00:00,  7.66it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  45%|\u2588\u2588\u2588\u2588\u258c     | 5/11 [00:00<00:01,  5.54it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  55%|\u2588\u2588\u2588\u2588\u2588\u258d    | 6/11 [00:00<00:00,  5.78it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  64%|\u2588\u2588\u2588\u2588\u2588\u2588\u258e   | 7/11 [00:01<00:00,  5.97it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  73%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e  | 8/11 [00:01<00:00,  6.26it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 9/11 [00:01<00:00,  6.15it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE):  91%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588 | 10/11 [00:01<00:00,  6.73it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  6.00it/s]\nCapturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  6.20it/s]\n(EngineCore pid=658) \nCapturing CUDA graphs (decode, FULL):   0%|          | 0/11 [00:00<?, ?it/s]\nCapturing CUDA graphs (decode, FULL):   9%|\u2589         | 1/11 [00:00<00:04,  2.18it/s]\nCapturing CUDA graphs (decode, FULL):  18%|\u2588\u258a        | 2/11 [00:00<00:02,  3.74it/s]\nCapturing CUDA graphs (decode, FULL):  36%|\u2588\u2588\u2588\u258b      | 4/11 [00:00<00:01,  5.87it/s]\nCapturing CUDA graphs (decode, FULL):  45%|\u2588\u2588\u2588\u2588\u258c     | 5/11 [00:00<00:00,  6.57it/s]\nCapturing CUDA graphs (decode, FULL):  55%|\u2588\u2588\u2588\u2588\u2588\u258d    | 6/11 [00:01<00:00,  6.57it/s]\nCapturing CUDA graphs (decode, FULL):  73%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258e  | 8/11 [00:01<00:00,  5.56it/s]\nCapturing CUDA graphs (decode, FULL):  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 9/11 [00:01<00:00,  6.08it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:02<00:00,  5.49it/s]\nCapturing CUDA graphs (decode, FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:02<00:00,  5.40it/s]\n[rank0]:[W905 01:57:07.376753775 ProcessGroupNCCL.cpp:1553] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())\n",
+ "versions": {
+  "vllm": "0.19.0",
+  "torch": "2.10.0+cu128",
+  "transformers": "5.15.0",
+  "vllm-lens": "1.1.0.post6",
+  "flashinfer-python": "0.6.6",
+  "triton": "3.6.0"
+ },
+ "result": {
+  "model": "Qwen/Qwen3.6-27B",
+  "engine": "plain",
+  "variant": {
+   "vllm_lens_version": "1.1.0.post6",
+   "variant": "fork"
+  },
+  "versions": {
+   "vllm": "0.19.0",
+   "torch": "2.10.0+cu128"
+  },
+  "gpu": "NVIDIA B200",
+  "engine_kwargs": {
+   "model": "Qwen/Qwen3.6-27B",
+   "tensor_parallel_size": 1,
+   "gpu_memory_utilization": 0.85,
+   "max_model_len": 144,
+   "enable_prefix_caching": false,
+   "max_num_seqs": 1024,
+   "max_num_batched_tokens": 106496,
+   "dtype": "bfloat16",
+   "seed": 0,
+   "attention_backend": "TRITON_ATTN",
+   "language_model_only": true,
+   "compilation_config": {
+    "cudagraph_capture_sizes": [
+     1,
+     2,
+     4,
+     8,
+     16,
+     32,
+     64,
+     128,
+     256,
+     512,
+     1024
+    ]
+   }
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "VLLM_COMPILE",
+   "cudagraph_mode": "FULL_AND_PIECEWISE",
+   "cudagraph_capture_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024
+   ],
+   "max_num_batched_tokens": 106496,
+   "max_num_seqs": 1024,
+   "num_layers": 64,
+   "enable_prefix_caching": false
+  },
+  "engine_up_s": 302.9582298550001,
+  "prompt_tokens": 96,
+  "max_tokens": 40,
+  "inject_layer": 1,
+  "marker": 10,
+  "mid_layer": 32,
+  "sizes": [
+   512,
+   1024
+  ],
+  "sizes_2d": [
+   8,
+   32,
+   128,
+   512
+  ],
+  "max_capture_size": 1024,
+  "capture_mode": "list",
+  "enable_lora": false,
+  "prefix_caching": false,
+  "cache_salt": "nonce",
+  "packed_decode": true,
+  "model_runner": "default",
+  "model_runner_resolved": "v1",
+  "throughput": [
+   {
+    "condition": "nosteer",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 5.93047293199993,
+    "gen_tokens": 20480,
+    "tok_per_s": 3453.350219253685,
+    "seq_per_s": 86.33375548134212,
+    "prompt_tokens_total": 49152,
+    "sample": " runs almost a million times faster than it would on raw silicon. The trick work"
+   },
+   {
+    "condition": "nosteer",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 5.775542940999912,
+    "gen_tokens": 20480,
+    "tok_per_s": 3545.986967669281,
+    "seq_per_s": 88.64967419173202,
+    "prompt_tokens_total": 49152,
+    "sample": " runs wildly faster because of them. By the same token, the evolution of Rails i"
+   },
+   {
+    "condition": "nosteer",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 10.893140343000141,
+    "gen_tokens": 40960,
+    "tok_per_s": 3760.1645356860404,
+    "seq_per_s": 94.00411339215101,
+    "prompt_tokens_total": 98304,
+    "sample": " runs millions of times faster because the computer, not the programmer, arrange"
+   },
+   {
+    "condition": "nosteer",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 10.841913224000109,
+    "gen_tokens": 40960,
+    "tok_per_s": 3777.9309937040675,
+    "seq_per_s": 94.44827484260168,
+    "prompt_tokens_total": 98304,
+    "sample": " runs faster because the hardware quietly provides them.\n\nToday we sit on an eve"
+   }
+  ],
+  "probes": {},
+  "stats": {}
+ }
+}

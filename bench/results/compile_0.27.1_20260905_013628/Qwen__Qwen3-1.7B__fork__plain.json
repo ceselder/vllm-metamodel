@@ -1,0 +1,147 @@
+{
+ "returncode": 0,
+ "elapsed_s": 72.09974908828735,
+ "log_tail": "_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [106496], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 1024, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_jit_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')\n(EngineCore pid=505) INFO 09-05 01:40:24 [parallel_state.py:1640] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://172.20.28.91:42768 backend=nccl\n(EngineCore pid=505) INFO 09-05 01:40:24 [parallel_state.py:1977] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank N/A, EPLB rank N/A\n(EngineCore pid=505) INFO 09-05 01:40:24 [gpu_worker.py:385] Using V2 Model Runner\n(EngineCore pid=505) INFO 09-05 01:40:25 [model_runner.py:308] Loading model from scratch...\n(EngineCore pid=505) INFO 09-05 01:40:25 [cuda.py:422] Using AttentionBackendEnum.TRITON_ATTN backend.\n(EngineCore pid=505) INFO 09-05 01:40:27 [weight_utils.py:867] Filesystem type for checkpoints: OVERLAY. Checkpoint size: 3.78 GiB. Available RAM: 1017.90 GiB.\n(EngineCore pid=505) INFO 09-05 01:40:27 [weight_utils.py:890] Auto-prefetch is disabled because the filesystem (OVERLAY) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.\n(EngineCore pid=505) INFO 09-05 01:40:27 [default_loader.py:430] Loading weights took 0.94 seconds\n(EngineCore pid=505) INFO 09-05 01:40:29 [model_runner.py:329] Model loading took 3.22 GiB and 3.847971 seconds\n(EngineCore pid=505) INFO 09-05 01:40:29 [topk_topp_sampler.py:62] Using FlashInfer for top-p & top-k sampling.\n(EngineCore pid=505) INFO 09-05 01:40:39 [backends.py:1094] Using cache directory: /root/.cache/vllm/torch_compile_cache/7ba2641841/rank_0_0/backbone for vLLM's torch.compile\n(EngineCore pid=505) INFO 09-05 01:40:39 [backends.py:1155] Dynamo bytecode transform time: 9.31 s\n(EngineCore pid=505) INFO 09-05 01:40:58 [backends.py:393] Compiling a graph for compile range (1, 106496) takes 18.97 s\n(EngineCore pid=505) INFO 09-05 01:41:02 [backends.py:920] collected artifacts: 29 entries, 3 artifacts, 6539194 bytes total\n(EngineCore pid=505) INFO 09-05 01:41:02 [decorators.py:708] saved AOT compiled function to /root/.cache/vllm/torch_compile_cache/torch_aot_compile/63271c000d910f6dbf55a623de5f9c6eea0b8403d4a69d1e6341643113f3933e/rank_0_0/model\n(EngineCore pid=505) INFO 09-05 01:41:02 [monitor.py:53] torch.compile took 32.27 s in total\n(EngineCore pid=505) INFO 09-05 01:41:03 [monitor.py:81] Initial profiling/warmup run took 0.59 s\n(EngineCore pid=505) INFO 09-05 01:41:04 [gpu_worker.py:563] Available KV cache memory: 142.01 GiB\n(EngineCore pid=505) INFO 09-05 01:41:04 [kv_cache_utils.py:2235] GPU KV cache size: 1,329,568 tokens\n(EngineCore pid=505) INFO 09-05 01:41:04 [kv_cache_utils.py:2236] Maximum concurrency for 144 tokens per request: 9233.11x\n(EngineCore pid=505) INFO 09-05 01:41:05 [kernel_warmup.py:256] Using FlashInfer autotune cache file: /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/2f7c0d3387ced07d501c19d14772c40f0307062ce5aac33386bfbb001c4a8de3/autotune_configs.json\n(EngineCore pid=505) INFO 09-05 01:41:08 [model_runner.py:791] Graph capturing finished in 3 secs, took 0.28 GiB\n(EngineCore pid=505) INFO 09-05 01:41:08 [gpu_worker.py:789] Free memory on device (177.74/178.35 GiB) on startup. Desired GPU memory utilization is (0.85, 151.6 GiB). Actual usage is 4.71 GiB for consumed memory (weights + non-torch), 4.88 GiB for peak activation, and 0.28 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=152033941402` (141.59 GiB) to fit into requested memory, or `--kv-cache-memory=180102348288` (167.73 GiB) to fully utilize gpu memory. Current kv cache memory in use is 142.01 GiB.\n(EngineCore pid=505) INFO 09-05 01:41:11 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.\n(EngineCore pid=505) INFO 09-05 01:41:12 [core.py:348] init engine (profile, create kv cache, warmup model) took 42.92 s (compilation: 32.27 s)\n(EngineCore pid=505) WARNING 09-05 01:41:12 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\n(EngineCore pid=505) INFO 09-05 01:41:12 [kernel.py:306] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])\nWARNING 09-05 01:41:12 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1\nINFO 09-05 01:41:13 [hf.py:540] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.\n[bench 01:41:13] engine up in 53s | resolved {'enforce_eager': False, 'compilation_mode': 'VLLM_COMPILE', 'cudagraph_mode': 'FULL_AND_PIECEWISE', 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024], 'max_num_batched_tokens': 106496, 'max_num_seqs': 1024, 'num_layers': 28, 'enable_prefix_caching': False}\n(EngineCore pid=505) WARNING 09-05 01:41:13 [jit_monitor.py:135] Triton kernel JIT compilation during inference: kernel_unified_attention. This causes a latency spike; consider extending warmup to cover this shape/config.\n(EngineCore pid=505) WARNING 09-05 01:41:14 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _gumbel_sample_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.\n[bench 01:41:14] nosteer       B=  512 rep0:    0.50s     41032 tok/s  1025.8 seq/s\n[bench 01:41:15] nosteer       B=  512 rep1:    0.48s     42819 tok/s  1070.5 seq/s\n[bench 01:41:16] nosteer       B= 1024 rep0:    0.85s     48165 tok/s  1204.1 seq/s\n[bench 01:41:17] nosteer       B= 1024 rep1:    0.79s     51540 tok/s  1288.5 seq/s\n[bench 01:41:17] plain engine done\nINFO 09-05 01:41:17 [utils.py:612] [shutdown] Process manager: send sigterm to process EngineCore\n(EngineCore pid=505) INFO 09-05 01:41:17 [core.py:1332] [shutdown] EngineCore: trigger received signal=SIGTERM\n(EngineCore pid=505) INFO 09-05 01:41:17 [core.py:1468] [shutdown] EngineCore: start mode=abort timeout=0s\n(EngineCore pid=505) INFO 09-05 01:41:17 [core.py:1499] [shutdown] EngineCore: request processing complete; starting resource teardown\n(EngineCore pid=505) INFO 09-05 01:41:17 [core.py:1345] [shutdown] EngineCore: exiting busy loop\n\n--- stderr ---\n(EngineCore pid=505) \nLoading safetensors checkpoint shards:   0% Completed | 0/2 [00:00<?, ?it/s]\n(EngineCore pid=505) \nLoading safetensors checkpoint shards:  50% Completed | 1/2 [00:00<00:00,  1.07it/s]\n(EngineCore pid=505) \nLoading safetensors checkpoint shards: 100% Completed | 2/2 [00:00<00:00,  2.14it/s]\n(EngineCore pid=505) \n(EngineCore pid=505) 2026-09-05 01:41:05,248 - INFO - autotuner.py:829 - flashinfer.jit: [Autotuner]: Autotuning process starts ...\n(EngineCore pid=505) 2026-09-05 01:41:05,627 - INFO - autotuner.py:852 - flashinfer.jit: [Autotuner]: Autotuning process ends\n(EngineCore pid=505) 2026-09-05 01:41:05,643 - INFO - autotuner.py:2269 - flashinfer.jit: [Autotuner]: Saved 0 configs to /root/.cache/vllm/flashinfer_autotune_cache/0.6.16.post3/100a/2f7c0d3387ced07d501c19d14772c40f0307062ce5aac33386bfbb001c4a8de3/autotune_configs.json (0 new, 0 from previous config)\n(EngineCore pid=505) \nCapturing CUDA graphs (PIECEWISE):   0%|          | 0/11 [00:00<?, ?it/s]\nCapturing CUDA graphs (PIECEWISE):   9%|\u2589         | 1/11 [00:00<00:01,  8.86it/s]\nCapturing CUDA graphs (PIECEWISE):  36%|\u2588\u2588\u2588\u258b      | 4/11 [00:00<00:00, 20.21it/s]\nCapturing CUDA graphs (PIECEWISE):  64%|\u2588\u2588\u2588\u2588\u2588\u2588\u258e   | 7/11 [00:00<00:00,  8.76it/s]\nCapturing CUDA graphs (PIECEWISE):  82%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u258f | 9/11 [00:01<00:00,  6.41it/s]\nCapturing CUDA graphs (PIECEWISE): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  5.43it/s]\nCapturing CUDA graphs (PIECEWISE): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:01<00:00,  6.52it/s]\n(EngineCore pid=505) \nCapturing CUDA graphs (FULL):   0%|          | 0/11 [00:00<?, ?it/s]\nCapturing CUDA graphs (FULL):  45%|\u2588\u2588\u2588\u2588\u258c     | 5/11 [00:00<00:00, 44.29it/s]\nCapturing CUDA graphs (FULL): 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 11/11 [00:00<00:00, 53.72it/s]\n",
+ "versions": {
+  "vllm": "0.27.1",
+  "torch": "2.13.0",
+  "transformers": "5.16.1",
+  "vllm-lens": "1.1.0.post6",
+  "flashinfer-python": "0.6.16.post3",
+  "triton": "3.7.1"
+ },
+ "result": {
+  "model": "Qwen/Qwen3-1.7B",
+  "engine": "plain",
+  "variant": {
+   "vllm_lens_version": "1.1.0.post6",
+   "variant": "fork"
+  },
+  "versions": {
+   "vllm": "0.27.1",
+   "torch": "2.13.0+cu130"
+  },
+  "gpu": "NVIDIA B200",
+  "engine_kwargs": {
+   "model": "Qwen/Qwen3-1.7B",
+   "tensor_parallel_size": 1,
+   "gpu_memory_utilization": 0.85,
+   "max_model_len": 144,
+   "enable_prefix_caching": false,
+   "max_num_seqs": 1024,
+   "max_num_batched_tokens": 106496,
+   "dtype": "bfloat16",
+   "seed": 0,
+   "attention_backend": "TRITON_ATTN",
+   "compilation_config": {
+    "cudagraph_capture_sizes": [
+     1,
+     2,
+     4,
+     8,
+     16,
+     32,
+     64,
+     128,
+     256,
+     512,
+     1024
+    ]
+   }
+  },
+  "resolved_config": {
+   "enforce_eager": false,
+   "compilation_mode": "VLLM_COMPILE",
+   "cudagraph_mode": "FULL_AND_PIECEWISE",
+   "cudagraph_capture_sizes": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024
+   ],
+   "max_num_batched_tokens": 106496,
+   "max_num_seqs": 1024,
+   "num_layers": 28,
+   "enable_prefix_caching": false
+  },
+  "engine_up_s": 52.92804638299998,
+  "prompt_tokens": 96,
+  "max_tokens": 40,
+  "inject_layer": 1,
+  "marker": 10,
+  "mid_layer": 14,
+  "sizes": [
+   512,
+   1024
+  ],
+  "sizes_2d": [
+   8,
+   32,
+   128,
+   512
+  ],
+  "max_capture_size": 1024,
+  "capture_mode": "list",
+  "enable_lora": false,
+  "prefix_caching": false,
+  "cache_salt": "nonce",
+  "packed_decode": true,
+  "model_runner": "default",
+  "model_runner_resolved": "v2",
+  "throughput": [
+   {
+    "condition": "nosteer",
+    "batch": 512,
+    "rep": 0,
+    "wall_s": 0.49912010999997847,
+    "gen_tokens": 20480,
+    "tok_per_s": 41032.20765839486,
+    "seq_per_s": 1025.8051914598714,
+    "prompt_tokens_total": 49152,
+    "sample": "'s internal structure is linked to the memory hierarchy and the mathematical lan"
+   },
+   {
+    "condition": "nosteer",
+    "batch": 512,
+    "rep": 1,
+    "wall_s": 0.47829587000001084,
+    "gen_tokens": 20480,
+    "tok_per_s": 42818.68459370041,
+    "seq_per_s": 1070.4671148425105,
+    "prompt_tokens_total": 49152,
+    "sample": ", once translated into machine code, \nThis paragraph is a classic example of a \""
+   },
+   {
+    "condition": "nosteer",
+    "batch": 1024,
+    "rep": 0,
+    "wall_s": 0.8504162790000009,
+    "gen_tokens": 40960,
+    "tok_per_s": 48164.647139827335,
+    "seq_per_s": 1204.1161784956835,
+    "prompt_tokens_total": 98304,
+    "sample": " is built atop a much more complex system. The more you know about software, the"
+   },
+   {
+    "condition": "nosteer",
+    "batch": 1024,
+    "rep": 1,
+    "wall_s": 0.7947228190000146,
+    "gen_tokens": 40960,
+    "tok_per_s": 51539.982268961685,
+    "seq_per_s": 1288.4995567240421,
+    "prompt_tokens_total": 98304,
+    "sample": " is just one layer of abstraction above the cache. We all write in a language th"
+   }
+  ],
+  "probes": {},
+  "stats": {}
+ }
+}

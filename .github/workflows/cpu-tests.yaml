@@ -39,4 +39,7 @@ jobs:
             vllm_lens/tests/test_readout.py \
             vllm_lens/tests/test_metamodel_helpers.py \
             vllm_lens/tests/test_lora_merge.py \
-            vllm_lens/tests/test_serialize.py
+            vllm_lens/tests/test_serialize.py \
+            vllm_lens/tests/test_kv_salt.py \
+            vllm_lens/tests/test_compile_op.py \
+            vllm_lens/tests/test_shm.py

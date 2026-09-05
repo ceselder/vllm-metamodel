@@ -19,6 +19,12 @@ vllm-lens-metamodel environment variables:
     every batch containing prompt tokens runs eagerly with the hooks live:
     steering and capture apply to **prompt positions only**; 2-D
     (broadcast) steering vectors are rejected.
+``VLLM_LENS_COMPILE=1`` (together with ``VLLM_LENS_CUDA_GRAPHS=1``)
+    Keep vLLM's torch.compile instead of forcing compilation mode NONE: the layer
+    hooks run as an opaque custom op inside the compiled graph (``_compile_op``),
+    installed from ``Worker.load_model`` before the model is traced.  Same
+    prompt-position-only semantics as CUDA graphs; ``cudagraph_mode`` is forced to
+    FULL_DECODE_ONLY.
 ``VLLM_LENS_BLOCK_RPC=0``
     Disable packing the offline call's single-position vectors into one
     ``set_steering_block`` RPC (falls back to ``set_steering_data_many``).
@@ -35,6 +41,22 @@ vllm-lens-metamodel environment variables:
 ``VLLM_USE_V2_MODEL_RUNNER`` (vLLM's own switch, >= 0.23)
     The plugin defaults it to ``0``: the hooks read the V1 model runner's per-step
     state; with the V2 runner forced on, engine construction fails loudly.
+``VLLM_LENS_PREFIX_CACHE=0``
+    Hooked requests never READ the prefix cache (the pre-post7 behaviour).  Default on:
+    with ``enable_prefix_caching=True`` steering-only requests reuse the cached blocks
+    of their prompt template up to the block before the steered position; the blocks
+    from there on are salted per request (see ``vllm_lens._kv_salt``).
+``VLLM_LENS_SHM=1`` | ``view``
+    Same-host zero-copy transport (``_shm``): captured activations come back through one
+    POSIX shared-memory segment per ``generate()`` (``1`` = copied out into ordinary
+    tensors, ``view`` = zero-copy views that keep the mapping alive via
+    ``output.lens_shm``), and the per-call steering / readout vector blocks travel the
+    same way.  Off by default; falls back to the pickled RPCs when a segment cannot be
+    opened.
+``VLLM_LENS_KV_SALT=0``
+    Do not patch vLLM's block hasher.  Then hooked requests fall back to skipping the
+    cache read, early exit is refused with prefix caching, and -- as in every version
+    before post7 -- steered blocks are still WRITTEN to the cache.
 
 Readout (vllm-metamodels): ``extra_args["apply_readout_vectors"] = [ReadoutVector(...)]``
 returns ``output.readout`` (per-position cosine / dot products with a per-request
@@ -43,16 +65,19 @@ direction, computed in the worker -- no hidden states leave the GPU).
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
 import pickle
+import uuid
 from collections.abc import AsyncIterator, Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 import torch
 import zstandard as zstd
 
+from vllm_lens import _kv_salt, _shm
 from vllm_lens._helpers._serialize import serialize_activations, serialize_tensor
 from vllm_lens._helpers.types import (
     CAPTURE_POSITIONS_KEY,
@@ -61,6 +86,7 @@ from vllm_lens._helpers.types import (
     ReadoutVector,
     SteeringVector,
 )
+from vllm_lens._kv_salt import CACHE_SALT_KEY, KV_SALT_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +115,106 @@ _warned_capture_prompt_only: bool = False
 
 def _env_truthy(name: str, default: str = "") -> bool:
     return os.environ.get(name, default).strip().lower() in _TRUTHY
+
+
+# ---------------------------------------------------------------------------
+# vllm-metamodels: prefix caching state (engine setting + scheduler-side salt patch)
+# ---------------------------------------------------------------------------
+
+_warned_unsalted: bool = False
+
+
+def _prefix_caching_enabled(cfg_owner: Any) -> bool:
+    try:
+        vc = getattr(cfg_owner, "vllm_config", None) or cfg_owner.llm_engine.vllm_config
+        return bool(vc.cache_config.enable_prefix_caching)
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _warn_unsalted_once() -> None:
+    global _warned_unsalted
+    if _warned_unsalted:
+        return
+    _warned_unsalted = True
+    logger.warning(
+        "vllm-lens: enable_prefix_caching=True but the scheduler process does not run the "
+        "vllm-lens block-hash salt patch (VLLM_LENS_KV_SALT=0, or plugins not loaded there). Hooked "
+        "requests skip READING the prefix cache, but their steered / early-exit blocks are still "
+        "WRITTEN and a plain request with the same prompt may read steered KV. Disable prefix "
+        "caching or enable the patch."
+    )
+
+
+def _prefix_cache_state_sync(llm: Any) -> tuple[bool, bool]:
+    """``(prefix caching enabled, salt patch active in the scheduler process)``, cached per engine."""
+    st = getattr(llm, "_lens_pc_state", None)
+    if st is None:
+        enabled = _prefix_caching_enabled(llm)
+        active = bool(enabled and _kv_salt.scheduler_active_sync(llm))
+        st = (enabled, active)
+        llm._lens_pc_state = st
+        if enabled and not active:
+            _warn_unsalted_once()
+    return st
+
+
+async def _prefix_cache_state_async(engine: Any) -> tuple[bool, bool]:
+    st = getattr(engine, "_lens_pc_state", None)
+    if st is None:
+        enabled = _prefix_caching_enabled(engine)
+        active = bool(enabled and await _kv_salt.scheduler_active_async(engine))
+        st = (enabled, active)
+        engine._lens_pc_state = st
+        if enabled and not active:
+            _warn_unsalted_once()
+    return st
+
+
+def _effective_caps(caps: dict[str, Any], pc_enabled: bool, salt_active: bool) -> dict[str, Any]:
+    """Worker capabilities + the client-side prefix-cache facts.  Early exit with prefix
+    caching needs the salt patch (its blocks must never be reusable)."""
+    caps = dict(caps or {})
+    caps["prefix_caching"] = bool(pc_enabled)
+    caps["kv_salt_active"] = bool(salt_active)
+    if pc_enabled and caps.get("early_exit") and not salt_active:
+        caps["early_exit"] = False
+        caps["early_exit_reason"] = (
+            "enable_prefix_caching=True and the scheduler process does not run the vllm-lens "
+            "block-hash salt patch (skipped layers would leave reusable garbage KV blocks)"
+        )
+    return caps
+
+
+def _apply_kv_policy(
+    sp: Any,
+    vectors: Sequence[SteeringVector] | None,
+    wants_capture: bool,
+    readouts: Sequence[ReadoutVector] | None,
+    early_exit: Any,
+    cache_salt: Any,
+    nonce: str,
+    pc_state: tuple[bool, bool],
+    force_skip: bool,
+) -> None:
+    """Set ``skip_reading_prefix_cache`` / ``extra_args[KV_SALT_KEY]`` on one request's params."""
+    hooked = vectors is not None or wants_capture or bool(readouts)
+    pc_enabled, salt_active = pc_state
+    if not hooked:
+        if force_skip:
+            sp.skip_reading_prefix_cache = True
+        return
+    if not (pc_enabled and salt_active):
+        # pre-post7 behaviour: hooks need every prompt position computed
+        sp.skip_reading_prefix_cache = True
+        return
+    skip, salt = _kv_salt.plan_request_kv(vectors, wants_capture, bool(readouts), bool(early_exit), cache_salt, nonce)
+    if salt is not None:
+        if sp.extra_args is None:
+            sp.extra_args = {}
+        sp.extra_args[KV_SALT_KEY] = salt
+    if skip or force_skip or not _env_truthy("VLLM_LENS_PREFIX_CACHE", "1"):
+        sp.skip_reading_prefix_cache = True
 
 
 # ---------------------------------------------------------------------------
@@ -274,24 +400,35 @@ def _configure_cuda_graphs(engine_args: Any) -> bool:
     elif cc is None:
         cc = CompilationConfig()
 
-    if cc.mode not in (None, CompilationMode.NONE):
+    compile_ok = _env_truthy("VLLM_LENS_COMPILE")
+    if compile_ok:
+        # vllm-metamodels post7: keep vLLM's torch.compile (its default mode when None); the
+        # hooks run as an opaque custom op inside the compiled graph (_compile_op).
+        logger.info(
+            "vllm-lens: VLLM_LENS_COMPILE=1 -- torch.compile stays on (mode %s); layer hooks run as "
+            "the custom op vllm_lens::lens_layer_; decode batches replay full CUDA graphs.",
+            getattr(cc.mode, "name", cc.mode),
+        )
+    elif cc.mode not in (None, CompilationMode.NONE):
         logger.warning(
             "vllm-lens: compilation mode %s would compile the decoder layers and "
             "the forward hooks would not fire; forcing enforce_eager=True. For "
             "CUDA graphs use compilation_config mode=0 (NONE) with "
-            "cudagraph_mode=FULL_DECODE_ONLY.",
+            "cudagraph_mode=FULL_DECODE_ONLY, or VLLM_LENS_COMPILE=1 to keep "
+            "torch.compile with the custom-op hooks.",
             cc.mode,
         )
         engine_args.enforce_eager = True
         return False
-
-    cc.mode = CompilationMode.NONE
+    else:
+        cc.mode = CompilationMode.NONE
     if cc.cudagraph_mode is None:
         cc.cudagraph_mode = CUDAGraphMode.FULL_DECODE_ONLY
     elif cc.cudagraph_mode not in (CUDAGraphMode.NONE, CUDAGraphMode.FULL_DECODE_ONLY):
         logger.warning(
             "vllm-lens: cudagraph_mode %s would run prefill batches inside CUDA "
-            "graphs where the hooks do not fire; overriding to FULL_DECODE_ONLY.",
+            "graphs where the hooks do not fire (the compile-mode op records no kernels "
+            "during capture); overriding to FULL_DECODE_ONLY.",
             cc.cudagraph_mode.name,
         )
         cc.cudagraph_mode = CUDAGraphMode.FULL_DECODE_ONLY
@@ -300,12 +437,41 @@ def _configure_cuda_graphs(engine_args: Any) -> bool:
     if engine_args.enforce_eager or cc.cudagraph_mode == CUDAGraphMode.NONE:
         return False
     logger.info(
-        "vllm-lens: CUDA graphs enabled (compilation mode NONE, cudagraph_mode "
+        "vllm-lens: CUDA graphs enabled (compilation mode %s, cudagraph_mode "
         "%s). Hooks run only in forward passes that contain prompt tokens: "
         "steering and activation capture are prompt-position only.",
+        getattr(cc.mode, "name", cc.mode),
         cc.cudagraph_mode.name,
     )
     return True
+
+
+def _patch_worker_load_model() -> None:
+    """vllm-metamodels post7: install the hooks right after the weights are loaded when the
+    engine compiles the model (torch.compile traces the hooks present at that moment and vLLM
+    drops all guards afterwards).  Runs in every worker process (plugins load in
+    ``WorkerWrapperBase.init_worker`` before the worker is constructed)."""
+    try:
+        from vllm.v1.worker.gpu_worker import Worker
+    except Exception:  # pragma: no cover - no GPU worker in this process
+        return
+    if getattr(Worker.load_model, "_vllm_lens_wrapped", False):
+        return
+    orig = Worker.load_model
+
+    def load_model(self, *args, **kwargs):
+        orig(self, *args, **kwargs)
+        try:
+            from vllm_lens._compile_op import model_is_compiled
+
+            compiled = model_is_compiled(getattr(self, "vllm_config", None))
+        except Exception:  # noqa: BLE001
+            compiled = False
+        if compiled and hasattr(self, "install_hooks"):
+            self.install_hooks()
+
+    load_model._vllm_lens_wrapped = True  # type: ignore[attr-defined]
+    Worker.load_model = load_model
 
 
 def _patched_create_engine_config(self, *args, **kwargs):
@@ -512,13 +678,17 @@ async def _patched_generate(
 
     # Allow explicit prefix-cache bypass via extra_args.
     skip_kv_cache = extra.pop("skip_reading_prefix_cache", None)
+    cache_salt = extra.pop(CACHE_SALT_KEY, None)  # vllm-metamodels: user salt mode, never reaches the engine
 
     wants_readout = bool(readouts)
     needs_hooks = wants_activations or steering_vectors is not None or wants_readout
     if needs_hooks or skip_kv_cache:
-        # Hooks rely on forward passes firing; prefix-cached tokens skip
-        # computation entirely, so force a fresh prefill for this request.
-        effective_params.skip_reading_prefix_cache = True
+        # vllm-metamodels: with prefix caching + the salt patch, steering-only requests keep
+        # reading the cache (steered blocks salted); capture / readout / early exit as before.
+        _apply_kv_policy(
+            effective_params, steering_vectors, wants_activations, readouts, extra.get(EARLY_EXIT_KEY),
+            cache_salt, f"{request_id}", await _prefix_cache_state_async(self), bool(skip_kv_cache),
+        )
     if needs_hooks and not getattr(self, "_hooks_installed", False):
         await self.collective_rpc("install_hooks")
         setattr(self, "_hooks_installed", True)
@@ -572,13 +742,31 @@ async def _patched_generate(
             await self.collective_rpc("clear_captured_states", args=(request_id,))
 
 
+def _own_params(sp: Any) -> Any:
+    """Shallow copy of a SamplingParams with its own ``extra_args`` dict (see _patched_llm_generate)."""
+    try:
+        sp2 = copy.copy(sp)
+        sp2.extra_args = dict(sp.extra_args) if sp.extra_args else sp.extra_args
+        return sp2
+    except Exception:  # noqa: BLE001 - exotic params object: fall back to in-place (1.1.0 behaviour)
+        return sp
+
+
 def _lens_capabilities_sync(llm: Any) -> dict[str, Any]:
+    """Worker capabilities merged with the prefix-cache facts (``prefix_caching``,
+    ``kv_salt_active``; ``early_exit`` adjusted), cached per engine.  Installs the hooks
+    first (several capabilities -- early exit, compile mode -- are only known afterwards)."""
     caps = getattr(llm, "_lens_caps", None)
     if caps is None:
         try:
+            if not getattr(llm, "_hooks_installed", False):
+                llm.collective_rpc("install_hooks")
+                llm._hooks_installed = True
             caps = llm.collective_rpc("lens_capabilities")[0] or {}
         except Exception:  # noqa: BLE001 - older worker without the RPC
             caps = {}
+        pc_enabled, salt_active = _prefix_cache_state_sync(llm)
+        caps = _effective_caps(caps, pc_enabled, salt_active)
         llm._lens_caps = caps
     return caps
 
@@ -587,11 +775,60 @@ async def _lens_capabilities_async(llm: Any) -> dict[str, Any]:
     caps = getattr(llm, "_lens_caps", None)
     if caps is None:
         try:
+            if not getattr(llm, "_hooks_installed", False):
+                await llm.collective_rpc("install_hooks")
+                setattr(llm, "_hooks_installed", True)
             caps = (await llm.collective_rpc("lens_capabilities"))[0] or {}
         except Exception:  # noqa: BLE001
             caps = {}
+        pc_enabled, salt_active = await _prefix_cache_state_async(llm)
+        caps = _effective_caps(caps, pc_enabled, salt_active)
         llm._lens_caps = caps
     return caps
+
+
+# ---------------------------------------------------------------------------
+# vllm-metamodels post7: shared-memory transport helpers (see _shm)
+# ---------------------------------------------------------------------------
+
+
+def _shm_supported(llm: Any) -> bool:
+    caps = _lens_capabilities_sync(llm)
+    return bool(caps.get("shm", False))
+
+
+def _ship_block(block: dict[str, Any], tag: str) -> dict[str, Any]:
+    """Replace ``block["vecs"]`` by a shared-memory descriptor when VLLM_LENS_SHM is on."""
+    if not _shm.shm_mode():
+        return block
+    try:
+        desc = _shm.put({"vecs": block["vecs"]}, tag=tag)
+    except Exception:  # noqa: BLE001 - no /dev/shm: pickle the tensor as before
+        logger.warning("vllm-lens: shared-memory block transport failed; pickling the block", exc_info=True)
+        return block
+    return {**block, "vecs": None, "shm": desc}
+
+
+def _unpack_shm_capture(blob: dict[str, Any], mode: str, outputs: Sequence[Any]) -> dict[str, Any]:
+    """Descriptor from ``get_captured_states_shm`` -> ``{request_id: activations}``.  ``mode`` ==
+    ``"view"`` keeps zero-copy views (the mapping handle is attached to every output as
+    ``lens_shm``); ``"copy"`` copies out and releases the mapping."""
+    if "pickled" in blob:
+        return blob["pickled"]
+    desc, positions = blob.get("shm"), blob.get("positions", {})
+    if desc is None:
+        return {}
+    tensors, handle = _shm.get(desc, copy=(mode != "view"))
+    if handle is not None:
+        for o in outputs:  # keep the mapping alive as long as any output (and its views) lives
+            o.lens_shm = handle
+    out: dict[str, Any] = {}
+    for ext, t in tensors.items():
+        acts: dict[str, Any] = {"residual_stream": t}
+        if ext in positions:
+            acts["positions"] = positions[ext]
+        out[ext] = acts
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -612,10 +849,16 @@ def _patched_llm_generate(
     data is keyed by a synthetic ``_steering_id`` stored in ``extra_args``
     (a lightweight string that survives msgspec serialization).
     """
+    # vllm-metamodels post7: never mutate the caller's SamplingParams.  1.1.0 popped
+    # ``apply_steering_vectors`` out of the caller's ``extra_args`` in place, so a params object
+    # reused for a second ``generate()`` was silently UNSTEERED.  Work on shallow copies (the
+    # tensors are shared, only the Struct + its extra_args dict are copied: ~0.3 us each).
     if isinstance(sampling_params, Sequence):
-        params_list = list(sampling_params)
+        params_list = [_own_params(sp) for sp in sampling_params]
+        sampling_params = params_list
     elif sampling_params is not None:
-        params_list = [sampling_params]
+        params_list = [_own_params(sampling_params)]
+        sampling_params = params_list[0]
     else:
         params_list = []
 
@@ -659,18 +902,27 @@ def _patched_llm_generate(
             max((sp.max_tokens or 0) for sp in params_list) if params_list else None,
         )
 
-    # Pop skip_reading_prefix_cache from extra_args for each request.
+    # Pop skip_reading_prefix_cache / lens_cache_salt from extra_args for each request.
     any_skip_kv_cache = False
+    cache_salts: list[Any] = []
     for sp in params_list:
-        if (sp.extra_args or {}).pop("skip_reading_prefix_cache", None):
+        extra = sp.extra_args or {}
+        if extra.pop("skip_reading_prefix_cache", None):
             any_skip_kv_cache = True
+        cache_salts.append(extra.pop(CACHE_SALT_KEY, None))
 
     has_steering = len(steering_payloads) > 0
     wants_readout = len(readout_payloads) > 0
     needs_hooks = wants_activations or has_steering or wants_readout
     if needs_hooks or any_skip_kv_cache:
-        for sp in params_list:
-            sp.skip_reading_prefix_cache = True
+        # vllm-metamodels: per-request prefix-cache policy (see _apply_kv_policy / _kv_salt).
+        pc_state = _prefix_cache_state_sync(self)
+        call_nonce = uuid.uuid4().hex[:12]
+        for idx, (sp, (vectors, cap, readouts, early_exit, _mt)) in enumerate(zip(params_list, per_request)):
+            _apply_kv_policy(
+                sp, vectors, cap is not None, readouts, early_exit, cache_salts[idx],
+                f"{call_nonce}-{idx}", pc_state, any_skip_kv_cache,
+            )
 
     if needs_hooks and not getattr(self, "_hooks_installed", False):
         self.collective_rpc("install_hooks")
@@ -693,13 +945,13 @@ def _patched_llm_generate(
             else (None, steering_payloads)
         )
         if block is not None:
-            self.collective_rpc("set_steering_block", args=(pickle.dumps(block),))
+            self.collective_rpc("set_steering_block", args=(pickle.dumps(_ship_block(block, "steer")),))
         if rest:
             self.collective_rpc("set_steering_data_many", args=(pickle.dumps(rest),))
     if wants_readout:
         rblock, rrest = _pack_readouts(readout_payloads)
         if rblock is not None:
-            self.collective_rpc("set_readout_block", args=(pickle.dumps(rblock),))
+            self.collective_rpc("set_readout_block", args=(pickle.dumps(_ship_block(rblock, "read")),))
         if rrest:
             self.collective_rpc("set_readout_data_many", args=(pickle.dumps(rrest),))
 
@@ -717,9 +969,15 @@ def _patched_llm_generate(
 
     fast = _env_truthy("VLLM_LENS_FAST_CAPTURE", "1")
     if wants_activations and fast:
-        # vllm-metamodels: ONE RPC for every request of this call (per-PP-rank blobs).
-        blobs = self.collective_rpc("get_captured_states_many", args=([o.request_id for o in outputs],))
-        parts = [pickle.loads(b) for b in blobs if b is not None]
+        # vllm-metamodels: ONE RPC for every request of this call (per-PP-rank blobs); with
+        # VLLM_LENS_SHM the blobs are shared-memory descriptors (post7).
+        mode = _shm.shm_mode()
+        if mode and _shm_supported(self):
+            blobs = self.collective_rpc("get_captured_states_shm", args=([o.request_id for o in outputs],))
+            parts = [_unpack_shm_capture(pickle.loads(b), mode, outputs) for b in blobs if b is not None]
+        else:
+            blobs = self.collective_rpc("get_captured_states_many", args=([o.request_id for o in outputs],))
+            parts = [pickle.loads(b) for b in blobs if b is not None]
         for output in outputs:
             found = [p[output.request_id] for p in parts if output.request_id in p]
             if not found:
@@ -852,6 +1110,11 @@ def register() -> None:
     # vLLM >= 0.27 refuses pickled collective_rpc payloads unless opted in; the
     # steering RPCs ship pickled SteeringVector tensors (trusted, same-user).
     os.environ.setdefault("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
+    # vllm-metamodels: salt the block hashes of steered / early-exit requests (runs in the
+    # scheduler process too -- vLLM loads general plugins in EngineCore.__init__).
+    _kv_salt.install()
+    # vllm-metamodels: compile-mode hooks must exist before the first (compiling) forward pass.
+    _patch_worker_load_model()
 
     from vllm import LLM
     from vllm.engine.arg_utils import EngineArgs

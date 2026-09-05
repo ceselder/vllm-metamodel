@@ -25,8 +25,11 @@ class FakeLLM:
         self.early_exit, self.calls = early_exit, []
         self.hidden = hidden
 
-    def collective_rpc(self, name):
-        assert name == "lens_capabilities"
+    def collective_rpc(self, name, args=(), kwargs=None):
+        # post7: capabilities() installs the hooks first (several capabilities are only known then)
+        assert name in ("install_hooks", "lens_capabilities"), name
+        if name == "install_hooks":
+            return [None]
         return [{"early_exit": self.early_exit, "early_exit_reason": "" if self.early_exit else "prefix caching on"}]
 
     def generate(self, prompts, params, lora_request=None, use_tqdm=False):

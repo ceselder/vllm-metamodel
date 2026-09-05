@@ -26,13 +26,16 @@ PositionSpec = Any  # "all" | {"last": k} | list[int]
 
 
 def capabilities(llm: Any) -> dict[str, Any]:
-    """The worker's ``lens_capabilities`` dict (``early_exit``, ``early_exit_reason``, ``multi_stream``, ...).
+    """The worker's ``lens_capabilities`` dict (``early_exit``, ``early_exit_reason``, ``multi_stream``, ...)
+    merged with the plugin's prefix-cache facts (``prefix_caching``, ``kv_salt_active``; ``early_exit`` is
+    False when prefix caching is on but the scheduler process lacks the block-hash salt patch).
     Returns ``{}`` if the engine has no vllm-lens worker extension."""
     try:
-        caps = llm.collective_rpc("lens_capabilities")
-        return (caps[0] if isinstance(caps, (list, tuple)) else caps) or {}
+        from vllm_lens._activations_plugin import _lens_capabilities_sync
+
+        return dict(_lens_capabilities_sync(llm))
     except Exception as e:  # noqa
-        logger.warning("lens_capabilities RPC failed (%s); assuming no early exit", e)
+        logger.warning("lens_capabilities failed (%s); assuming no early exit", e)
         return {}
 
 

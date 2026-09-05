@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--model", required=True)
     p.add_argument("--stage", choices=["hf-ref", "vllm"], required=True)
-    p.add_argument("--engine", choices=["eager", "graphs"], default="eager")
+    p.add_argument("--engine", choices=["eager", "graphs", "compile"], default="eager")
     p.add_argument("--out", required=True)
     p.add_argument("--ref", default="", help="hf-ref .pt (vllm stage)")
     p.add_argument("--baseline", default="", help="bench/results_summary.json for the throughput check")
@@ -303,6 +303,9 @@ def vllm_stage(a: argparse.Namespace) -> None:
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
     if a.engine == "graphs":
         os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
+    elif a.engine == "compile":  # post7: torch.compile kept, hooks as the custom op
+        os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
+        os.environ["VLLM_LENS_COMPILE"] = "1"
     import torch
     import vllm
     from transformers import AutoTokenizer
@@ -827,6 +830,7 @@ def throughput_checks(tp: dict, engine: str) -> list[dict[str, Any]]:
     rows, T = tp["rows"], int(tp.get("T", 40))
     base = tp.get("baseline_series") or {}
     out: list[dict[str, Any]] = []
+    graphy = engine.startswith("graphs") or engine.startswith("compile")  # decode batches replay CUDA graphs
 
     def add(name: str, ok: bool | None, detail: str) -> None:
         out.append({"case": "throughput", "check": name, "ok": ok, "detail": detail})
@@ -850,10 +854,10 @@ def throughput_checks(tp: dict, engine: str) -> list[dict[str, Any]]:
                     f"(control's repeat spread of wall_2T-wall_T = {ns_spread:.0%} > {RESOLVABLE_SPREAD:.0%}; informational)", None, detail)
         er = rows["embed_replace"][B] if B in rows["embed_replace"] else rows["embed_replace"][str(B)]
         ka = rows["karvonen_add"][B] if B in rows["karvonen_add"] else rows["karvonen_add"][str(B)]
-        if engine.startswith("graphs"):
+        if graphy:
             add(f"B={B}: CUDA graphs engage with embed-replace requests (hooks ran in <= {T // 4} of {T + 1} forward passes; eager would be ~{T + 1})",
                 er["hook_passes"] <= T // 4, f"hook passes: embed={er['hook_passes']} add={ka['hook_passes']} nosteer={ns['hook_passes']}")
-        fk, ck = ("fork_graphs", "ceiling_graphs") if engine.startswith("graphs") else ("fork_vectorized", "ceiling_eager")
+        fk, ck = ("fork_graphs", "ceiling_graphs") if graphy else ("fork_vectorized", "ceiling_eager")
         if base.get(fk) and base.get(ck) and str(B) in base[fk] and str(B) in base[ck]:
             rec_f, rec_c = base[fk][str(B)]["wall_s"], base[ck][str(B)]["wall_s"]
             rec_ratio, now_ratio = rec_f / rec_c, ka["wall_s"] / ns["wall_s"]

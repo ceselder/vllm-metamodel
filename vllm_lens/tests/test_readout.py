@@ -394,9 +394,10 @@ def test_early_exit_supported_rules():
     ext.vllm_config = cfg
     ext.model_runner = SimpleNamespace(_model_forward=lambda **k: None, use_aux_hidden_state_outputs=False, is_pooling_model=False)
     assert ext._early_exit_supported() == (True, "ok")
+    # post7: prefix caching no longer disables early exit at the engine level -- each
+    # early-exit request must carry a KV salt from token 0 (see test_kv_salt.py)
     cfg.cache_config.enable_prefix_caching = True
-    ok, why = ext._early_exit_supported()
-    assert not ok and "prefix" in why
+    assert ext._early_exit_supported() == (True, "ok")
     cfg.cache_config.enable_prefix_caching = False
     cfg.parallel_config.pipeline_parallel_size = 2
     assert not ext._early_exit_supported()[0]

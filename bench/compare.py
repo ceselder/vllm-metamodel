@@ -9,6 +9,8 @@ Series naming used everywhere (README, plots, report):
   fork_eager       vllm-lens-metamodel, per-request steering, eager
   fork_graphs      vllm-lens-metamodel, per-request steering, CUDA graphs (FULL_DECODE_ONLY)
   ceiling_graphs   vLLM, no steering / no hooks, same FULL_DECODE_ONLY engine config
+  fork_compile     vllm-metamodels post7, per-request steering, torch.compile ON + custom-op hooks
+  ceiling_compile  vLLM, no steering, same compiled FULL_DECODE_ONLY engine config
   ceiling_eager    vLLM, no steering / no hooks, eager
   ceiling_plain    vLLM, no steering, its default compilation (torch.compile + CUDA graphs)
 """
@@ -29,6 +31,9 @@ SERIES = {
     ("fork", "graphs", "steer3d_loop"): "fork_graphs_indexed",
     ("fork", "graphs", "steer3d"): "fork_graphs",
     ("fork", "graphs", "nosteer"): "ceiling_graphs",
+    ("fork", "compile", "steer3d"): "fork_compile",
+    ("fork", "compile", "steer3d_loop"): "fork_compile_indexed",
+    ("fork", "compile", "nosteer"): "ceiling_compile",
     ("fork", "eager", "nosteer"): "ceiling_eager",
     ("stock", "eager", "nosteer"): "ceiling_eager_stockimg",
     ("fork", "plain", "nosteer"): "ceiling_plain",

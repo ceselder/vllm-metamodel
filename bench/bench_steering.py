@@ -17,6 +17,8 @@ Engine modes
   eager   plugin active, ``enforce_eager`` (what stock 1.1.0 always forces)
   graphs  vllm-lens-metamodel only: ``VLLM_LENS_CUDA_GRAPHS=1`` -> compilation mode
           NONE + ``cudagraph_mode=FULL_DECODE_ONLY`` (the plugin fills these in)
+  compile vllm-metamodels post7: ``VLLM_LENS_CUDA_GRAPHS=1 VLLM_LENS_COMPILE=1`` -> vLLM's
+          torch.compile stays on, hooks run as the custom op, decode-only full graphs
   plain   ``VLLM_LENS_DISABLE=1``: vLLM with its default compilation
           (torch.compile + CUDA graphs), no hooks -- the no-steering ceiling
 
@@ -86,7 +88,7 @@ def parse_args() -> argparse.Namespace:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     p.add_argument("--model", required=True)
-    p.add_argument("--engine", choices=["eager", "graphs", "plain"], required=True)
+    p.add_argument("--engine", choices=["eager", "graphs", "compile", "plain"], required=True)
     p.add_argument("--out", required=True)
     p.add_argument(
         "--sizes",
@@ -153,6 +155,16 @@ def parse_args() -> argparse.Namespace:
         default="list",
         help="CUDA-graph sizes: explicit list (GRAPH_SIZES + batch sizes) or vLLM defaults up to max_cudagraph_capture_size",
     )
+    p.add_argument(
+        "--prefix-caching",
+        action="store_true",
+        help="enable_prefix_caching=True (post7: steered requests share the template prefix; steered blocks salted)",
+    )
+    p.add_argument(
+        "--cache-salt",
+        default="",
+        help="extra_args['lens_cache_salt'] for steered requests: '' = nonce (default), 'payload' = identical (prompt, vector) rows share",
+    )
     return p.parse_args()
 
 
@@ -182,6 +194,9 @@ def main() -> None:
         os.environ["VLLM_LENS_DISABLE"] = "1"
     elif a.engine == "graphs":
         os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
+    elif a.engine == "compile":
+        os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"
+        os.environ["VLLM_LENS_COMPILE"] = "1"
     if a.no_packed_decode:
         os.environ["VLLM_ENABLE_FLA_PACKED_RECURRENT_DECODE"] = "0"
     if a.model_runner != "default":
@@ -196,7 +211,7 @@ def main() -> None:
     log(
         f"vllm {vllm.__version__} | vllm-lens {variant} | torch {torch.__version__} | engine={a.engine}"
     )
-    if a.engine in ("graphs", "plain") and not is_fork:
+    if a.engine in ("graphs", "compile", "plain") and not is_fork:
         sys.exit(
             f"--engine {a.engine} needs vllm-lens-metamodel (stock 1.1.0 forces enforce_eager, has no disable switch)"
         )
@@ -216,13 +231,15 @@ def main() -> None:
         tensor_parallel_size=1,
         gpu_memory_utilization=a.gpu_mem,
         max_model_len=max_len,
-        enable_prefix_caching=False,
+        enable_prefix_caching=bool(a.prefix_caching),
         max_num_seqs=max_num_seqs,
         # never chunk a prompt: token budget covers every sequence's full prompt at once
         max_num_batched_tokens=max(8192, max_num_seqs * (P + 8)),
         dtype="bfloat16",
         seed=a.seed,
     )
+    if a.prefix_caching:
+        kw["disable_log_stats"] = False  # prefix-cache hit counters via llm.get_metrics()
     if a.attention_backend:
         kw["attention_backend"] = a.attention_backend
     if a.language_model_only:
@@ -240,9 +257,10 @@ def main() -> None:
     )
     if a.engine == "eager":
         kw["enforce_eager"] = True
-    elif a.engine == "graphs":
+    elif a.engine in ("graphs", "compile"):
         # mode / cudagraph_mode deliberately NOT given: the plugin must fill in
-        # mode=NONE + FULL_DECODE_ONLY itself (VLLM_LENS_CUDA_GRAPHS=1).
+        # mode=NONE + FULL_DECODE_ONLY itself (VLLM_LENS_CUDA_GRAPHS=1), or keep vLLM's
+        # compile mode + FULL_DECODE_ONLY (VLLM_LENS_COMPILE=1).
         kw["compilation_config"] = dict(cc_kw)
     else:  # plain: vLLM defaults (torch.compile + CUDA graphs), capture sizes matched to the batches
         kw["compilation_config"] = dict(cc_kw)
@@ -264,9 +282,17 @@ def main() -> None:
             "max_num_batched_tokens": vc.scheduler_config.max_num_batched_tokens,
             "max_num_seqs": vc.scheduler_config.max_num_seqs,
             "num_layers": vc.model_config.get_num_layers(vc.parallel_config),
+            "enable_prefix_caching": bool(vc.cache_config.enable_prefix_caching),
         }
     except Exception as e:  # noqa: BLE001
         resolved = {"error": repr(e)}
+    if is_fork and a.engine != "plain":
+        try:
+            from vllm_lens.metamodel import capabilities as _caps
+
+            resolved["lens_capabilities"] = {k: v for k, v in _caps(llm).items() if k in ("compile_op", "prompt_only", "prefix_caching", "kv_salt_active", "early_exit")}
+        except Exception as e:  # noqa: BLE001
+            resolved["lens_capabilities"] = {"error": repr(e)}
     log(f"engine up in {engine_up_s:.0f}s | resolved {resolved}")
     n_layers = int(resolved.get("num_layers") or 0)
     mid_layer = a.mid_layer if a.mid_layer >= 0 else max(1, n_layers // 2)
@@ -290,6 +316,8 @@ def main() -> None:
         "max_capture_size": max_capture,
         "capture_mode": a.capture_mode,
         "enable_lora": a.enable_lora,
+        "prefix_caching": bool(a.prefix_caching),
+        "cache_salt": a.cache_salt or "nonce",
         "packed_decode": not a.no_packed_decode,
         "model_runner": a.model_runner,
         "model_runner_resolved": "v2" if getattr(getattr(llm.llm_engine, "vllm_config", None), "use_v2_model_runner", False) else "v1",
@@ -303,6 +331,12 @@ def main() -> None:
             json.dump(result, f, indent=1)
 
     def stats(tag: str) -> None:
+        if a.prefix_caching:
+            try:
+                c = {m.name: m.value for m in llm.get_metrics() if m.name in ("vllm:prefix_cache_queries", "vllm:prefix_cache_hits")}
+                result.setdefault("cache_counters", {})[tag] = c
+            except Exception as e:  # noqa: BLE001
+                result.setdefault("cache_counters", {})[tag] = {"error": repr(e)}
         if not is_fork or a.engine == "plain":
             return
         try:
@@ -510,7 +544,7 @@ def main() -> None:
         if a.engine == "eager":
             probe_2d(tag.replace("steer3d", "steer2d_normmatch"))
         stats(f"probes_{tag}")
-    if a.engine == "graphs":
+    if a.engine in ("graphs", "compile"):
         # CUDA-graph mode must refuse broadcast vectors instead of applying them inconsistently
         vec2 = SteeringVector(
             activations=torch.randn(1, D, generator=g),
@@ -543,7 +577,7 @@ def main() -> None:
     )
 
     def extra3d(i: int) -> dict:
-        return {
+        e = {
             "apply_steering_vectors": [
                 SteeringVector(
                     activations=(vecs[i] * hnorm).view(1, 1, D),
@@ -554,6 +588,9 @@ def main() -> None:
                 )
             ]
         }
+        if a.cache_salt:
+            e["lens_cache_salt"] = a.cache_salt
+        return e
 
     def extra2d(i: int) -> dict:
         return {

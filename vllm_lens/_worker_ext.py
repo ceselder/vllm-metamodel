@@ -64,6 +64,8 @@ from vllm_lens._helpers.types import (
     SteeringVector,
     normalize_positions,
 )
+from vllm_lens import _compile_op, _shm
+from vllm_lens._kv_salt import KV_SALT_KEY, is_installed as _kv_salt_installed
 
 if TYPE_CHECKING:
     from jaxtyping import Float
@@ -263,6 +265,9 @@ class _ReqPlan:
     """Request opted into early exit and is eligible (max_tokens == 1, finite layer set)."""
     exit_layer: int = -1
     """Deepest layer this request needs (capture or readout); -1 if not eligible."""
+    kv_salt: tuple[int, str] | None = None
+    """``extra_args["_lens_kv_salt"]`` = (salt_from, tag): the plugin salted this request's
+    KV block hashes from token ``salt_from`` on (prefix caching enabled)."""
 
 
 @dataclass(slots=True)
@@ -457,14 +462,28 @@ def _resolve_request(
         except ValueError:
             logger.warning("vllm-lens: bad %s for %s, capturing all positions", CAPTURE_POSITIONS_KEY, req_id, exc_info=True)
     cap_set = frozenset(cap) if isinstance(cap, list) else None
+    kv_salt: tuple[int, str] | None = None
+    if extra and extra.get(KV_SALT_KEY) is not None:
+        try:
+            raw = extra[KV_SALT_KEY]
+            kv_salt = (int(raw[0]), str(raw[1]))
+        except Exception:  # noqa: BLE001 - malformed: treat as unsalted
+            kv_salt = None
     early_exit, exit_layer = False, -1
     if extra and extra.get(EARLY_EXIT_KEY):
         need: set[int] = set(cap_set) if cap_set is not None else set()
         for e in reads:
             need.update(e.layers)
         max_tokens = getattr(sp, "max_tokens", None)
-        if max_tokens == 1 and need and not (cap is not None and cap_set is None):
-            early_exit, exit_layer = True, max(0, max(need))
+        # With prefix caching the request's blocks must be salted from token 0 (the plugin
+        # does that when the scheduler runs the salt patch); otherwise the layers skipped
+        # by the exit would leave reusable garbage KV -> run the full model instead.
+        salted_all = kv_salt is not None and kv_salt[0] == 0
+        if not getattr(extension, "_prefix_caching", False) or salted_all:
+            if max_tokens == 1 and need and not (cap is not None and cap_set is None):
+                early_exit, exit_layer = True, max(0, max(need))
+        else:
+            extension._stats["early_exit_refused_unsalted"] += 1
     return _ReqPlan(
         gen=gen,
         configs=configs,
@@ -480,7 +499,35 @@ def _resolve_request(
         reads=tuple(reads),
         early_exit=early_exit,
         exit_layer=exit_layer,
+        kv_salt=kv_salt,
     )
+
+
+def _check_kv_salt(extension: HiddenStatesExtension, req_id: str, plan: _ReqPlan, a0: int) -> None:
+    """Backstop for the prefix-cache salt (first time a steered request is planned, prefix
+    caching enabled): a nonce-salted request can only start past its first steered position
+    if the scheduler served that position from the cache -- i.e. the block-hash patch is not
+    active there.  Counted + logged (once), never raised: a preempted-and-resumed request
+    legitimately re-reads its own steered blocks."""
+    stats = extension._stats
+    if plan.kv_salt is None:
+        stats["kv_unsalted_steered"] += 1
+        if stats["kv_unsalted_steered"] == 1:
+            logger.warning(
+                "vllm-lens: steered request %s has no KV salt while prefix caching is enabled: "
+                "its steered blocks are reusable by other requests (plugin fallback path)", req_id
+            )
+        return
+    salt_from, tag = plan.kv_salt
+    if tag.startswith("n:") and a0 > plan.min_pos:
+        stats["kv_salt_miss"] += 1
+        if stats["kv_salt_miss"] == 1:
+            logger.error(
+                "vllm-lens: steered request %s starts at token %d, past its first steered position %d, "
+                "although its blocks are nonce-salted from token %d -- the scheduler process is NOT "
+                "applying the block-hash salt (or the request resumed from preemption). Steering was "
+                "not applied to this prompt.", req_id, a0, plan.min_pos, salt_from
+            )
 
 
 def _resolve_reads(
@@ -552,15 +599,19 @@ def _build_step_plan(
     read_by_layer: dict[int, list[tuple[int, _ReadEntry, np.ndarray, np.ndarray]]] = {}
     all_exit = bool(getattr(extension, "_early_exit_ok", False))
     exit_max = -1
+    prefix_caching = getattr(extension, "_prefix_caching", False)
     for i in range(num_reqs):
         req_id = req_ids[i]
         plan = cache.get(req_id)
+        first = plan is None
         if plan is None or plan.gen != gen:
             plan = _resolve_request(extension, runner, req_id, gen)
             if plan is None:
                 all_exit = False
                 continue
             cache[req_id] = plan
+            if first and prefix_caching and plan.configs:
+                _check_kv_salt(extension, req_id, plan, abs_start[i])
         if plan.early_exit:
             exit_max = max(exit_max, plan.exit_layer)
         else:
@@ -1039,8 +1090,14 @@ def _hook_inner(
     extension: HiddenStatesExtension,
     layer_idx: int,
     output: torch.Tensor | tuple[torch.Tensor, ...],
+    in_place: bool = False,
 ) -> torch.Tensor | tuple[torch.Tensor, ...] | None:
-    """Core hook logic, separated so _make_hook can wrap it in try/except."""
+    """Core hook logic, separated so _make_hook can wrap it in try/except.
+
+    ``in_place`` (compile-mode custom op, ``_compile_op``): mutate the layer's output
+    tensors directly instead of returning a cloned, modified output -- inside a compiled
+    graph the op's arguments ARE the tensors the next layer consumes.
+    """
     if extension._step_idle:
         return None
     if not is_forward_context_available():
@@ -1074,17 +1131,20 @@ def _hook_inner(
     stream, residual, rest = _split_layer_output(output, layer_idx)
     modified_output: torch.Tensor | tuple[torch.Tensor, ...] | None = None
     if todo:
-        target = stream.clone()
-        if isinstance(output, tuple):
-            if residual is not None and layer_idx in plan.replace_layers:
-                # Fused-residual layer: the true stream is output[0] + output[1].
-                # norm_match reads it; mode="replace" also zeroes the residual
-                # half, so clone that half only when a replace row is scheduled.
-                residual = residual.clone()
-                rest = (residual, *rest[1:])
-            modified_output = (target, *rest)
+        if in_place:
+            target = stream
         else:
-            modified_output = target
+            target = stream.clone()
+            if isinstance(output, tuple):
+                if residual is not None and layer_idx in plan.replace_layers:
+                    # Fused-residual layer: the true stream is output[0] + output[1].
+                    # norm_match reads it; mode="replace" also zeroes the residual
+                    # half, so clone that half only when a replace row is scheduled.
+                    residual = residual.clone()
+                    rest = (residual, *rest[1:])
+                modified_output = (target, *rest)
+            else:
+                modified_output = target
 
         extension._stats["steer_layer_steps"] += 1
         extension._stats["rows_steered"] += len(todo)
@@ -1103,6 +1163,8 @@ def _hook_inner(
                     plan.abs_start[i],
                     residual,
                 )
+        if in_place:
+            stream = target  # already the mutated output half
 
     # --- Phase 3: capture activations (rank 0 only) -----------------
     if cap_rows or reads:
@@ -1296,78 +1358,101 @@ def _make_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
     return hook
 
 
-def _make_pre_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
-    """vllm-lens-metamodel: pre-hook on this rank's first decoder layer
-    (registered with ``with_kwargs=True``).
+def _begin_pass(
+    extension: HiddenStatesExtension,
+    is_layer0: bool,
+    get_target: Callable[[int], torch.Tensor],
+) -> None:
+    """A new forward pass begins (this rank's first decoder layer is about to run).
 
-    A new forward pass begins: drop the previous pass's plan and decide
-    whether this pass is *idle* (``_step_is_idle``), in which case every
-    layer hook returns on a single flag check and the pass costs nothing
-    else.  Otherwise build the pass's plan here (the layer hooks reuse it)
-    and, when this is GLOBAL layer 0, apply / capture ``EMBED_LAYER_INDEX``
-    configs on the hidden states ENTERING the layer -- the forward hooks only
-    ever see layer OUTPUTS.  Embedding-injection failures are counted AND
-    re-raised (``EmbedInjectionError``): a silently skipped injection would
-    corrupt a training run, so it must be loud.
+    Shared by the eager pre-hook (``_make_pre_hook``) and the compile-mode op
+    (``_compile_op`` / ``_op_dispatch``): drop the previous pass's plan and decide
+    whether this pass is *idle* (``_step_is_idle``), in which case every layer hook
+    returns on a single flag check and the pass costs nothing else.  Otherwise build
+    the pass's plan here (the layer hooks reuse it) and, when this is GLOBAL layer 0,
+    apply / capture / read ``EMBED_LAYER_INDEX`` configs on the hidden states ENTERING
+    the layer (``get_target(total_tokens)`` returns them) -- the forward hooks only ever
+    see layer OUTPUTS.  Embedding-injection failures are counted AND re-raised
+    (``EmbedInjectionError``): a silently skipped injection would corrupt a training
+    run, so it must be loud.
     """
+    extension._step_plan = None
+    extension._step_idle = False
+    try:
+        if not is_forward_context_available():
+            return
+        runner = extension.model_runner
+        num_reqs = runner.input_batch.num_reqs
+        if not num_reqs:
+            return
+        if _step_is_idle(extension, runner, num_reqs):
+            extension._step_idle = True
+            extension._stats["steps_fast_idle"] += 1
+            return
+        if torch.cuda.is_available() and torch.cuda.is_current_stream_capturing():
+            return  # CUDA-graph capture (dummy inputs): never bake anything in
+        plan = extension._step_plan = _build_step_plan(extension, runner, num_reqs)
+    except Exception:
+        extension._stats["errors"] += 1
+        logger.warning("vllm-lens pre-hook error, running full path", exc_info=True)
+        extension._step_idle = False
+        extension._step_plan = None
+        return
+    if plan is None or not is_layer0:
+        return
+    todo = plan.steer.get(EMBED_LAYER_INDEX)
+    cap_rows = plan.cap_by_layer.get(EMBED_LAYER_INDEX)
+    reads = plan.read_by_layer.get(EMBED_LAYER_INDEX)
+    if not todo and not cap_rows and not reads:
+        return
+    try:
+        target = get_target(plan.qsl[num_reqs])
+        if todo:
+            _apply_embed(todo, target, plan, extension._stats)
+        if cap_rows:  # post-injection embedding stream, explicit layer -1 only
+            if extension._fast_capture:
+                _capture_gather(extension, runner, EMBED_LAYER_INDEX, target, None, plan, cap_rows)
+            else:
+                _capture_rows(
+                    extension, runner, EMBED_LAYER_INDEX, target, plan.qsl, cap_rows
+                )
+        if reads:
+            _readout_layer(extension, runner, EMBED_LAYER_INDEX, target, None, reads)
+    except Exception:
+        extension._stats["errors"] += 1
+        extension._stats["embed_errors"] += 1
+        logger.error(
+            "vllm-lens: EMBED_LAYER_INDEX injection failed on layer 0 -- "
+            "raising rather than silently skipping",
+            exc_info=True,
+        )
+        raise
+
+
+def _make_pre_hook(extension: HiddenStatesExtension, layer_idx: int) -> Callable:
+    """vllm-lens-metamodel: eager pre-hook on this rank's first decoder layer
+    (registered with ``with_kwargs=True``); see ``_begin_pass``."""
     is_layer0 = layer_idx == 0
 
     def pre_hook(
         _module: torch.nn.Module, args: tuple, kwargs: dict[str, Any]
     ) -> None:
-        extension._step_plan = None
-        extension._step_idle = False
-        try:
-            if not is_forward_context_available():
-                return
-            runner = extension.model_runner
-            num_reqs = runner.input_batch.num_reqs
-            if not num_reqs:
-                return
-            if _step_is_idle(extension, runner, num_reqs):
-                extension._step_idle = True
-                extension._stats["steps_fast_idle"] += 1
-                return
-            if torch.cuda.is_available() and torch.cuda.is_current_stream_capturing():
-                return  # CUDA-graph capture (dummy inputs): never bake anything in
-            plan = extension._step_plan = _build_step_plan(extension, runner, num_reqs)
-        except Exception:
-            extension._stats["errors"] += 1
-            logger.warning("vllm-lens pre-hook error, running full path", exc_info=True)
-            extension._step_idle = False
-            extension._step_plan = None
-            return
-        if plan is None or not is_layer0:
-            return
-        todo = plan.steer.get(EMBED_LAYER_INDEX)
-        cap_rows = plan.cap_by_layer.get(EMBED_LAYER_INDEX)
-        reads = plan.read_by_layer.get(EMBED_LAYER_INDEX)
-        if not todo and not cap_rows and not reads:
-            return
-        try:
-            target = _find_hidden_states_arg(args, kwargs, plan.qsl[num_reqs])
-            if todo:
-                _apply_embed(todo, target, plan, extension._stats)
-            if cap_rows:  # post-injection embedding stream, explicit layer -1 only
-                if extension._fast_capture:
-                    _capture_gather(extension, runner, EMBED_LAYER_INDEX, target, None, plan, cap_rows)
-                else:
-                    _capture_rows(
-                        extension, runner, EMBED_LAYER_INDEX, target, plan.qsl, cap_rows
-                    )
-            if reads:
-                _readout_layer(extension, runner, EMBED_LAYER_INDEX, target, None, reads)
-        except Exception:
-            extension._stats["errors"] += 1
-            extension._stats["embed_errors"] += 1
-            logger.error(
-                "vllm-lens: EMBED_LAYER_INDEX injection failed on layer 0 -- "
-                "raising rather than silently skipping",
-                exc_info=True,
-            )
-            raise
+        _begin_pass(extension, is_layer0, lambda total: _find_hidden_states_arg(args, kwargs, total))
 
     return pre_hook
+
+
+def _embed_target(hs: Any, total_tokens: int) -> torch.Tensor:
+    """Compile-mode counterpart of ``_find_hidden_states_arg``: the op received ONE tensor
+    (``kwargs["hidden_states"]`` or ``args[1]`` of the first layer); verify it is the
+    embedding stream of this pass, else raise (never inject into the wrong tensor)."""
+    if not _is_hidden_candidate(hs, total_tokens):
+        raise EmbedInjectionError(
+            "vllm-lens: EMBED_LAYER_INDEX steering (compile mode) expected a "
+            f"[>= {total_tokens} tokens, hidden] floating tensor entering decoder layer 0, got "
+            f"{tuple(hs.shape) if isinstance(hs, torch.Tensor) else type(hs).__name__}"
+        )
+    return hs
 
 
 _MULTI_STREAM_MSG = (
@@ -1399,6 +1484,16 @@ def _detect_multi_stream(extension: HiddenStatesExtension) -> bool:
     return False
 
 
+def _block_vecs(d: dict[str, Any]) -> torch.Tensor:
+    """``d["vecs"]`` of a block RPC, or the tensor behind ``d["shm"]`` (vllm-metamodels post7:
+    the client wrote the block into shared memory and shipped only the descriptor)."""
+    desc = d.get("shm")
+    if desc is None:
+        return d["vecs"]
+    tensors, _ = _shm.get(desc, copy=True)  # H2D happens right after; the mapping can go
+    return tensors["vecs"]
+
+
 def _new_stats() -> dict[str, int]:
     return {
         "steps_fast_idle": 0,
@@ -1419,6 +1514,10 @@ def _new_stats() -> dict[str, int]:
         "readout_rows": 0,
         "hook_readout_s": 0.0,
         "early_exits": 0,
+        "op_calls": 0,
+        "early_exit_refused_unsalted": 0,
+        "kv_salt_miss": 0,
+        "kv_unsalted_steered": 0,
         "retrieval_s": 0.0,
         "errors": 0,
     }
@@ -1485,6 +1584,9 @@ class HiddenStatesExtension:
     """internal_req_id -> {(readout seq, layer): [(abs positions, float32 values) per pass]}"""
     _early_exit_ok: bool = False
     _early_exit_reason: str = "hooks not installed"
+    _prefix_caching: bool = False  # engine's enable_prefix_caching (steered requests must be salted)
+    _compile_mode: bool = False  # model runs under torch.compile: hooks are the custom op (_compile_op)
+    _first_layer_idx: int = 0
 
     def install_hooks(self) -> None:
         """Register a forward hook on every decoder layer. Idempotent.
@@ -1532,6 +1634,11 @@ class HiddenStatesExtension:
         self._captured_positions = {}
         self._readout_index = {}
         self._readouts = {}
+        try:
+            cfg = getattr(self, "vllm_config", None) or self.model_runner.vllm_config
+            self._prefix_caching = bool(getattr(cfg.cache_config, "enable_prefix_caching", False))
+        except Exception:  # pragma: no cover - defensive
+            self._prefix_caching = False
         self._early_exit_ok, self._early_exit_reason = self._early_exit_supported()
         if self._early_exit_ok:
             self._wrap_model_forward()
@@ -1571,21 +1678,71 @@ class HiddenStatesExtension:
                     mml,
                 )
 
+        # torch.compile (vllm-metamodels post7): when the engine compiles the decoder stack
+        # the eager hooks below would be traced (untraceable) or ignored, so every hook body
+        # becomes one opaque custom-op call (``_compile_op``).  They must be registered BEFORE
+        # the first forward pass compiles the model (``Worker.load_model`` is wrapped by the
+        # plugin to call install_hooks then); installing later is a silent no-op -> refuse.
+        model = self.model_runner.model
+        try:
+            cfg = getattr(self, "vllm_config", None) or self.model_runner.vllm_config
+            self._compile_mode = _compile_op.model_is_compiled(cfg)
+        except Exception:  # pragma: no cover - defensive
+            self._compile_mode = False
+        if self._compile_mode:
+            cm = _compile_op.compiled_submodule(model)
+            if cm is not None and (getattr(cm, "compiled", False) or getattr(cm, "aot_compiled_fn", None) is not None):
+                self._hooks_installed = False
+                raise RuntimeError(
+                    "vllm-lens: the model was compiled before the hooks were installed (vLLM drops "
+                    "torch.compile guards, so hooks registered now would never run). The plugin "
+                    "installs them from Worker.load_model; make sure the vllm-lens plugin is loaded "
+                    "in the worker process, or run with compilation mode NONE (VLLM_LENS_CUDA_GRAPHS=1 "
+                    "without VLLM_LENS_COMPILE) / enforce_eager."
+                )
+            _compile_op._ACTIVE = self
+            logger.info("vllm-lens: torch.compile active -- layer hooks run as the custom op %s", _compile_op.OP_NAME)
+
         # Hooks must be installed on ALL ranks so steering vectors are
         # applied everywhere (not just rank 0).
-        layers = _get_layers(self.model_runner.model)
+        layers = _get_layers(model)
         first = True
         for layer_idx, layer in enumerate(layers):
             if isinstance(layer, PPMissingLayer):
                 continue
             if first:
+                self._first_layer_idx = layer_idx
                 # with_kwargs: Qwen3.5/3.6 (Qwen3NextModel) pass hidden_states
                 # by keyword, Qwen2/Llama positionally -- see _find_hidden_states_arg
                 layer.register_forward_pre_hook(
-                    _make_pre_hook(self, layer_idx), with_kwargs=True
+                    _compile_op.make_pre_hook() if self._compile_mode else _make_pre_hook(self, layer_idx),
+                    with_kwargs=True,
                 )
                 first = False
-            layer.register_forward_hook(_make_hook(self, layer_idx))
+            layer.register_forward_hook(
+                _compile_op.make_post_hook(layer_idx) if self._compile_mode else _make_hook(self, layer_idx)
+            )
+
+    def _op_dispatch(self, layer: int, stream: torch.Tensor, residual: torch.Tensor | None) -> None:
+        """Body of the compile-mode custom op (``_compile_op.lens_layer_``): the eager
+        pre-hook / hook logic, in place on the layer's output halves."""
+        self._stats["op_calls"] += 1
+        if layer == EMBED_LAYER_INDEX:
+            _begin_pass(self, self._first_layer_idx == 0, lambda total: _embed_target(stream, total))
+            return
+        output: torch.Tensor | tuple[torch.Tensor, ...] = stream if residual is None else (stream, residual)
+        try:
+            _hook_inner(self, layer, output, in_place=True)
+        except _EarlyExit:
+            raise
+        except UnsupportedLayerOutputError:
+            self._stats["errors"] += 1
+            self._stats["unsupported_layer_output"] += 1
+            logger.error("vllm-lens: layer %d has a multi-stream output; steering/capture there is undefined -- raising", layer)
+            raise
+        except Exception:
+            self._stats["errors"] += 1
+            logger.warning("vllm-lens hook error on layer %d, skipping", layer, exc_info=True)
 
     def lens_capabilities(self) -> dict[str, Any]:
         """vllm-metamodels: what this engine supports (queried once by the plugin
@@ -1603,6 +1760,12 @@ class HiddenStatesExtension:
             "early_exit_reason": self._early_exit_reason,
             "model_runner": "v1" if hasattr(self.model_runner, "input_batch") else "v2",
             "lora_merge": True,
+            # vllm-metamodels post7: prefix caching.  ``kv_salt_worker`` = the hasher patch is
+            # installed in THIS process; the plugin verifies the scheduler process separately.
+            "prefix_caching": bool(self._prefix_caching),
+            "kv_salt_worker": bool(_kv_salt_installed()),
+            "compile_op": bool(self._compile_mode),
+            "shm": True,
         }
 
     # ------------------------------------------------------------------
@@ -1611,10 +1774,13 @@ class HiddenStatesExtension:
 
     def _early_exit_supported(self) -> tuple[bool, str]:
         """Early exit needs: PP == 1 (the placeholder replaces the whole model
-        output), no prefix caching (skipped layers leave stale KV blocks that a
-        later request could reuse), no aux-hidden-state (EAGLE-3) outputs, a
-        generative (not pooling) model, and an overridable
-        ``model_runner._model_forward``.  ``VLLM_LENS_EARLY_EXIT=0`` disables it."""
+        output), no aux-hidden-state (EAGLE-3) outputs, a generative (not pooling)
+        model, and an overridable ``model_runner._model_forward``.  With prefix
+        caching enabled (post7) each early-exit request must additionally carry a
+        KV salt from token 0 (the plugin sets it when the scheduler runs the
+        block-hash patch; ``_resolve_request`` enforces it per request), so the
+        garbage KV of the skipped layers is never reusable.
+        ``VLLM_LENS_EARLY_EXIT=0`` disables it."""
         if os.environ.get("VLLM_LENS_EARLY_EXIT", "1").strip().lower() not in _TRUTHY:
             return False, "disabled by VLLM_LENS_EARLY_EXIT"
         runner = self.model_runner
@@ -1626,8 +1792,6 @@ class HiddenStatesExtension:
             return False, "no vllm_config"
         if getattr(cfg.parallel_config, "pipeline_parallel_size", 1) != 1:
             return False, "pipeline parallelism > 1"
-        if getattr(cfg.cache_config, "enable_prefix_caching", False):
-            return False, "enable_prefix_caching=True (skipped layers would leave reusable garbage KV blocks)"
         if getattr(runner, "use_aux_hidden_state_outputs", False):
             return False, "aux hidden-state outputs (EAGLE-3) enabled"
         if getattr(runner, "is_pooling_model", False):
@@ -1762,7 +1926,7 @@ class HiddenStatesExtension:
         """
         d = pickle.loads(pickled_data)
         keys: list[str] = list(d["keys"])
-        vecs: torch.Tensor = d["vecs"]
+        vecs: torch.Tensor = _block_vecs(d)
         if vecs.dim() != 2 or vecs.shape[0] != len(keys):
             raise ValueError(f"vecs must be (n_keys, hidden), got {tuple(vecs.shape)}")
         device = next(self.model_runner.model.parameters()).device
@@ -1893,7 +2057,7 @@ class HiddenStatesExtension:
         """
         d = pickle.loads(pickled_data)
         keys: list[str] = list(d["keys"])
-        vecs: torch.Tensor = d["vecs"]
+        vecs: torch.Tensor = _block_vecs(d)
         if vecs.dim() != 2 or vecs.shape[0] != len(keys):
             raise ValueError(f"vecs must be (n_keys, hidden), got {tuple(vecs.shape)}")
         device = next(self.model_runner.model.parameters()).device
@@ -2002,6 +2166,35 @@ class HiddenStatesExtension:
         blob = pickle.dumps(out, protocol=pickle.HIGHEST_PROTOCOL)
         self._stats["retrieval_s"] += time.perf_counter() - t0
         return blob
+
+    def get_captured_states_shm(self, external_req_ids: list[str]) -> bytes:
+        """vllm-metamodels post7: ``get_captured_states_many`` through shared memory.  Every
+        request's ``residual_stream`` is copied ONCE into one POSIX shared-memory segment; the
+        returned pickle holds only the descriptor (``_shm.put``) plus the positions per request
+        (the client attaches, unlinks and builds views / copies).  Falls back to the pickled
+        payload (key ``"pickled"``) when no segment can be created (e.g. /dev/shm full)."""
+        t0 = time.perf_counter()
+        self._flush_host_blocks()
+        by_ext = self._by_external(list(self._captured_states), external_req_ids)
+        tensors: dict[str, torch.Tensor] = {}
+        positions: dict[str, list[int]] = {}
+        for ext, rids in by_ext.items():
+            acts = self._pop_activations(rids[0])
+            for extra in rids[1:]:
+                self._captured_states.pop(extra, None)
+                self._captured_positions.pop(extra, None)
+            tensors[ext] = acts["residual_stream"]
+            if "positions" in acts:
+                positions[ext] = acts["positions"]
+        try:
+            desc = _shm.put(tensors, tag="cap") if tensors else None
+            out: dict[str, Any] = {"shm": desc, "positions": positions}
+        except Exception:  # noqa: BLE001 - no shared memory available: ship the tensors
+            logger.warning("vllm-lens: shared-memory capture transport failed; falling back to pickle", exc_info=True)
+            out = {"pickled": {ext: ({"residual_stream": t, "positions": positions[ext]} if ext in positions else {"residual_stream": t})
+                               for ext, t in tensors.items()}}
+        self._stats["retrieval_s"] += time.perf_counter() - t0
+        return pickle.dumps(out, protocol=pickle.HIGHEST_PROTOCOL)
 
     def get_readouts(self, external_req_id: str) -> bytes | None:
         """Readout results of one request (async path): pickled list, see ``_pop_readouts``."""

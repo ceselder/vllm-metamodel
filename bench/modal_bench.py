@@ -22,6 +22,9 @@ Entrypoints (from the repo root, ``MODAL_PROFILE`` selecting your workspace):
                                                          # version-compatibility matrix (steering + injection + readout
                                                          #   + CPU tests + stock comparison) -> bench/results/matrix_<ver>_<ts>/
     modal run bench/modal_bench.py::lora                 # LoRA decode overhead + merge-on-publish (bench/bench_lora.py)
+    modal run bench/modal_bench.py::prefix_cache         # prefix caching + steering: exactness suite + throughput on/off
+    BENCH_VLLM=0.27.1 modal run bench/modal_bench.py::compile_op   # torch.compile kept (custom-op hooks) vs hook engine vs plain
+    modal run bench/modal_bench.py::shm                  # same-host shared-memory transport: captures + vector blocks
 
 Results land in ``bench/results/<...>/`` as JSON plus summaries (``bench/compare.py``,
 ``bench/test_injection_modes.py``, ``bench/summarize_readout.py``, ``bench/summarize_matrix.py``).
@@ -50,7 +53,7 @@ STOCK_LENS = os.environ.get("BENCH_STOCK_LENS") or ("1.1.0" if VLLM_TUPLE < (0, 
 GPU = os.environ.get("BENCH_GPU", "B200")
 app = modal.App("vllm-metamodels-bench")
 
-COMMON_FILES = ["bench_steering.py", "bench_readout.py", "test_injection_modes.py", "diag_engine.py", "bench_lora.py"]
+COMMON_FILES = ["bench_steering.py", "bench_readout.py", "test_injection_modes.py", "diag_engine.py", "bench_lora.py", "test_prefix_cache.py", "bench_shm.py"]
 
 
 def _base() -> modal.Image:
@@ -538,7 +541,9 @@ def run_matrix_fork(model: str, profile: str, common: str, attention_backend: st
     cmd = [sys.executable, "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider",
            "/opt/vllm-metamodels/vllm_lens/tests/test_steering_index.py",
            "/opt/vllm-metamodels/vllm_lens/tests/test_readout.py",
-           "/opt/vllm-metamodels/vllm_lens/tests/test_metamodel_helpers.py"]
+           "/opt/vllm-metamodels/vllm_lens/tests/test_metamodel_helpers.py",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_kv_salt.py", "/opt/vllm-metamodels/vllm_lens/tests/test_compile_op.py",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_shm.py"]
     out["cpu_tests"] = _run(cmd, env, None, "cpu_tests", tail_chars=4000)
     # steering throughput + correctness probes (+ on vLLM >= 0.23: plain vLLM on its V1 runner as
     # well, since the plugin forces V1 and "plain" runs vLLM's default = the V2 runner)
@@ -687,7 +692,9 @@ def run_cpu_tests() -> dict:
     """The fork's CPU suites against this vLLM version's real modules (no GPU)."""
     cmd = [sys.executable, "-m", "pytest", "-q", "--noconftest", "-p", "no:cacheprovider",
            "/opt/vllm-metamodels/vllm_lens/tests/test_steering_index.py", "/opt/vllm-metamodels/vllm_lens/tests/test_readout.py",
-           "/opt/vllm-metamodels/vllm_lens/tests/test_metamodel_helpers.py", "/opt/vllm-metamodels/vllm_lens/tests/test_lora_merge.py"]
+           "/opt/vllm-metamodels/vllm_lens/tests/test_metamodel_helpers.py", "/opt/vllm-metamodels/vllm_lens/tests/test_lora_merge.py",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_kv_salt.py", "/opt/vllm-metamodels/vllm_lens/tests/test_compile_op.py",
+           "/opt/vllm-metamodels/vllm_lens/tests/test_shm.py"]
     return _run(cmd, _env(False), None, "cpu_tests", tail_chars=4000)
 
 
@@ -773,4 +780,290 @@ def lora(
                 print(rec["log_tail"][-6000:], flush=True)
             else:
                 print(rec["log_tail"][-3000:], flush=True)
+    print(f"[local] results in {dest}")
+
+
+# ---------------------------------------------------------------------------
+# Prefix caching with steering (1.1.0.post7):  modal run bench/modal_bench.py::prefix_cache
+# ---------------------------------------------------------------------------
+
+
+def _strip_flags(toks: list[str], flags: tuple[str, ...]) -> list[str]:
+    """Drop ``--flag value`` pairs the target script does not accept."""
+    out: list[str] = []
+    skip = False
+    for t in toks:
+        if skip:
+            skip = False
+            continue
+        if t in flags:
+            skip = True
+            continue
+        out.append(t)
+    return out
+
+
+@app.function(image=image_fork, **_FN)
+def run_prefix_cache(model: str, common: str, big: bool, engines: list[str], hazard: bool, sizes: str,
+                     ro_layer: int, skip_bench: bool, skip_readout: bool, marker: int, skip_tests: bool = False) -> dict:
+    """One container: bench/test_prefix_cache.py (reference engine with caching off, then the test
+    engine with caching on per engine mode, optionally the unsalted hazard reproduction), then
+    bench_steering.py with prefix caching off / on (nonce) / on (payload) and bench_readout.py with
+    caching off / on -- all on one GPU so the weights stay in the page cache."""
+    offline = _in_volume(model)
+    env = _env(offline)
+    out: dict = {"versions": _versions()}
+    lmo = " --language-model-only" if big else ""
+    ref = f"/tmp/pc_ref_{model.replace('/', '__')}.pt"
+    base = [sys.executable, "/bench/test_prefix_cache.py", "--model", model, "--marker", str(marker), *(common + lmo).split()]
+    if not skip_tests:
+        out["pc_ref"] = _run([*base, "--stage", "ref", "--engine", "graphs", "--ref", ref, "--out", "/tmp/pc_ref.json"], env, "/tmp/pc_ref.json", "pc_ref")
+    if not skip_tests and out["pc_ref"]["returncode"] == 0:
+        for eng in engines:
+            path = f"/tmp/pc_test_{eng}.json"
+            out[f"pc_test_{eng}"] = _run([*base, "--stage", "test", "--engine", eng, "--ref", ref, "--out", path], env, path, f"pc_test_{eng}")
+        if hazard:
+            path = "/tmp/pc_hazard.json"
+            out["pc_hazard_unsalted"] = _run([*base, "--stage", "test", "--engine", "graphs", "--unsalted", "--ref", ref, "--out", path], env, path, "pc_hazard_unsalted")
+    if not skip_bench:
+        # marker 90 of 96: the RL template (blocks 0-4 = 80 tokens shared, the marker's block is the
+        # prompt's last block, which vLLM never reuses anyway); marker_p = 70: one block earlier, where
+        # payload tags can additionally share the steered block between identical (prompt, vector) rows
+        mp = marker - 16 - 4
+        sb = [sys.executable, "/bench/bench_steering.py", "--model", model, "--engine", "graphs", *(common + lmo).split(),
+              "--sizes", sizes, "--repeats", "2", "--conditions", "nosteer,steer3d"]
+        runs = (
+            (f"steer_off_m{marker}", ["--marker", str(marker)]),
+            (f"steer_on_m{marker}", ["--marker", str(marker), "--prefix-caching"]),
+            (f"steer_on_m{mp}", ["--marker", str(mp), "--prefix-caching", "--conditions", "steer3d"]),
+            (f"steer_on_payload_m{mp}", ["--marker", str(mp), "--prefix-caching", "--cache-salt", "payload", "--conditions", "steer3d"]),
+        )
+        for tag, extra in runs:
+            path = f"/tmp/{tag}.json"
+            out[tag] = _run([*sb, *extra, "--out", path], env, path, tag, tail_chars=6000)
+    if not skip_readout:
+        ro_common = " ".join(_strip_flags((common + lmo).split(), ("--inject-layer", "--prompt-tokens", "--marker")))
+        rb = [sys.executable, "/bench/bench_readout.py", "--model", model, "--stage", "vllm", "--engine", "graphs", "--layer", str(ro_layer),
+              "--sizes", "1024", "--gen-sizes", "64", "--repeats", "2", "--conditions", "nocap,read_last5,exit_read_last5", *ro_common.split()]
+        for tag, extra in (("readout_off", []), ("readout_on", ["--prefix-caching"])):
+            path = f"/tmp/{tag}.json"
+            out[tag] = _run([*rb, *extra, "--out", path], env, path, tag, tail_chars=6000)
+    return out
+
+
+@app.local_entrypoint()
+def prefix_cache(
+    model: str = "Qwen/Qwen3.6-27B",
+    small_model: str = "Qwen/Qwen3-1.7B",
+    engines: str = "graphs",
+    small_engines: str = "graphs,eager",
+    sizes: str = "512,1024",
+    prompt_tokens: int = 96,
+    marker: int = 90,
+    inject_layer: int = 1,
+    layer: int = 42,
+    small_layer: int = 18,
+    attention_backend: str = "TRITON_ATTN",
+    skip_big: bool = False,
+    skip_small: bool = False,
+    skip_bench: bool = False,
+    skip_readout: bool = False,
+    skip_hazard: bool = False,
+    skip_tests: bool = False,
+    extra_args: str = "",
+    out_dir: str = str(HERE / "results"),
+):
+    """Prefix caching with steering: exactness suite (bench/test_prefix_cache.py) + throughput with the
+    cache off / on (nonce) / on (payload) at --marker (default 90 of 96: the RL template shares the first
+    90 tokens; blocks before the marker's block are reused).  Results -> bench/results/prefix_cache_<ts>/."""
+    from test_prefix_cache import summarize
+
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(out_dir) / f"prefix_cache_{ts}"
+    dest.mkdir(parents=True, exist_ok=True)
+    common = f"--prompt-tokens {prompt_tokens} --inject-layer {inject_layer}"
+    if attention_backend:
+        common += f" --attention-backend {attention_backend}"
+    if extra_args:
+        common += " " + extra_args
+    jobs = []
+    if not skip_small and small_model:
+        jobs.append((small_model, run_prefix_cache.spawn(small_model, common, False, [e for e in small_engines.split(",") if e], not skip_hazard, sizes, small_layer, skip_bench, skip_readout, marker, skip_tests)))
+    if not skip_big:
+        jobs.append((model, run_prefix_cache.spawn(model, common, True, [e for e in engines.split(",") if e], False, sizes, layer, skip_bench, skip_readout, marker, skip_tests)))
+    print(f"[local] vLLM {VLLM}: {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
+    for mtag, fut in jobs:
+        res = fut.get()
+        for tag, rec in res.items():
+            if tag == "versions":
+                continue
+            name = f"{mtag.replace('/', '__')}__{tag}"
+            rec["versions"] = res.get("versions")
+            (dest / f"{name}.json").write_text(json.dumps(rec, indent=1))
+            print(f"[local] saved {name}.json rc={rec['returncode']} ({rec['elapsed_s']:.0f}s)", flush=True)
+            if rec["returncode"] != 0:
+                print(rec["log_tail"][-5000:], flush=True)
+    summary = summarize(dest)
+    (dest / "summary.json").write_text(json.dumps(summary, indent=1))
+    for c in summary["checks"]:
+        print(f"[{'PASS' if c['ok'] else 'FAIL'}] {c['run']} {c['case']}: {c['check']}  {c['detail'][:160]}")
+    print(f"{summary['n_pass']}/{summary['n_checks']} checks pass" + (" -- ALL PASS" if summary["all_pass"] else " -- SOME FAILED"))
+    print(f"[local] results in {dest}")
+
+
+# ---------------------------------------------------------------------------
+# torch.compile-compatible hooks (1.1.0.post7):  BENCH_VLLM=<ver> modal run bench/modal_bench.py::compile_op
+# ---------------------------------------------------------------------------
+
+
+@app.function(image=image_fork, **_FN)
+def run_compile_op(model: str, common: str, big: bool, sizes: str, engines: list[str], inj_hf: bool, inj_args: str) -> dict:
+    """One container: steering throughput for the hook engine (compilation mode NONE + decode graphs),
+    the compile engine (torch.compile kept, custom-op hooks, decode graphs) and plain vLLM (its default
+    compile + graphs, no hooks), then the injection-mode matrix on the compile engine (exactness vs the
+    HF reference / clean-vs-clean floor)."""
+    offline = _in_volume(model)
+    env = _env(offline)
+    out: dict = {"versions": _versions()}
+    lmo = " --language-model-only" if big else ""
+    for eng in engines:
+        path = f"/tmp/steer_{eng}.json"
+        cmd = [sys.executable, "/bench/bench_steering.py", "--model", model, "--engine", eng, "--out", path,
+               *(common + lmo).split(), "--sizes", sizes, "--repeats", "2", "--conditions", "nosteer,steer3d"]
+        out[f"steer_{eng}"] = _run(cmd, env, path, f"steer_{eng}", tail_chars=8000)
+    for tag, rec in _injection_stages(model, common + lmo + " " + inj_args, ["compile"], False, inj_hf, env).items():
+        out[f"inj_{tag}"] = rec
+    return out
+
+
+@app.local_entrypoint()
+def compile_op(
+    model: str = "Qwen/Qwen3.6-27B",
+    small_model: str = "Qwen/Qwen3-1.7B",
+    engines: str = "graphs,compile,plain",
+    sizes: str = "512,1024",
+    max_tokens: int = 40,
+    prompt_tokens: int = 96,
+    inject_layer: int = 1,
+    marker: int = 10,
+    attention_backend: str = "TRITON_ATTN",
+    skip_big: bool = False,
+    skip_small: bool = False,
+    skip_inj_hf: bool = False,
+    extra_args: str = "",
+    out_dir: str = str(HERE / "results"),
+):
+    """torch.compile kept + custom-op hooks (``VLLM_LENS_COMPILE=1``) vs the hook engine vs plain vLLM,
+    on vLLM ``BENCH_VLLM``; same prompts / marker as the headline steering benchmark (marker 10).
+    Results -> bench/results/compile_<ver>_<ts>/ (compare.py series fork_compile / ceiling_compile)."""
+    from compare import summarize as summarize_steering
+
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(out_dir) / f"compile_{VLLM}_{ts}"
+    (dest / "injection").mkdir(parents=True, exist_ok=True)
+    common = f"--max-tokens {max_tokens} --prompt-tokens {prompt_tokens} --inject-layer {inject_layer} --marker {marker}"
+    if attention_backend:
+        common += f" --attention-backend {attention_backend}"
+    if extra_args:
+        common += " " + extra_args
+    inj_args = "--coeffs 1.0,4.0 --batches 64,512 --tp-batches 512,1024"
+    eng_list = [e for e in engines.split(",") if e]
+    jobs = []
+    if not skip_small and small_model:
+        jobs.append((small_model, run_compile_op.spawn(small_model, common, False, sizes, eng_list, not skip_inj_hf, inj_args)))
+    if not skip_big:
+        jobs.append((model, run_compile_op.spawn(model, common, True, sizes, eng_list, False, inj_args + " --skip-throughput")))
+    print(f"[local] vLLM {VLLM}: {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
+    steering_results: dict = {}
+    for mtag, fut in jobs:
+        res = fut.get()
+        mkey = mtag.replace("/", "__")
+        for tag, rec in res.items():
+            if tag == "versions":
+                continue
+            rec["versions"] = res.get("versions")
+            rc = rec.get("returncode")
+            print(f"[local] {mtag} {tag}: rc={rc} ({rec.get('elapsed_s', 0):.0f}s)", flush=True)
+            if rc != 0:
+                print(rec.get("log_tail", "")[-4000:], flush=True)
+            if tag.startswith("steer_"):
+                eng = tag[len("steer_"):]
+                (dest / f"{mkey}__fork__{eng}.json").write_text(json.dumps(rec, indent=1))
+                steering_results.setdefault(mtag, {}).setdefault("fork", {})[eng] = rec
+            elif tag.startswith("inj_"):
+                (dest / "injection" / f"{mkey}__{tag[4:]}.json").write_text(json.dumps(rec, indent=1))
+    try:
+        s = summarize_steering(steering_results)
+        (dest / "summary.json").write_text(json.dumps(s, indent=1))
+        _print_steering_summary(s)
+    except Exception as e:  # noqa: BLE001
+        print(f"[local] steering summary failed: {e!r}")
+    try:
+        from test_injection_modes import markdown_table, summarize as summarize_injection
+
+        si = summarize_injection(dest / "injection")
+        (dest / "injection" / "summary.json").write_text(json.dumps(si, indent=1))
+        (dest / "injection" / "summary.md").write_text(markdown_table(si))
+        for c in si["checks"]:
+            if not c["ok"]:
+                print(f"[FAIL] {c['model']} {c['engine']} {c['case']}: {c['check']}  {c['detail'][:200]}")
+        print(f"[local] injection (compile engine): {si['n_pass']}/{si['n_checks']} checks pass")
+    except Exception as e:  # noqa: BLE001
+        print(f"[local] injection summary failed: {e!r}")
+    print(f"[local] results in {dest}")
+
+
+# ---------------------------------------------------------------------------
+# Shared-memory transport (1.1.0.post7):  modal run bench/modal_bench.py::shm
+# ---------------------------------------------------------------------------
+
+
+@app.function(image=image_fork, **_FN)
+def run_shm(model: str, layer: int, big: bool, extra: str) -> dict:
+    offline = _in_volume(model)
+    env = _env(offline)
+    path = "/tmp/shm.json"
+    cmd = [sys.executable, "/bench/bench_shm.py", "--model", model, "--layer", str(layer), "--out", path,
+           *(extra + (" --language-model-only" if big else "")).split()]
+    return {"versions": _versions(), "shm": _run(cmd, env, path, "shm", tail_chars=12000)}
+
+
+@app.local_entrypoint()
+def shm(
+    model: str = "Qwen/Qwen3.6-27B",
+    small_model: str = "Qwen/Qwen3-1.7B",
+    layer: int = 42,
+    small_layer: int = 18,
+    sizes: str = "512,1024",
+    repeats: int = 3,
+    attention_backend: str = "TRITON_ATTN",
+    skip_big: bool = False,
+    skip_small: bool = False,
+    extra_args: str = "",
+    out_dir: str = str(HERE / "results"),
+):
+    """Pickled RPC vs shared memory for captured activations (all positions, 1,024 texts) and for
+    the per-call steering vector block (bench/bench_shm.py).  Results -> bench/results/shm_<ts>/."""
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    dest = Path(out_dir) / f"shm_{ts}"
+    dest.mkdir(parents=True, exist_ok=True)
+    common = f"--sizes {sizes} --repeats {repeats}"
+    if attention_backend:
+        common += f" --attention-backend {attention_backend}"
+    if extra_args:
+        common += " " + extra_args
+    jobs = []
+    if not skip_small and small_model:
+        jobs.append((small_model, run_shm.spawn(small_model, small_layer, False, common)))
+    if not skip_big:
+        jobs.append((model, run_shm.spawn(model, layer, True, common)))
+    print(f"[local] vLLM {VLLM}: {len(jobs)} container jobs spawned; results -> {dest}", flush=True)
+    for mtag, fut in jobs:
+        res = fut.get()
+        rec = res["shm"]
+        rec["versions"] = res.get("versions")
+        name = f"{mtag.replace('/', '__')}__shm"
+        (dest / f"{name}.json").write_text(json.dumps(rec, indent=1))
+        print(f"[local] saved {name}.json rc={rec['returncode']} ({rec['elapsed_s']:.0f}s)", flush=True)
+        print(rec["log_tail"][-5000:], flush=True)
     print(f"[local] results in {dest}")

@@ -117,6 +117,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--attention-backend", default="")
     p.add_argument("--language-model-only", action="store_true")
     p.add_argument("--enable-lora", action="store_true", help="LoRA slots on (rollout-engine config)")
+    p.add_argument("--prefix-caching", action="store_true", help="enable_prefix_caching=True (post7: readout requests skip reading; early exit salted)")
     p.add_argument("--seed", type=int, default=0)
     return p.parse_args()
 
@@ -393,7 +394,7 @@ def vllm_stage(a: argparse.Namespace) -> None:
         tensor_parallel_size=1,
         gpu_memory_utilization=a.gpu_mem,
         max_model_len=max_len,
-        enable_prefix_caching=False,
+        enable_prefix_caching=bool(a.prefix_caching),
         max_num_seqs=max_num_seqs,
         max_num_batched_tokens=max(8192, max_num_seqs * max_len),  # whole batch prefills in one wave
         dtype="bfloat16",

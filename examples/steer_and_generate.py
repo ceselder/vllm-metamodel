@@ -28,6 +28,11 @@ def main() -> None:
     p.add_argument("--max-tokens", type=int, default=32)
     a = p.parse_args()
     os.environ.setdefault("VLLM_LENS_CUDA_GRAPHS", "1")  # must be set before vLLM is imported
+    # post7 options (also before vLLM is imported):
+    #   VLLM_LENS_COMPILE=1   keep vLLM's torch.compile; the hooks run as a custom op inside the graph
+    #   VLLM_LENS_SHM=1       captured activations come back through shared memory (or "view" for zero-copy)
+    # Prefix caching may stay on (enable_prefix_caching=True): steered KV blocks are salted per request;
+    # add extra_args["lens_cache_salt"] = "payload" to let identical (prompt, vector) rows share them.
 
     from vllm import LLM, SamplingParams
 

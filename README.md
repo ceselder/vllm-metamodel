@@ -43,6 +43,11 @@ pip install git+https://github.com/ceselder/vllm-metamodels
 **vLLM versions (same B200, same prompts)**
 - Tested end to end on **vLLM 0.16.0, 0.19.0, 0.27.1 and 0.28.0**. Plain vLLM 0.27.1 generates **5 % faster** than 0.19.0 on the 27B (4,253 vs 4,063 tok/s at B = 1,024; the 1.7B gains 13–47 % by 0.28), but the hook-compatible engine (compile off, decode graphs) is **10 % slower** on 0.27.1 than on 0.19.0 (3,524 vs 3,882 tok/s with steering), so for steered rollouts 0.19 is still the faster pin — see [Supported vLLM versions](#supported-vllm-versions).
 
+**post7: prefix caching, torch.compile, shared memory (1× B200, vLLM 0.19 unless noted)**
+- **Prefix caching with steering** (`enable_prefix_caching=True` is now safe *and* useful: steered KV blocks are salted from the marker's predecessor, the shared template prefix is reused): Qwen3-1.7B steered `generate()` at B = 1,024 **0.96 s → 0.89 s (−7 %)**, bit-exact vs the no-cache engine (30/30 checks). **Qwen3.6-27B: no gain** — vLLM cannot cache the GatedDeltaNet state of Qwen3-Next models, so it reports 0 prefix hits (correctness holds). Early exit is now allowed with prefix caching (27B early-exit readout 4.62 s either way).
+- **torch.compile stays on** (`VLLM_LENS_COMPILE=1`: hooks run as an opaque custom op inside the compiled graph): Qwen3-1.7B B = 1,024 steered `generate()` **1.05 s → 1.00 s (−4.6 %)** vs the compile-off hook engine (plain vLLM 0.95 s); exactness probes cos 0.99999 / ratio 1.0001. **Qwen3.6-27B on vLLM 0.27.1, B = 1,024: 11.63 s → 9.98 s (−14 %), within 2 % of plain vLLM (9.78 s)**; on 0.19 COMPILE27B_README.
+- **Shared-memory transport** (`VLLM_LENS_SHM=1|view`): all-position capture of 1,024 texts on the 1.7B **1.40 s → 0.92 s (copy-out) / 0.81 s (zero-copy views)**; on the 27B (1.22 GB) **8.20 s → 7.07 s (−14 %)** with the persistent arena. Vector blocks gain nothing (left on the pickled path).
+
 **Correctness features (not speedups)**
 - Karvonen-style injection `h + coeff·‖h‖·unit(v)` on the **full** residual stream (`norm_match=True, scale=coeff`; upstream 1.1.0 measured the wrong norm on fused-residual models, ~8× too weak).
 - Embedding replacement (`mode="replace"`, `EMBED_LAYER_INDEX`) for NLA-style injection and hyper-connection models; multi-stream layer outputs are refused loudly instead of mis-injected.
@@ -64,7 +69,10 @@ Everything below is opt-in per request, keeps the upstream vllm-lens API, and (u
 | **One-call reward scoring** | `vllm_lens.metamodel.readout_scores(llm, token_ids, directions, layer=42)` | [One-call scoring](#one-call-scoring-vllm_lensmetamodel) |
 | **LoRA merge-on-publish** — serve the RL policy as merged weights, no LoRA kernels | `merge_lora(llm, adapter_dir)` / `unmerge_lora(llm)` | [LoRA merge-on-publish](#lora-merge-on-publish-rl-rollouts-without-lora-kernels) |
 | **vLLM 0.16 → 0.28 tested**, V1 model runner forced where vLLM defaults to V2 | automatic | [Supported vLLM versions](#supported-vllm-versions) |
-| Capability introspection / kill switches | `llm.collective_rpc("lens_capabilities")`, `VLLM_LENS_DISABLE=1`, `VLLM_LENS_FAST_CAPTURE=0`, `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` | [API reference](#api-reference) |
+| **Prefix caching with steering** — template prefix shared, steered blocks salted, no leaks | automatic with `enable_prefix_caching=True`; `extra_args["lens_cache_salt"]="payload"` to share steered blocks between identical rows | [Prefix caching with steering](#prefix-caching-with-steering-110post7) |
+| **torch.compile with hooks** — keep vLLM's compiled graph, hooks as a custom op | `VLLM_LENS_COMPILE=1` (+ `VLLM_LENS_CUDA_GRAPHS=1`) | [torch.compile with hooks](#torchcompile-with-hooks-110post7) |
+| **Shared-memory transport** for captured activations | `VLLM_LENS_SHM=1` (copy-out) or `view` (zero-copy) | [Shared-memory transport](#shared-memory-transport-110post7) |
+| Capability introspection / kill switches | `vllm_lens.metamodel.capabilities(llm)`, `VLLM_LENS_DISABLE=1`, `VLLM_LENS_FAST_CAPTURE=0`, `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0`, `VLLM_LENS_PREFIX_CACHE=0`, `VLLM_LENS_KV_SALT=0` | [API reference](#api-reference) |
 
 
 ## Supported vLLM versions
@@ -658,6 +666,7 @@ Per-request keys in `SamplingParams.extra_args` (offline) / `vllm_xargs` (HTTP):
 | `capture_positions` | `"all"` \| `{"last": k}` \| `list[int]` | which positions to capture (default `"all"`); negative ints count from the end of the prompt |
 | `apply_readout_vectors` | `list[ReadoutVector]` | in-engine projection; result on `output.readout` |
 | `lens_early_exit` | `bool` | stop after the deepest requested layer (see [Early exit](#early-exit)) |
+| `lens_cache_salt` | `"nonce"` (default) \| `"payload"` \| `str` | post7, engines with prefix caching: how the steered KV blocks are keyed — unique per request, shared between identical (prompt, vectors) requests, or caller-managed (see [Prefix caching with steering](#prefix-caching-with-steering-110post7)) |
 
 `ReadoutVector(activations=[n_layers, hidden], layer_indices, positions="all"|{"last": k}|[...], metric="cos"|"dot", bias=0.0)` →
 `output.readout[i] = {"values": Tensor[n_layers, n_pos] float32, "positions": [int], "layers": [int]}`.
@@ -667,12 +676,147 @@ prompt-position steering/capture only), `VLLM_LENS_DISABLE=1` (plugin off), `VLL
 (upstream capture path), `VLLM_LENS_EARLY_EXIT=0`, `VLLM_LENS_BLOCK_RPC=0` (per-request RPCs),
 `VLLM_LENS_MULTI_STREAM=0|1` (override hyper-connection detection), `VLLM_USE_V2_MODEL_RUNNER`
 (vLLM's own switch; the plugin defaults it to `0` because the hooks need the V1 runner),
-`VLLM_LENS_MERGE_ALLOW_TP=1` (allow `merge_lora` on TP > 1 engines, untested).
+`VLLM_LENS_MERGE_ALLOW_TP=1` (allow `merge_lora` on TP > 1 engines, untested), `VLLM_LENS_COMPILE=1`
+(keep vLLM's torch.compile, hooks as a custom op; with `VLLM_LENS_CUDA_GRAPHS=1`), `VLLM_LENS_PREFIX_CACHE=0`
+(hooked requests never read the prefix cache; blocks still salted), `VLLM_LENS_KV_SALT=0` (do not patch
+vLLM's block hasher — pre-post7 behaviour incl. the leak), `VLLM_LENS_SHM=1|view` (shared-memory transport
+for captured activations and vector blocks).
+
+`capabilities(llm)` / `lens_capabilities` keys added in post7: `prefix_caching`, `kv_salt_worker`,
+`kv_salt_active` (scheduler process verified), `compile_op`, `shm`; `early_exit` is adjusted for the
+prefix-caching rule. `steering_stats` gains `op_calls`, `kv_salt_miss`, `kv_unsalted_steered`,
+`early_exit_refused_unsalted`.
 
 Worker RPCs (`llm.collective_rpc(name, args=...)`): `lens_capabilities`, `steering_stats`,
 `lens_lora_layout`, `lens_merge_lora(adapter_path | pickled_tensors, scaling, keep_base)`,
 `lens_unmerge_lora(release, how)`, `lens_lora_status`, `lens_weight_fingerprint`,
-`lens_lora_compare_exact`, `lens_release_lora_base`, `lens_load_weights_ipc`.
+`lens_lora_compare_exact`, `lens_release_lora_base`, `lens_load_weights_ipc`, `get_captured_states_shm`
+(post7; `set_steering_block` / `set_readout_block` accept `{"shm": descriptor}` instead of `"vecs"`).
+
+## Prefix caching with steering (1.1.0.post7)
+
+vLLM keys a KV block by `hash(parent_block, token_ids, extra_keys)`, so two requests with the same
+prompt share **every** block — including blocks whose KV a steering vector changed (everything from
+the injected position on). Before post7 the plugin set `skip_reading_prefix_cache` on hooked
+requests, which stops *reading* but not *writing*: with `enable_prefix_caching=True` (vLLM's
+default) a steered request still published steered blocks that a later plain request with the same
+prompt read. Reproduced on Qwen3-1.7B: plain rows after 64 steered rows differed by 0.25 nats in
+their next-token log-probs (the steering effect itself is 0.14). Only `enable_prefix_caching=False`
+was safe.
+
+post7 patches vLLM's block hasher (in the scheduler process — vLLM loads general plugins there) so
+that every block from the one containing token `p − 1` onward (`p` = the request's first steered
+position) carries a per-request **salt** in its hash:
+
+- blocks before that keep vLLM's hash → shared with plain requests and with every other steered
+  request of the same prompt template (the RL rollout case: 80 of 96 tokens reused);
+- blocks from there on are keyed by the salt → never read by anyone else; the recompute always
+  covers ≥ 2 tokens, so a steered prefill can never be dispatched as a 1-token decode batch (a
+  replayed CUDA graph runs no hooks).
+
+```python
+# nothing to do: steering-only requests now READ the cache and are salted automatically
+llm = LLM(model, enable_prefix_caching=True)
+sp = SamplingParams(..., extra_args={"apply_steering_vectors": [sv]})
+# GRPO groups: identical (prompt, vector) rows share their steered blocks too
+sp = SamplingParams(..., extra_args={"apply_steering_vectors": [sv], "lens_cache_salt": "payload"})
+```
+
+| tag (`extra_args["lens_cache_salt"]`) | steered blocks | when |
+|---|---|---|
+| `"nonce"` (default) | unique per request: written, never reused | always exact, template prefix still shared |
+| `"payload"` | shared between requests with identical prompt **and** vectors (sha1 of vectors + layer/position/scale/norm_match/mode) | GRPO groups; vLLM shares them even within one batch (8 groups × 8 rows: 8 rows steered, all 64 exact). Falls back to a nonce when the marker is the last prompt token (a full-prompt hit would leave a hook-less 1-token recompute of the marker) |
+| any other string | caller-managed | you guarantee identical KV |
+
+Capture / readout requests still skip reading (the hooks must see their positions) and are salted
+when steered; **early exit is now legal with prefix caching** (early-exit requests are salted from
+token 0, so the garbage KV of the skipped layers is never reusable). The client verifies through
+vLLM's utility RPC that the scheduler process runs the patch (`capabilities(llm)["kv_salt_active"]`);
+otherwise it falls back to the never-read behaviour, refuses early exit and warns once about the
+leak. `VLLM_LENS_PREFIX_CACHE=0` keeps the never-read behaviour (still salted).
+
+**Measured** (`bench/test_prefix_cache.py` + `bench/modal_bench.py::prefix_cache`; reference engine
+with caching off vs test engine with caching on; graphs and eager; both models): steered rows into
+an empty cache then plain rows, plain prompt cached then steered rows, interleaved batches cold and
+warm, payload groups, last-token marker, early exit, capture + steering — **bit-exact on vLLM 0.19**
+(max |Δ top-20 log-prob| = 0). Throughput (marker 90 of 96, graphs, 40 new tokens):
+
+| model | B | caching off | caching on (nonce) | notes |
+|---|---|---|---|---|
+| Qwen3-1.7B | 512 | 0.52 s | 0.44 s (−15 %) | prefix hits ≈ 83 % of queried blocks |
+| Qwen3-1.7B | 1,024 | 0.96 s | 0.89 s (−7 %) | no steering: 0.92 → 0.86 s |
+| Qwen3.6-27B | 512 | 6.18 s | 6.29 s (noise) | **0 prefix hits**: vLLM cannot cache the GatedDeltaNet state of Qwen3-Next ("does not support 'all' prefix caching"), on 0.19 and 0.27.1 |
+| Qwen3.6-27B | 1,024 | 11.66 s | 11.43 s (noise) | readout / early-exit passes unchanged (6.53 / 6.62 / 4.62 s) |
+
+So the win applies to dense-attention models; on hybrid GDN models the change is a correctness fix
+only (and lets you leave vLLM's default `enable_prefix_caching=True` on without contaminating
+plain requests).
+
+**Also fixed in post7:** the offline `LLM.generate` no longer mutates the caller's `SamplingParams`
+(1.1.0 popped `apply_steering_vectors` out of `extra_args` in place, so a params object reused for a
+second `generate()` was silently unsteered), and `capabilities()` installs the hooks before reporting.
+
+## torch.compile with hooks (1.1.0.post7)
+
+vLLM compiles the decoder stack with `torch.compile(fullgraph=True)` and then drops every guard.
+A Python forward hook is inlined into the compiled graph if it exists at trace time — its body
+must be traceable — and is ignored for ever if registered later. The fork's eager hooks are not
+traceable (dicts, numpy, host syncs), which is why every release so far forced compilation mode
+NONE: 17 % slower than compiled vLLM on 0.27.1, 4 % on 0.19 ([Supported vLLM versions](#supported-vllm-versions)).
+
+`VLLM_LENS_COMPILE=1` (together with `VLLM_LENS_CUDA_GRAPHS=1`) keeps vLLM's compile mode. Each
+layer hook becomes one call to an opaque custom op, `torch.ops.vllm_lens.lens_layer_(stream,
+residual, layer)` (`torch.library.custom_op` with `mutates_args`; the fake impl is a no-op), whose
+Python implementation runs the normal per-pass planning and applies steering / capture / readout /
+early exit **in place** on the layer's output tensors. During CUDA-graph capture the op records
+nothing, so decode graphs stay hook-free — the same prompt-position-only semantics as before. The
+hooks are installed from `Worker.load_model`, before the profiling run compiles the model
+(`install_hooks` refuses if the model is already compiled); `cudagraph_mode` is forced to
+FULL_DECODE_ONLY because a piecewise prefill graph would replay without the op's kernels. vLLM's
+compile cache hashes the contents of every traced file, so graphs compiled without the hooks (or
+with older hook code) are never reused.
+
+```bash
+VLLM_LENS_CUDA_GRAPHS=1 VLLM_LENS_COMPILE=1 python my_rollouts.py   # capabilities(llm)["compile_op"] == True
+```
+
+| vLLM | model | B | hook engine (compile off + decode graphs) | compile on + custom-op hooks | plain vLLM (no hooks, compile + graphs) |
+|---|---|---|---|---|---|
+| 0.19.0 | Qwen3-1.7B | 1,024 | 1.051 s | **1.003 s (−4.6 %)** | 0.949 s |
+| 0.19.0 | Qwen3-1.7B | 512 | 0.637 s | **0.578 s (−9 %)** | 0.518 s |
+| 0.27.1 | Qwen3.6-27B | 1,024 | 11.633 s | **9.981 s (−14 %)** | 9.778 s |
+| 0.27.1 | Qwen3.6-27B | 512 | 6.119 s | **5.170 s (−16 %)** | 5.091 s |
+| 0.27.1 | Qwen3-1.7B | 1,024 | 1.052 s | **0.980 s (−7 %)** | 0.795 s |
+| 0.27.1 | Qwen3-1.7B | 512 | 0.543 s | 0.544 s (0 %) | 0.478 s |
+COMPILE_TABLE_ROWS_019_27B
+
+Exactness on the compile engine: steering probes cos(Δ, v) = 0.99999, magnitude ratio 1.0001, other
+rows untouched; the injection matrix (`bench/test_injection_modes.py --engine compile`, Karvonen add
+vs the HF reference, embed replace, layer replace, mixed batches) passes; `steering_stats()["op_calls"]`
+= layers + 1 per prefill pass and 0 inside decode graphs.
+
+## Shared-memory transport (1.1.0.post7)
+
+`collective_rpc` pickles every payload and ships it over ZMQ (pickle, socket, unpickle: three copies
+of ~1.2 GB for an all-position capture of 1,024 texts on the 27B). With `VLLM_LENS_SHM=1` the worker
+writes the captured activations of a `generate()` once into a POSIX shared-memory segment and the RPC
+returns a descriptor; the client copies the tensors out. `VLLM_LENS_SHM=view` returns zero-copy views
+instead (the mapping handle rides on every output as `output.lens_shm`; drop the outputs to release it).
+Same host only (checked), automatic fallback to the pickled path. The per-call steering / readout vector
+blocks can travel the same way but do not benefit (a few MB, ~10 ms either way), so they stay pickled.
+
+| model | texts × positions | pickled RPC | shared memory, copy-out | shared memory, views |
+|---|---|---|---|---|
+| Qwen3-1.7B (0.49 GB) | 1,024 × all | 1.40 s | 0.92 s (−35 %) | 0.81 s (−42 %) |
+| Qwen3-1.7B (0.24 GB) | 512 × all | 0.79 s | 0.51 s (−35 %) | 0.47 s (−41 %) |
+| Qwen3.6-27B (1.22 GB) | 1,024 × all | 8.20 s | **7.07 s (−14 %)** (persistent arena) | 7.74 s (−6 %) |
+| Qwen3.6-27B (0.61 GB) | 512 × all | 4.26 s | 3.55 s (−17 %) | 3.88 s (−9 %) |
+
+The first version created a fresh segment per call; on the 27B that was *not* faster (first-touch page
+faults on 1.2 GB of tmpfs cost the worker the ~3.5 s the client saved), so copy-out mode writes into a
+persistent per-process arena whose pages stay resident (worker retrieval 0.77 → 0.32 s); `view` mode
+still maps a fresh segment per call because the next call must not overwrite live views. Numbers are
+comparable within one container only (the pickled path measured 12.4 s in another container).
 
 ## Fast hidden-state readout (1.1.0.post4)
 
@@ -790,6 +934,9 @@ exactly the "clean base model, LoRA off" pass an RL reward wants anyway.
 | reading hidden states out | blocking `.cpu()` per request per layer-step, one zstd RPC per request, all positions | one gather + one pinned async copy per layer-step, one RPC per `generate()`, `capture_positions` (`{"last": k}`, lists) |
 | projections / rewards | move `[T, 5120]` tensors to the host, compute there | `ReadoutVector`: cosine / dot (+ bias) computed in the worker, float32 scalars returned (`output.readout`) |
 | layers past the read layer | always computed | `lens_early_exit`: forward pass stops after the deepest requested layer when every request in the pass is readout-only |
+| prefix caching | hooked requests skip *reading*; steered blocks still *written* → plain requests read steered KV (`enable_prefix_caching=True` unsafe) | block hashes salted from the marker's predecessor (scheduler-side patch): template prefix shared, steered blocks never leak, early exit legal with caching |
+| torch.compile | impossible (hooks untraceable → mode NONE forced) | `VLLM_LENS_COMPILE=1`: hooks are one opaque custom op each, installed before the model is traced |
+| bulk transport | pickled RPCs | `VLLM_LENS_SHM`: captured activations through one shared-memory segment per call (copy-out or zero-copy views) |
 
 ### What changed (small, upstreamable diff)
 Two library files carry the change against upstream `v1.1.0` (`_worker_ext.py`,
@@ -840,7 +987,7 @@ os.environ["VLLM_LENS_CUDA_GRAPHS"] = "1"          # before the engine is built
 llm = LLM(model, compilation_config={"cudagraph_capture_sizes": [8, 64, 512, 1024]})  # optional
 ```
 
-With `cudagraph_mode=FULL_DECODE_ONLY` (and no `torch.compile`, so the hooks still fire),
+With `cudagraph_mode=FULL_DECODE_ONLY` (and no `torch.compile`, so the hooks still fire — or, since post7, `VLLM_LENS_COMPILE=1` to keep torch.compile with the hooks as a custom op, see [torch.compile with hooks](#torchcompile-with-hooks-110post7)),
 uniform-decode batches replay CUDA graphs — no Python runs, decode is exactly as fast as
 without the plugin — while every batch that contains prompt tokens runs eagerly with the
 hooks live. Steering and capture are therefore **prompt-position only** in this mode: the

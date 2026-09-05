@@ -9,7 +9,9 @@ the same host (offline ``LLM``, single-node ``vllm serve``) the payload can inst
 written ONCE into a named shared-memory segment and the RPC carries only a descriptor
 (name, offsets, shapes, dtypes: a few hundred bytes).
 
-``put(tensors)`` creates the segment, copies each tensor in and returns the descriptor;
+``put(tensors)`` creates a fresh segment (zero-copy ``view`` mode); ``put_arena`` writes into a
+persistent per-process arena whose pages stay resident (copy-out mode -- a fresh mapping per call
+pays a page fault per 4 KB page on first touch, ~3.5 s for 1.2 GB);
 ``get(desc)`` attaches, unlinks the name (the mapping survives until every process drops
 it) and returns tensor VIEWS into the mapping plus the ``SharedMemory`` handle that keeps
 it alive.  ``copy=True`` returns ordinary tensors instead (one memcpy, no lifetime coupling).
@@ -147,6 +149,85 @@ def get(desc: dict[str, Any], copy: bool = False, unlink: bool = True) -> tuple[
     except Exception:
         shm.close()
         raise
+
+
+# ---------------------------------------------------------------------------
+# Persistent arena (copy-out mode): one segment per producer process, reused across calls
+# so its pages stay resident.  A fresh mapping per call costs a page fault per 4 KB on
+# first touch -- ~3.5 s for the 27B's 1.2 GB capture, which cancelled the transport gain.
+# ---------------------------------------------------------------------------
+
+_ARENA: _Segment | None = None
+_ARENA_GEN = 0
+
+
+def put_arena(tensors: dict[str, torch.Tensor], tag: str = "lens") -> dict[str, Any]:
+    """Like :func:`put` but into this process's persistent arena (grown when needed; the
+    old segment is unlinked, the consumer's stale mapping stays valid until it re-attaches).
+    The descriptor carries ``arena=True`` and a ``gen`` so the consumer can cache its mapping."""
+    global _ARENA, _ARENA_GEN
+    segs: list[tuple[str, str, tuple[int, ...], int, int]] = []
+    off = 0
+    for key, t in tensors.items():
+        n = t.numel() * t.element_size()
+        off = (off + 63) // 64 * 64
+        segs.append((key, str(t.dtype).replace("torch.", ""), tuple(t.shape), off, n))
+        off += n
+    need = max(off, 1)
+    if _ARENA is None or _ARENA.size < need:
+        if _ARENA is not None:
+            _ARENA.unlink()
+            _ARENA.close()
+        size = max(need, int(need * 1.25))
+        name = f"/vllm_lens_arena_{tag}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
+        _ARENA = _Segment(name, size, create=True)
+        _ARENA_GEN += 1
+        buf = torch.frombuffer(_ARENA.buf, dtype=torch.uint8, count=size)
+        buf.zero_()  # touch every page once, now, instead of on every call
+        del buf
+    buf = torch.frombuffer(_ARENA.buf, dtype=torch.uint8, count=_ARENA.size)
+    for key, _dt, _shape, o, n in segs:
+        if n == 0:
+            continue
+        src = tensors[key].detach()
+        if src.device.type != "cpu":
+            src = src.cpu()
+        buf[o : o + n].copy_(src.contiguous().view(-1).view(torch.uint8))
+    del buf
+    return {"shm": _ARENA.name, "nbytes": _ARENA.size, "segments": segs, "host": host_id(), "arena": True, "gen": _ARENA_GEN}
+
+
+_CLIENT_ARENA: dict[str, _Segment] = {}
+
+
+def get_arena(desc: dict[str, Any]) -> dict[str, torch.Tensor]:
+    """Copy tensors out of a producer's persistent arena (mapping cached per name; never unlinked
+    by the consumer -- the producer owns the segment)."""
+    if desc.get("host") != host_id():
+        raise RuntimeError(f"shared-memory descriptor from another host ({desc.get('host')} != {host_id()})")
+    seg = _CLIENT_ARENA.get(desc["shm"])
+    if seg is None or seg.size < int(desc["nbytes"]):
+        for old in _CLIENT_ARENA.values():
+            old.close()
+        _CLIENT_ARENA.clear()
+        seg = _Segment(desc["shm"], int(desc["nbytes"]), create=False)
+        _CLIENT_ARENA[desc["shm"]] = seg
+    buf = torch.frombuffer(seg.buf, dtype=torch.uint8, count=seg.size)
+    out: dict[str, torch.Tensor] = {}
+    for key, dt, shape, o, n in desc["segments"]:
+        dtype = _DTYPES[dt]
+        out[key] = torch.empty(tuple(shape), dtype=dtype) if n == 0 else buf[o : o + n].view(dtype).view(*shape).clone()
+    del buf
+    return out
+
+
+def release_arena() -> None:
+    """Producer-side cleanup (engine shutdown / tests)."""
+    global _ARENA
+    if _ARENA is not None:
+        _ARENA.unlink()
+        _ARENA.close()
+        _ARENA = None
 
 
 def release(handle: Any) -> None:

@@ -818,7 +818,10 @@ def _unpack_shm_capture(blob: dict[str, Any], mode: str, outputs: Sequence[Any])
     desc, positions = blob.get("shm"), blob.get("positions", {})
     if desc is None:
         return {}
-    tensors, handle = _shm.get(desc, copy=(mode != "view"))
+    if desc.get("arena"):
+        tensors, handle = _shm.get_arena(desc), None
+    else:
+        tensors, handle = _shm.get(desc, copy=(mode != "view"))
     if handle is not None:
         for o in outputs:  # keep the mapping alive as long as any output (and its views) lives
             o.lens_shm = handle
@@ -973,7 +976,7 @@ def _patched_llm_generate(
         # VLLM_LENS_SHM the blobs are shared-memory descriptors (post7).
         mode = _shm.shm_mode()
         if mode and _shm_supported(self):
-            blobs = self.collective_rpc("get_captured_states_shm", args=([o.request_id for o in outputs],))
+            blobs = self.collective_rpc("get_captured_states_shm", args=([o.request_id for o in outputs], mode))
             parts = [_unpack_shm_capture(pickle.loads(b), mode, outputs) for b in blobs if b is not None]
         else:
             blobs = self.collective_rpc("get_captured_states_many", args=([o.request_id for o in outputs],))

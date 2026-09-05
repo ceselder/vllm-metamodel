@@ -2167,7 +2167,7 @@ class HiddenStatesExtension:
         self._stats["retrieval_s"] += time.perf_counter() - t0
         return blob
 
-    def get_captured_states_shm(self, external_req_ids: list[str]) -> bytes:
+    def get_captured_states_shm(self, external_req_ids: list[str], mode: str = "copy") -> bytes:
         """vllm-metamodels post7: ``get_captured_states_many`` through shared memory.  Every
         request's ``residual_stream`` is copied ONCE into one POSIX shared-memory segment; the
         returned pickle holds only the descriptor (``_shm.put``) plus the positions per request
@@ -2187,7 +2187,12 @@ class HiddenStatesExtension:
             if "positions" in acts:
                 positions[ext] = acts["positions"]
         try:
-            desc = _shm.put(tensors, tag="cap") if tensors else None
+            if not tensors:
+                desc = None
+            elif mode == "view":
+                desc = _shm.put(tensors, tag="cap")  # fresh segment: the client keeps zero-copy views
+            else:
+                desc = _shm.put_arena(tensors, tag="cap")  # persistent arena: resident pages, client copies out
             out: dict[str, Any] = {"shm": desc, "positions": positions}
         except Exception:  # noqa: BLE001 - no shared memory available: ship the tensors
             logger.warning("vllm-lens: shared-memory capture transport failed; falling back to pickle", exc_info=True)

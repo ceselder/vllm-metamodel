@@ -116,7 +116,7 @@ def test_get_captured_states_shm_equals_pickled_path():
     W._capture_gather(ext_b, runner, 1, h1, None, plan, plan.capture_rows(1))
     W._capture_gather(ext_b, runner, 2, h2, None, plan, plan.capture_rows(2))
     ref = pickle.loads(ext_b.get_captured_states_many(["0", "1"]))
-    blob = pickle.loads(ext.get_captured_states_shm(["0", "1"]))
+    blob = pickle.loads(ext.get_captured_states_shm(["0", "1"], "view"))
     assert "shm" in blob and blob["positions"]["0"] == ref["0"]["positions"]
     from vllm_lens._activations_plugin import _unpack_shm_capture
 
@@ -140,3 +140,36 @@ def test_plugin_ships_blocks_through_shm_when_enabled(monkeypatch):
     assert shipped["vecs"] is None and "shm" in shipped
     got, _ = _shm.get(shipped["shm"], copy=True)
     assert torch.equal(got["vecs"], block["vecs"])
+
+
+def test_arena_reuse_and_growth():
+    _shm.release_arena()
+    t1 = {"a": torch.randn(4, D).to(torch.bfloat16)}
+    d1 = _shm.put_arena(t1, tag="t")
+    assert d1["arena"] and d1["gen"] >= 1
+    got = _shm.get_arena(d1)
+    assert torch.equal(got["a"], t1["a"])
+    t2 = {"a": torch.randn(2, D).to(torch.bfloat16)}  # smaller: same segment reused
+    d2 = _shm.put_arena(t2, tag="t")
+    assert d2["shm"] == d1["shm"] and torch.equal(_shm.get_arena(d2)["a"], t2["a"])
+    t3 = {"a": torch.randn(64, 64, D)}  # larger: grown, old name unlinked
+    d3 = _shm.put_arena(t3, tag="t")
+    assert d3["shm"] != d1["shm"] and torch.equal(_shm.get_arena(d3)["a"], t3["a"])
+    assert not os.path.exists("/dev/shm" + d1["shm"])
+    _shm.release_arena()
+    assert not os.path.exists("/dev/shm" + d3["shm"])
+
+
+def test_worker_shm_copy_mode_uses_arena():
+    ext = make_ext()
+    runner = FakeRunner([("0-aaaa1111", {"output_residual_stream": [1]}, 4, 0, 4)])
+    ext.model_runner = runner
+    plan = build_plan(ext, runner); ext._step_plan = plan
+    h1 = torch.randn(4, D)
+    W._capture_gather(ext, runner, 1, h1, None, plan, plan.capture_rows(1))
+    blob = pickle.loads(ext.get_captured_states_shm(["0"], "copy"))
+    assert blob["shm"]["arena"] is True
+    from vllm_lens._activations_plugin import _unpack_shm_capture
+    got = _unpack_shm_capture(blob, "copy", [SimpleNamespace(request_id="0")])
+    assert torch.equal(got["0"]["residual_stream"][0], h1)
+    _shm.release_arena()

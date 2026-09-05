@@ -55,13 +55,15 @@ def _bars(ax, groups: list[str], series: list[tuple[str, str, list[float | None]
                     ha="center", va="bottom", fontsize=7.5, color=INK2, rotation=0)
     ax.set_xticks(range(len(groups)))
     ax.set_xticklabels(groups, fontsize=9, color=INK)
-    if n >= 2:
-        ax.legend(frameon=False, fontsize=8.5, loc="upper left", labelcolor=INK2)
+    top = max([v for _, _, vals in series for v in vals if v is not None] or [1.0])
+    ax.set_ylim(0, top * 1.22)  # headroom for the value labels
+    if n >= 2:  # legend below the axes so it never covers a bar
+        ax.legend(frameon=False, fontsize=8.5, loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=1, labelcolor=INK2)
 
 
 def _save(fig, out_dirs: list[Path], stem: str, data: dict[str, Any]) -> None:
     fig.patch.set_facecolor(SURF)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
     for d in out_dirs:
         d.mkdir(parents=True, exist_ok=True)
         fig.savefig(d / f"{stem}.png", dpi=170)
@@ -92,7 +94,7 @@ def _load(path: Path) -> dict | None:
 def plot_prefix(prefix_dir: Path, out: list[Path]) -> dict:
     data: dict[str, Any] = {"source": str(prefix_dir), "models": {}}
     models = [m for m in ("Qwen/Qwen3-1.7B", "Qwen/Qwen3.6-27B") if list(prefix_dir.glob(f"{m.replace('/', '__')}__steer_off_m*.json"))]
-    fig, axes = plt.subplots(1, len(models), figsize=(5.2 * len(models), 4.2), squeeze=False)
+    fig, axes = plt.subplots(1, len(models), figsize=(5.6 * len(models), 5.6), squeeze=False)
     for ax, m in zip(axes[0], models):
         mk = m.replace("/", "__")
         off = next(iter(prefix_dir.glob(f"{mk}__steer_off_m*.json")), None)
@@ -121,8 +123,8 @@ def plot_prefix(prefix_dir: Path, out: list[Path]) -> dict:
             "rows_steered": {"on_m90": (r_on or {}).get("stats", {}).get("steer3d", {}).get("rows_steered"),
                              "on_m70_payload": (r_pay or {}).get("stats", {}).get("steer3d", {}).get("rows_steered")},
         }
-    fig.suptitle("Prefix caching with per-request steering: exact (salted steered blocks) and a modest win on dense "
-                 "attention; no win on the hybrid 27B, whose recurrent state vLLM cannot cache", fontsize=11, color=INK, x=0.01, ha="left")
+    fig.suptitle("Prefix caching with per-request steering stays exact (steered blocks salted) and saves 7-15% on a dense-attention model;\n"
+                 "the hybrid 27B gains nothing because vLLM cannot cache its recurrent (GatedDeltaNet) state", fontsize=10.5, color=INK, x=0.01, ha="left")
     _save(fig, out, "prefix_cache_steering", data)
     return data
 
@@ -138,7 +140,7 @@ def plot_compile(compile_dirs: list[Path], out: list[Path]) -> dict:
                 cols.append((ver, m, d))
     if not cols:
         return data
-    fig, axes = plt.subplots(1, len(cols), figsize=(4.6 * len(cols), 4.4), squeeze=False)
+    fig, axes = plt.subplots(1, len(cols), figsize=(4.8 * len(cols), 5.8), squeeze=False)
     for ax, (ver, m, d) in zip(axes[0], cols):
         mk = m.replace("/", "__")
         rg, rc, rp = (_load(d / f"{mk}__fork__{e}.json") for e in ("graphs", "compile", "plain"))
@@ -166,8 +168,8 @@ def plot_compile(compile_dirs: list[Path], out: list[Path]) -> dict:
             data["versions"][ver][m]["injection_compile"] = {"n_checks": len(inj["checks"]), "n_pass": sum(1 for c in inj["checks"] if c["ok"]),
                                                              "n_unresolvable": sum(1 for c in inj["checks"] if c["ok"] is None),
                                                              "failed": [c["check"] for c in inj["checks"] if c["ok"] is False]}
-    fig.suptitle("Keeping torch.compile on with custom-op hooks recovers most of the compile speedup the hook engine gave up",
-                 fontsize=11, color=INK, x=0.01, ha="left")
+    fig.suptitle("Keeping torch.compile on (hooks as a custom op) recovers most of the speed the compile-off hook engine gave up:\n"
+                 "steered generation lands within 2% of plain vLLM on the 27B / vLLM 0.27.1", fontsize=10.5, color=INK, x=0.01, ha="left")
     _save(fig, out, "compile_op_steering", data)
     return data
 
@@ -177,7 +179,7 @@ def plot_shm(shm_dir: Path, out: list[Path]) -> dict:
     models = [m for m in ("Qwen/Qwen3.6-27B", "Qwen/Qwen3-1.7B") if (shm_dir / f"{m.replace('/', '__')}__shm.json").exists()]
     if not models:
         return data
-    fig, axes = plt.subplots(1, len(models), figsize=(5.4 * len(models), 4.4), squeeze=False)
+    fig, axes = plt.subplots(1, len(models), figsize=(5.8 * len(models), 5.6), squeeze=False)
     for ax, m in zip(axes[0], models):
         r = _load(shm_dir / f"{m.replace('/', '__')}__shm.json") or {}
         groups = ["B=512", "B=1024"]
@@ -189,7 +191,7 @@ def plot_shm(shm_dir: Path, out: list[Path]) -> dict:
                 vals.append(min(ws) if ws else None)
             series.append((name, color, vals))
         _bars(ax, groups, series)
-        _style(ax, f"{SHORT.get(m, m)}: all-position capture, layer {r.get('layer')}", "wall time per generate() call, prefill only (s)")
+        _style(ax, f"{SHORT.get(m, m)}, layer {r.get('layer')}", "wall time per generate() call, prefill only (s)")
         data["models"][m] = {
             "capture_wall_s": {s[0]: dict(zip(groups, s[2])) for s in series},
             "capture_worker_retrieval_s": {tag: {f"B={B}": min([x["retrieval_s"] for x in r.get("capture", []) if x["transport"] == tag and int(x["batch"]) == B] or [None]) for B in (512, 1024)}
@@ -199,7 +201,8 @@ def plot_shm(shm_dir: Path, out: list[Path]) -> dict:
             "steer_generate_wall_s": {f"{x['transport']} B={x['batch']}": x["wall_s"] for x in r.get("vectors", [])},
             "hidden_dim": r.get("hidden_dim"),
         }
-    fig.suptitle("Shipping captured activations through shared memory instead of pickled RPCs", fontsize=11, color=INK, x=0.01, ha="left")
+    fig.suptitle("Shipping captured activations through shared memory instead of pickled RPCs: 14% faster on the 27B (persistent arena),\n"
+                 "35-42% on the 1.7B; all-position capture of 512 / 1,024 texts", fontsize=10.5, color=INK, x=0.01, ha="left")
     _save(fig, out, "shm_transport", data)
     return data
 

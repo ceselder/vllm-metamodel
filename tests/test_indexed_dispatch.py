@@ -22,7 +22,7 @@ import torch
 
 try:  # ``_worker_ext`` imports two vLLM modules at import time; stub them without vLLM.
     import vllm.forward_context
-    import vllm.model_executor.models.utils
+    import vllm.model_executor.models.utils  # noqa: F401
 except Exception:  # noqa: BLE001  # pragma: no cover
     _fc = types.ModuleType("vllm.forward_context")
     _fc._ctx = None

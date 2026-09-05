@@ -1,4 +1,27 @@
-## Unreleased
+## Unreleased — indexed hook dispatch, idle fast path, opt-in CUDA graphs
+
+Per-request steering / hooks at batch sizes in the hundreds were dominated by hook overhead:
+every layer hook re-resolved every request with a `startswith` scan over all registered keys
+and paid two device syncs per request, on every forward pass, and the plugin forced
+`enforce_eager`. See `UPSTREAM_PR.md` for the numbers (Qwen3.6-27B, 1× B200: one `generate()`
+of 1,024 steered requests 230 s → 12 s eager → 10.5 s with CUDA graphs, = the no-steering
+time; unsteered rows bit-identical, steering deltas cos 1.000 / ratio 1.000).
+
+- `_find_steering_configs` / `_find_hook_configs_no_persistent`: dict lookups on the internal
+  id's `-`-boundary prefixes (+ the `_steering_id` / `_hook_id` sentinel) instead of a scan;
+  same results, same order.
+- Each request's steering / hooks / capture spec is resolved once and cached (`_ReqPlan`),
+  invalidated by a generation counter on every `set_*` / `clear_*`; each forward pass is
+  planned once from the model runner's host buffers (`_StepPlan`; no `.item()` syncs; works
+  when the attention metadata carries no `query_start_loc`, as on several vLLM ≥ 0.27 backends).
+- Idle fast path: the first decoder layer's pre-hook flags passes on which no hook can have
+  work (no hooks / capture, every steering vector behind every row's position); layer hooks
+  then return on one flag check. Per-layer work is skipped when nothing targets the layer.
+- `VLLM_LENS_CUDA_GRAPHS=1`: decode batches replay CUDA graphs (`cudagraph_mode=FULL_DECODE_ONLY`,
+  compilation mode NONE) instead of forcing eager; steering / hooks / capture are then
+  prompt-position only, 2-D broadcast vectors are refused with a `ValueError`, generated
+  positions are never touched (batch-composition independent). Default behaviour unchanged.
+- New CPU test `tests/test_indexed_dispatch.py` (no engine needed).
 
 ## v1.2.1 (22 July 2026)
 

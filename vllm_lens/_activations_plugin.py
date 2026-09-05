@@ -224,6 +224,84 @@ def _trim_activations(
 # ---------------------------------------------------------------------------
 
 
+_cuda_graphs_enabled: bool = False
+_warned_capture_prompt_only: bool = False
+
+
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _configure_cuda_graphs(engine_args: Any) -> bool:
+    """``VLLM_LENS_CUDA_GRAPHS=1``: keep CUDA graphs for decode batches instead of
+    forcing ``enforce_eager``.
+
+    The forward hooks only fire for eagerly executed layers, so any torch.compile
+    mode other than NONE still falls back to eager, and ``cudagraph_mode`` must be
+    NONE or FULL_DECODE_ONLY (graphs covering prefill batches would skip the prompt
+    positions).  Returns True if decode batches will run as CUDA-graph replays --
+    then steering / hooks / capture apply to prompt positions only.
+    """
+    from vllm.config import CompilationConfig
+    from vllm.config.compilation import CompilationMode, CUDAGraphMode
+
+    cc = engine_args.compilation_config
+    if isinstance(cc, dict):
+        cc = CompilationConfig(**cc)
+    elif isinstance(cc, int):
+        cc = CompilationConfig(mode=CompilationMode(cc))
+    elif cc is None:
+        cc = CompilationConfig()
+    if cc.mode not in (None, CompilationMode.NONE):
+        logger.warning(
+            "vllm-lens: compilation mode %s would compile the decoder layers and the forward "
+            "hooks would not fire; forcing enforce_eager=True.",
+            cc.mode,
+        )
+        engine_args.enforce_eager = True
+        return False
+    cc.mode = CompilationMode.NONE
+    if cc.cudagraph_mode is None:
+        cc.cudagraph_mode = CUDAGraphMode.FULL_DECODE_ONLY
+    elif cc.cudagraph_mode not in (CUDAGraphMode.NONE, CUDAGraphMode.FULL_DECODE_ONLY):
+        logger.warning(
+            "vllm-lens: cudagraph_mode %s would run prefill batches inside CUDA graphs where "
+            "the hooks do not fire; overriding to FULL_DECODE_ONLY.",
+            cc.cudagraph_mode.name,
+        )
+        cc.cudagraph_mode = CUDAGraphMode.FULL_DECODE_ONLY
+    engine_args.compilation_config = cc
+    if engine_args.enforce_eager or cc.cudagraph_mode == CUDAGraphMode.NONE:
+        return False
+    logger.info(
+        "vllm-lens: CUDA graphs enabled (compilation mode NONE, cudagraph_mode %s); steering, "
+        "hooks and activation capture apply to prompt positions only.",
+        cc.cudagraph_mode.name,
+    )
+    return True
+
+
+def _check_graph_mode_request(steering_vectors: list[SteeringVector] | None, wants_activations: bool) -> None:
+    """Fail fast / warn once for requests whose semantics change under CUDA graphs."""
+    global _warned_capture_prompt_only
+    if not _cuda_graphs_enabled:
+        return
+    for sv in steering_vectors or ():
+        if sv.activations.dim() == 2:
+            raise ValueError(
+                "vllm-lens: 2-D (broadcast) steering vectors are not supported with CUDA graphs "
+                "(VLLM_LENS_CUDA_GRAPHS=1): generated positions run inside replayed graphs where "
+                "the hooks do not execute. Use 3-D position-specific vectors on prompt positions, "
+                "or run eager."
+            )
+    if wants_activations and not _warned_capture_prompt_only:
+        _warned_capture_prompt_only = True
+        logger.warning(
+            "vllm-lens: CUDA graphs are enabled, so output_residual_stream captures PROMPT positions "
+            "only (generated positions run inside replayed graphs). Use enforce_eager to capture them."
+        )
+
+
 def _patched_create_engine_config(self, *args, **kwargs):
     """Patch for ``EngineArgs.create_engine_config``.
 
@@ -231,11 +309,17 @@ def _patched_create_engine_config(self, *args, **kwargs):
     ``VllmConfig`` is built, so the settings propagate through any
     engine creation path (``AsyncLLM.from_engine_args``,
     ``AsyncLLM.from_vllm_config``, ``vllm serve``, etc.) including
-    across subprocess boundaries.
+    across subprocess boundaries.  With ``VLLM_LENS_CUDA_GRAPHS=1`` eager
+    mode is not forced (see ``_configure_cuda_graphs``).
     """
+    global _cuda_graphs_enabled
     if not self.worker_extension_cls:
         self.worker_extension_cls = _WORKER_EXT
-    self.enforce_eager = True
+    if _env_truthy("VLLM_LENS_CUDA_GRAPHS"):
+        _cuda_graphs_enabled = _configure_cuda_graphs(self)
+    else:
+        self.enforce_eager = True
+        _cuda_graphs_enabled = False
 
     # Our capture/steering hooks read V1 model-runner internals (input_batch,
     # requests). vLLM's V2 runner — the default for dense models on vLLM 0.23+ —
@@ -307,6 +391,7 @@ async def _patched_generate(
     steering_vectors = _decode_steering_vectors(
         extra.pop("apply_steering_vectors", None)
     )
+    _check_graph_mode_request(steering_vectors, wants_activations)
 
     # Extract hooks (callables can't survive msgspec).
     hooks_list = _decode_hooks(extra.pop("apply_hooks", None))
@@ -417,6 +502,7 @@ def _prepare_offline_params(
     for idx, sp in enumerate(params_list):
         extra = sp.extra_args or {}
         vectors = _decode_steering_vectors(extra.pop("apply_steering_vectors", None))
+        _check_graph_mode_request(vectors, extra.get("output_residual_stream") is not None)
         if vectors is not None:
             steering_id = f"_steer_{idx}"
             steering_payloads[steering_id] = pickle.dumps(vectors)
